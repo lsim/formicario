@@ -4,25 +4,25 @@ import type { GameSpec } from '@/GameSpec.ts';
 import type { ParticipantFunction } from '@/Participant.ts';
 
 export class BattleArgs {
-  mapWidth: number;
-  mapHeight: number;
-  newFoodSpace: number;
-  newFoodMin: number;
-  newFoodDiff: number;
-  halfTimeTurn: number;
   halfTimePercent: number;
+  halfTimeTurn: number;
+  mapHeight: number;
+  mapWidth: number;
+  newFoodDiff: number;
+  newFoodMin: number;
+  newFoodSpace: number;
+  startAnts: number;
   timeOutTurn: number;
   winPercent: number;
-  startAnts: number;
 
   constructor(spec: GameSpec) {
     // Choose specific parameters for the battle from the game spec values/ranges
 
     // Map width and height must be divisible by 64 and be randomly chosen between the min and max from the game spec
-    const mapWidthMin = Math.round(spec.mapWidth[0] / 64);
-    const mapWidthMax = Math.round(spec.mapWidth[1] / 64);
-    const mapHeightMin = Math.round(spec.mapHeight[0] / 64);
-    const mapHeightMax = Math.round(spec.mapHeight[1] / 64);
+    const mapWidthMin = Math.max(Math.round(spec.mapWidth[0] / 64), 1);
+    const mapWidthMax = Math.max(Math.round(spec.mapWidth[1] / 64), 1);
+    const mapHeightMin = Math.max(Math.round(spec.mapHeight[0] / 64), 1);
+    const mapHeightMax = Math.max(Math.round(spec.mapHeight[1] / 64), 1);
     // Pick random base number and multiply by 64 to get a random map width/height
     this.mapWidth = Math.round(Math.random() * (mapWidthMax - mapWidthMin) + mapWidthMin) * 64;
     this.mapHeight = Math.round(Math.random() * (mapHeightMax - mapHeightMin) + mapHeightMin) * 64;
