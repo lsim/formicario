@@ -1,4 +1,4 @@
-import type { IGameSpec } from '@/GameSpec.ts'
+import type { GameSpec } from '@/GameSpec.ts';
 
 export type WorkerCommandType = 'run-game';
 
@@ -8,5 +8,5 @@ export interface WorkerCommand {
 
 export interface RunGameCommand extends WorkerCommand {
   type: 'run-game';
-  game: IGameSpec;
+  game: GameSpec;
 }

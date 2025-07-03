@@ -1,7 +1,13 @@
-import type { ParticipantFunction } from '@/Participant.ts'
 import { parse } from 'espree';
-import type { IGameSpec } from '@/GameSpec.ts'
-import type { ITeam } from '@/Team.ts'
+import type { Program } from 'estree';
+import { walk } from 'estree-walker';
+
+import type { GameSpec } from '@/GameSpec.ts';
+import type { ITeam } from '@/Team.ts';
+
+import { createRestrictedEval, shadowedGlobals } from '@/safe-eval.ts';
+import { Battle } from '@/Battle.ts';
+import type { ParticipantFunction } from '@/Participant.ts';
 
 onmessage = (e) => {
   console.log('Worker received message', e.data);
@@ -11,24 +17,30 @@ onmessage = (e) => {
   postMessage('Hello from the worker thread');
 };
 
-function evaluateStep(participant: ParticipantFunction) {
-
-}
-
+// Static analysis for obvious violations
 function auditParticipant(participant: string) {
-  const ast = parse(participant);
+  const ast = parse(participant) as Program;
 
-  // TODO: check that the participant doesn't access any globals (except Math)
+  walk(ast, {
+    enter(node) {
+      if (node.type === 'Identifier') {
+        if (shadowedGlobals.includes(node.name)) {
+          throw new Error(`Participant code tried to access global ${node.name}`);
+        }
+      }
+    },
+  });
 }
+
+const safeEval = createRestrictedEval();
 
 function instantiateParticipant(team: ITeam) {
   auditParticipant(team.code);
-  return new Function('"use strict";\n' + team.code)();
+  return safeEval(team.code) as ParticipantFunction;
 }
 
-function run(game: IGameSpec) {
+function run(game: GameSpec) {
   const participantFunctions = game.teams.map(instantiateParticipant);
 
-  const steps = participantFunctions.map(evaluateStep);
-
+  const battle = new Battle(game, participantFunctions);
 }

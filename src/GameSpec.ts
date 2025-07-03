@@ -1,6 +1,6 @@
 import type { ITeam } from '@/Team.ts';
 
-export interface IGameSpec {
+export type GameSpec = {
   mapWidth: [number, number];
   mapHeight: [number, number];
   newFoodSpace: [number, number];
@@ -15,4 +15,4 @@ export interface IGameSpec {
   startAnts: [number, number];
 
   seed: number;
-}
+};

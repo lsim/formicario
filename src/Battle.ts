@@ -1,6 +1,6 @@
 // A battle holds the state of an ongoing battle. It has the specific parameters
 // of the battle, and the teams that are participating in it.
-import type { IGameSpec } from '@/GameSpec.ts';
+import type { GameSpec } from '@/GameSpec.ts';
 import type { ParticipantFunction } from '@/Participant.ts';
 
 export class BattleArgs {
@@ -15,7 +15,7 @@ export class BattleArgs {
   winPercent: number;
   startAnts: number;
 
-  constructor(spec: IGameSpec) {
+  constructor(spec: GameSpec) {
     // Choose specific parameters for the battle from the game spec values/ranges
 
     // Map width and height must be divisible by 64 and be randomly chosen between the min and max from the game spec
@@ -45,7 +45,7 @@ export class BattleArgs {
     this.winPercent = spec.winPercent;
   }
 
-  public static fromGameSpec(spec: IGameSpec): BattleArgs {
+  public static fromGameSpec(spec: GameSpec): BattleArgs {
     return new BattleArgs(spec);
   }
 }
@@ -109,7 +109,7 @@ export class Battle {
   basesBuilt: number;
   currentTurn: number;
 
-  constructor(spec: IGameSpec, participantFunctions: ParticipantFunction[]) {
+  constructor(spec: GameSpec, participantFunctions: ParticipantFunction[]) {
     this.args = BattleArgs.fromGameSpec(spec);
     this.participants = participantFunctions.map((func) => this.resetParticipant({ func }));
 
@@ -203,6 +203,8 @@ export class Battle {
         this.numBorn++;
         participant.numBorn++;
         participant.numAnts++;
+        // OPTIMIZE: having the ant implementation produce a brain template would allow us to only
+        //  shuffle primitive values during the battle, which may save the GC some work
         ant.brain = {};
       }
     });
