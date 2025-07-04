@@ -1,7 +1,7 @@
 // A battle holds the state of an ongoing battle. It has the specific parameters
 // of the battle, and the teams that are participating in it.
 import type { GameSpec } from '@/GameSpec.ts';
-import type { RNGFunction } from './prng.ts';
+import type { RNGFunction } from '@/prng.ts';
 
 export class BattleArgs {
   halfTimePercent: number;
@@ -295,17 +295,17 @@ export class Battle {
     // Create randomized team visibility tables
     // Each team sees other teams in a different random order
     // This prevents teams from coordinating based on team numbers
-    
+
     const numTeams = this.participants.length;
     this.teamShuffleTables = [];
-    
+
     for (let teamIndex = 0; teamIndex < numTeams; teamIndex++) {
       const shuffleTable: number[] = new Array(numTeams + 1).fill(0);
       const taken: number[] = new Array(numTeams).fill(0);
-      
+
       // Own team is always seen as team 0
       shuffleTable[teamIndex + 1] = 0;
-      
+
       // Assign other teams random numbers
       for (let otherTeamIndex = 0; otherTeamIndex < numTeams; otherTeamIndex++) {
         if (otherTeamIndex === teamIndex) {
@@ -315,12 +315,12 @@ export class Battle {
           do {
             assignedNumber = this.rng(numTeams);
           } while (taken[assignedNumber] > teamIndex);
-          
+
           shuffleTable[otherTeamIndex + 1] = assignedNumber;
           taken[assignedNumber]++;
         }
       }
-      
+
       this.teamShuffleTables.push(shuffleTable);
     }
   }
@@ -363,38 +363,38 @@ export class Battle {
   private runAnt(ant: AntData): number {
     const participant = this.participants[ant.team - 1];
     if (!participant) return 0;
-    
+
     // Update ant age and statistics
     ant.age++;
     ant.nextTurn = this.currentTurn + 1;
     participant.timesRun++;
-    
+
     // Prepare 5 SquareData structures (current + 4 adjacent squares)
     const mapData = this.getSurroundings(ant.xPos, ant.yPos);
-    
+
     // Apply team number obfuscation using shuffle tables
     const shuffleTable = this.teamShuffleTables[ant.team - 1];
-    const obfuscatedMapData = mapData.map(square => ({
+    const obfuscatedMapData = mapData.map((square) => ({
       ...square,
-      team: square.numAnts || square.base 
-        ? shuffleTable[square.team] || 0 
-        : 0
+      team: square.numAnts || square.base ? shuffleTable[square.team] || 0 : 0,
     }));
-    
+
     // Collect brain data for all ants on current square
     const antsOnSquare = this.getAntsOnSquare(ant.xPos, ant.yPos);
     const antInfo: AntInfo = {
-      brains: antsOnSquare.map(a => ({ ...a.brain }))
+      brains: antsOnSquare.map((a) => ({ ...a.brain })),
     };
-    
+
     // Ensure calling ant's brain is first in the array
-    const callingAntIndex = antsOnSquare.findIndex(a => a.index === ant.index);
+    const callingAntIndex = antsOnSquare.findIndex((a) => a.index === ant.index);
     if (callingAntIndex > 0) {
       // Swap calling ant's brain to position 0
-      [antInfo.brains[0], antInfo.brains[callingAntIndex]] = 
-        [antInfo.brains[callingAntIndex], antInfo.brains[0]];
+      [antInfo.brains[0], antInfo.brains[callingAntIndex]] = [
+        antInfo.brains[callingAntIndex],
+        antInfo.brains[0],
+      ];
     }
-    
+
     // Execute participant function
     let action: number | AntDescriptor;
     try {
@@ -414,19 +414,19 @@ export class Battle {
       console.error(`Ant function error for team ${ant.team}:`, error);
       action = 0;
     }
-    
+
     // Update ant's brain with any changes from the first brain (calling ant)
     if (antInfo.brains.length > 0) {
       ant.brain = { ...antInfo.brains[0] };
     }
-    
+
     // Update other ants' brains on the same square
     antsOnSquare.forEach((squareAnt, index) => {
       if (index < antInfo.brains.length && squareAnt.index !== ant.index) {
         squareAnt.brain = { ...antInfo.brains[index === 0 ? callingAntIndex : index] };
       }
     });
-    
+
     // Return action as number (ignore AntDescriptor case for now)
     return typeof action === 'number' ? action : 0;
   }
@@ -434,32 +434,32 @@ export class Battle {
   private getSurroundings(x: number, y: number): SquareData[] {
     // Returns 5 SquareData structures: [current, right, down, left, up]
     const surroundings: SquareData[] = [];
-    
+
     // Current square (index 0)
     surroundings.push(this.mapData(x, y));
-    
+
     // Right square (index 1) - wraps around
     const rightX = (x + 1) % this.args.mapWidth;
     surroundings.push(this.mapData(rightX, y));
-    
-    // Down square (index 2) - wraps around  
+
+    // Down square (index 2) - wraps around
     const downY = (y + 1) % this.args.mapHeight;
     surroundings.push(this.mapData(x, downY));
-    
+
     // Left square (index 3) - wraps around
     const leftX = (x - 1 + this.args.mapWidth) % this.args.mapWidth;
     surroundings.push(this.mapData(leftX, y));
-    
+
     // Up square (index 4) - wraps around
     const upY = (y - 1 + this.args.mapHeight) % this.args.mapHeight;
     surroundings.push(this.mapData(x, upY));
-    
+
     return surroundings;
   }
-  
+
   private getAntsOnSquare(x: number, y: number): AntData[] {
     // Find all ants on the specified square
-    return this.ants.filter(ant => ant.xPos === x && ant.yPos === y);
+    return this.ants.filter((ant) => ant.xPos === x && ant.yPos === y);
   }
 
   doAction(ant: AntData, action: number) {

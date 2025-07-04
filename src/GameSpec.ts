@@ -1,5 +1,5 @@
 import type { ITeam } from '@/Team.ts';
-import type { RNGFunction } from './prng.ts';
+import type { RNGFunction } from '@/prng.ts';
 
 export type GameSpec = {
   mapWidth: [number, number];

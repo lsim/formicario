@@ -8,7 +8,7 @@ import type { ITeam } from '@/Team.ts';
 import { createRestrictedEval, shadowedGlobals } from '@/safe-eval.ts';
 import { Battle } from '@/Battle.ts';
 import type { AntFunction } from '@/Battle.ts';
-import { getRNG } from '../prng.ts';
+import { getRNG } from '@/prng.ts';
 
 onmessage = (e) => {
   console.log('Worker received message', e.data);
