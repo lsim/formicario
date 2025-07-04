@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
+import { RouterView } from 'vue-router';
 </script>
 
 <template>
@@ -9,11 +9,11 @@ import { RouterView } from 'vue-router'
 
       <h1>Myrekrig</h1>
 
-<!--      <div class="wrapper">-->
-<!--        <nav>-->
-<!--          <RouterLink to="/">Home</RouterLink>-->
-<!--        </nav>-->
-<!--      </div>-->
+      <!--      <div class="wrapper">-->
+      <!--        <nav>-->
+      <!--          <RouterLink to="/">Home</RouterLink>-->
+      <!--        </nav>-->
+      <!--      </div>-->
     </header>
 
     <main>
@@ -34,6 +34,5 @@ import { RouterView } from 'vue-router'
     margin-top: 2rem;
     width: 100%;
   }
-
 }
 </style>

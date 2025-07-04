@@ -1,5 +1,4 @@
 <script setup lang="ts">
-
 import Worker from '../workers/worker?worker';
 
 const worker = new Worker();
@@ -11,7 +10,6 @@ worker.onmessage = (e) => {
 function doStuff() {
   worker.postMessage({ type: 'run-game', participants: ['foo', 'bar'] });
 }
-
 </script>
 
 <template>
@@ -19,6 +17,4 @@ function doStuff() {
   <button @click="doStuff">Do stuff</button>
 </template>
 
-<style scoped>
-
-</style>
+<style scoped></style>
