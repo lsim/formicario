@@ -7,7 +7,8 @@ import type { ITeam } from '@/Team.ts';
 
 import { createRestrictedEval, shadowedGlobals } from '@/safe-eval.ts';
 import { Battle } from '@/Battle.ts';
-import type { ParticipantFunction } from '@/Participant.ts';
+import type { AntFunction } from '@/Battle.ts';
+import { getRNG } from '../prng.ts';
 
 onmessage = (e) => {
   console.log('Worker received message', e.data);
@@ -36,10 +37,11 @@ const safeEval = createRestrictedEval();
 
 function instantiateParticipant(team: ITeam) {
   auditParticipant(team.code);
-  return safeEval(team.code) as ParticipantFunction;
+  return safeEval(team.code) as AntFunction;
 }
 
 function run(game: GameSpec) {
+  game.rng = getRNG(game.seed);
   const participantFunctions = game.teams.map(instantiateParticipant);
 
   const battle = new Battle(game, participantFunctions);

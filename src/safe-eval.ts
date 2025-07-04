@@ -1,4 +1,6 @@
 // We are going to add more to this list as we go
+import type { AntFunction } from '@/Battle.ts';
+
 export const prohibitedGlobalNames = [
   'Math',
   'JSON',
@@ -35,7 +37,9 @@ function buildScope(allowedGlobals: Record<string, unknown> = {}) {
 }
 
 // Expects code that declares a function
-export function createRestrictedEval(allowedGlobals: Record<string, unknown> = {}) {
+export function createRestrictedEval(
+  allowedGlobals: Record<string, unknown> = {},
+): (code: string) => AntFunction {
   // We return an eval function where the scope is limited to the allowed globals
   return function restrictedEval(fnCode: string) {
     // Create an isolated scope by shadowing the prohibited globals with function arguments of the same name

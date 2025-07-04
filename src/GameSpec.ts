@@ -1,4 +1,5 @@
 import type { ITeam } from '@/Team.ts';
+import type { RNGFunction } from './prng.ts';
 
 export type GameSpec = {
   mapWidth: [number, number];
@@ -15,4 +16,5 @@ export type GameSpec = {
   startAnts: [number, number];
 
   seed: number;
+  rng: RNGFunction;
 };

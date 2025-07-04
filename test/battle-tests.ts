@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { GameSpec } from '@/GameSpec';
 import { BattleArgs } from '@/Battle';
+import { getRNG } from '@/prng.ts';
 
 describe('Battle tests', () => {
   describe('battle args', () => {
@@ -15,6 +16,7 @@ describe('Battle tests', () => {
         newFoodMin: [10, 10],
         newFoodSpace: [10, 10],
         seed: 10,
+        rng: getRNG(10),
         startAnts: [10, 10],
         teams: [],
         timeOutTurn: 20,

@@ -10,11 +10,11 @@
  * - 0-4+8: move to the given direction and drag food (8 = stay, 9 = right, 10 = down, 11 = left, 12 = up)
  * - 16   : build base (provided conditions are met - otherwise stay)
  */
-function ReluctAnt(squareData, antBrain) {
+function ReluctAnt(squareData, antInfo) {
   // When invoked with no arguments, the ant must return an object describing itself.
   if (!squareData)
     return {
-      // Brain size is defined by the number of expressions in the structure. Arrays must be fixed-size and only support basic read/write operations.
+      // Brain size is defined by the number of expressions in the structure. No arrays or nested objects.
       brain: {},
       name: 'ReluctAnt',
       color: '#8956ff',
@@ -23,5 +23,5 @@ function ReluctAnt(squareData, antBrain) {
   // Each ant is born with a random number in its brain in addition to its brain structure.
 
   // This very basic ReluctAnt strategy has each ant move exclusively in one of the four directions.
-  return (antBrain.random % 3) + 1;
+  return (antInfo.brains[0].random % 3) + 1;
 }
