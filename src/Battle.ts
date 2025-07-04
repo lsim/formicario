@@ -50,7 +50,7 @@ export class BattleArgs {
 }
 
 // Corresponds to the TeamData struct in the C code
-declare type TeamData = {
+declare type TeamData = AntDescriptor & {
   func: AntFunction;
   numBorn: number;
   numAnts: number;
@@ -109,14 +109,18 @@ declare type AntBrain = {
   [key: string]: number | boolean;
 };
 
-// TODO: Define this type
-declare type AntDescriptor = object;
+// Returned by the AntFunction when called with no arguments
+declare type AntDescriptor = {
+  color: string;
+  name: string;
+  brainTemplate: object;
+};
 
-export type AntFunction = (map?: SquareData[], antInfo?: AntInfo) => number | AntDescriptor;
+export type AntFunction = (() => AntDescriptor) & ((map: SquareData[], antInfo: AntInfo) => number);
 
 export class Battle {
   args: BattleArgs;
-  participants: TeamData[];
+  teams: TeamData[];
   // An array of squares, each with a linked list of ants on that square
   map: SquareData[] = [];
   ants: AntData[] = [];
@@ -140,7 +144,11 @@ export class Battle {
   constructor(spec: GameSpec, antFunctions: AntFunction[]) {
     this.args = BattleArgs.fromGameSpec(spec);
     this.rng = spec.rng;
-    this.participants = antFunctions.map((func) => this.resetParticipant({ func }));
+    this.teams = antFunctions.map((func) => {
+      const descriptor = func();
+      const team = { func, ...descriptor };
+      return this.resetTeam(team);
+    });
 
     this.initializeBattle();
 
@@ -157,7 +165,7 @@ export class Battle {
     return this.map[x + y * this.args.mapWidth];
   }
 
-  resetParticipant(p: Partial<TeamData> & { func: AntFunction }): TeamData {
+  resetTeam(p: Partial<TeamData> & { func: AntFunction } & AntDescriptor): TeamData {
     return Object.assign(p, {
       numBorn: 0,
       numAnts: 0,
@@ -191,15 +199,15 @@ export class Battle {
     const basePositions = this.calculateOptimalBasePositions();
 
     // Initialize each team
-    this.participants.forEach((participant, teamIndex) => {
+    this.teams.forEach((team, teamIndex) => {
       const teamId = teamIndex + 1; // Teams are 1-indexed
       const basePos = basePositions[teamIndex];
 
-      this.resetParticipant(participant);
+      this.resetTeam(team);
 
-      participant.numBases = 1;
-      participant.basesBuilt = 1;
-      participant.squareOwn = 1;
+      team.numBases = 1;
+      team.basesBuilt = 1;
+      team.squareOwn = 1;
       this.numBases++;
       this.basesBuilt++;
 
@@ -216,7 +224,7 @@ export class Battle {
           team: teamId,
           age: 0,
           nextTurn: this.currentTurn + 1,
-          brain: { random: this.rng() }, // Empty brain object for participant memory
+          brain: { random: this.rng() }, // Empty brain object for team memory
         };
 
         this.ants.push(ant);
@@ -230,8 +238,8 @@ export class Battle {
         square.numAnts++;
         this.numAnts++;
         this.numBorn++;
-        participant.numBorn++;
-        participant.numAnts++;
+        team.numBorn++;
+        team.numAnts++;
         // OPTIMIZE: having the ant implementation produce a brain template would allow us to only
         //  shuffle primitive values during the battle, which may save the GC some work
         ant.brain = { random: this.rng() };
@@ -243,7 +251,7 @@ export class Battle {
   }
 
   private calculateOptimalBasePositions(): { x: number; y: number }[] {
-    const numTeams = this.participants.length;
+    const numTeams = this.teams.length;
     const maxTries = 10000;
     let bestDistance = 0;
     let bestPositions: { x: number; y: number }[] = [];
@@ -296,7 +304,7 @@ export class Battle {
     // Each team sees other teams in a different random order
     // This prevents teams from coordinating based on team numbers
 
-    const numTeams = this.participants.length;
+    const numTeams = this.teams.length;
     this.teamShuffleTables = [];
 
     for (let teamIndex = 0; teamIndex < numTeams; teamIndex++) {
@@ -361,13 +369,13 @@ export class Battle {
   }
 
   private runAnt(ant: AntData): number {
-    const participant = this.participants[ant.team - 1];
-    if (!participant) return 0;
+    const team = this.teams[ant.team - 1];
+    if (!team) return 0;
 
     // Update ant age and statistics
     ant.age++;
     ant.nextTurn = this.currentTurn + 1;
-    participant.timesRun++;
+    team.timesRun++;
 
     // Prepare 5 SquareData structures (current + 4 adjacent squares)
     const mapData = this.getSurroundings(ant.xPos, ant.yPos);
@@ -395,19 +403,19 @@ export class Battle {
       ];
     }
 
-    // Execute participant function
+    // Execute team function
     let action: number | AntDescriptor;
     try {
       // Random timing measurement (1 in 10 chance like C implementation)
       const shouldTime = this.rng(10) === 0;
       if (shouldTime) {
         const startTime = performance.now();
-        action = participant.func(obfuscatedMapData, antInfo);
+        action = team.func(obfuscatedMapData, antInfo);
         const endTime = performance.now();
-        participant.timeUsed += endTime - startTime;
-        participant.timesTimed++;
+        team.timeUsed += endTime - startTime;
+        team.timesTimed++;
       } else {
-        action = participant.func(obfuscatedMapData, antInfo);
+        action = team.func(obfuscatedMapData, antInfo);
       }
     } catch (error) {
       // If ant function fails, default to no action
@@ -480,12 +488,12 @@ export class Battle {
         // Update statistics
         this.numBases++;
         this.basesBuilt++;
-        this.participants[ant.team - 1].numBases++;
-        this.participants[ant.team - 1].basesBuilt++;
+        this.teams[ant.team - 1].numBases++;
+        this.teams[ant.team - 1].basesBuilt++;
 
         // Remove consumed ants from global count
         this.numAnts -= 25;
-        this.participants[ant.team - 1].numAnts -= 25;
+        this.teams[ant.team - 1].numAnts -= 25;
       }
       return;
     }
@@ -520,17 +528,17 @@ export class Battle {
       const killedAnts = newSquare.numAnts;
 
       // Update kill statistics
-      this.participants[ant.team - 1].kill += killedAnts;
-      this.participants[enemyTeam - 1].killed += killedAnts;
+      this.teams[ant.team - 1].kill += killedAnts;
+      this.teams[enemyTeam - 1].killed += killedAnts;
 
       // Remove killed ants
       this.numAnts -= killedAnts;
-      this.participants[enemyTeam - 1].numAnts -= killedAnts;
+      this.teams[enemyTeam - 1].numAnts -= killedAnts;
 
       // Take over enemy base if present
       if (newSquare.base) {
-        this.participants[enemyTeam - 1].numBases--;
-        this.participants[ant.team - 1].numBases++;
+        this.teams[enemyTeam - 1].numBases--;
+        this.teams[ant.team - 1].numBases++;
       }
 
       // Clear the square
@@ -570,8 +578,8 @@ export class Battle {
         this.ants.push(newAnt);
         this.numAnts++;
         this.numBorn++;
-        this.participants[ant.team - 1].numAnts++;
-        this.participants[ant.team - 1].numBorn++;
+        this.teams[ant.team - 1].numAnts++;
+        this.teams[ant.team - 1].numBorn++;
 
         newSquare.numAnts++;
       } else {
@@ -617,14 +625,14 @@ export class Battle {
   foodOwnTouch(square: SquareData, factor: number) {
     if (square.team === 0) return;
 
-    const participant = this.participants[square.team - 1];
+    const team = this.teams[square.team - 1];
     const foodOwned = Math.min(square.numFood, square.numAnts);
     const foodTouched = square.numFood - foodOwned;
     const foodKnown = square.numFood;
 
-    participant.foodOwn += foodOwned * factor;
-    participant.foodTouch += foodTouched * factor;
-    participant.foodKnown += foodKnown * factor;
+    team.foodOwn += foodOwned * factor;
+    team.foodTouch += foodTouched * factor;
+    team.foodKnown += foodKnown * factor;
   }
 
   // Check if battle should terminate
@@ -635,8 +643,8 @@ export class Battle {
     let activeTeams = 0;
 
     // Calculate team values
-    for (const participant of this.participants) {
-      const teamValue = participant.numAnts + baseValue * participant.numBases;
+    for (const team of this.teams) {
+      const teamValue = team.numAnts + baseValue * team.numBases;
       totalValue += teamValue;
       maxTeamValue = Math.max(maxTeamValue, teamValue);
       if (teamValue > 0) activeTeams++;

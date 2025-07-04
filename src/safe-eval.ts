@@ -2,6 +2,9 @@
 import type { AntFunction } from '@/Battle.ts';
 
 export const prohibitedGlobalNames = [
+  'document',
+  'self',
+  'window',
   'Math',
   'JSON',
   'Date',
@@ -13,7 +16,11 @@ export const prohibitedGlobalNames = [
   'clearInterval',
 ];
 
-export const shadowedGlobals = Object.keys(window).concat(prohibitedGlobalNames);
+const allowedGlobalNames = ['name'];
+
+export const shadowedGlobals = Object.keys(self)
+  .concat(prohibitedGlobalNames)
+  .filter((prop) => !allowedGlobalNames.includes(prop));
 
 function buildScope(allowedGlobals: Record<string, unknown> = {}) {
   const scope: Record<string, unknown> = {};

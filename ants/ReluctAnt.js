@@ -15,7 +15,7 @@ function ReluctAnt(squareData, antInfo) {
   if (!squareData)
     return {
       // Brain size is defined by the number of expressions in the structure. No arrays or nested objects.
-      brain: {},
+      brainTemplate: {},
       name: 'ReluctAnt',
       color: '#8956ff',
     };

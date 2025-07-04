@@ -1,4 +1,3 @@
-import type { ITeam } from '@/Team.ts';
 import type { RNGFunction } from '@/prng.ts';
 
 export type GameSpec = {
@@ -11,7 +10,7 @@ export type GameSpec = {
   halfTimePercent: number;
   timeOutTurn: number;
   winPercent: number;
-  teams: ITeam[];
+  teams: string[];
 
   startAnts: [number, number];
 
