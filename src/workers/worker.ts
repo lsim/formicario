@@ -8,14 +8,21 @@ import { createRestrictedEval, shadowedGlobals } from '@/safe-eval.ts';
 import { Battle } from '@/Battle.ts';
 import type { AntFunction } from '@/Battle.ts';
 import { getRNG } from '@/prng.ts';
-import type { WorkerCommand } from '@/workers/WorkerCommand.ts';
+import type { WorkerMessage } from '@/workers/WorkerMessage.ts';
+import type { GameSummary } from '@/GameSummary.ts';
 
 // TODO: We need to set up a stream of status messages back to the UI
-onmessage = (e) => {
-  const command: WorkerCommand = e.data as WorkerCommand;
+onmessage = async (e) => {
+  const command: WorkerMessage = e.data as WorkerMessage;
   console.log('Worker received message', command);
   if (command?.type === 'run-game') {
-    run(command.game);
+    try {
+      const summary = await run(command.game);
+      postMessage({ type: 'game-summary', results: summary });
+    } catch (error) {
+      console.error('Error running game:', error);
+      postMessage({ type: 'error', error: String(error) });
+    }
   }
   postMessage('Hello from the worker thread');
 };
@@ -42,12 +49,20 @@ function instantiateParticipant(team: string) {
   return safeEval(team) as AntFunction;
 }
 
-function run(game: GameSpec) {
+async function run(game: GameSpec): Promise<GameSummary> {
   console.log('Running game', game);
   game.rng = getRNG(game.seed);
   const teamFunctions = game.teams.map(instantiateParticipant);
 
   const battle = new Battle(game, teamFunctions);
 
-  battle.doTurn();
+  // Run the complete battle using the do-while loop structure
+  const battleSummary = await battle.run();
+
+  console.log('Battle summary', battleSummary);
+
+  return {
+    seed: game.seed,
+    battles: [battleSummary],
+  };
 }

@@ -2,6 +2,7 @@
 // of the battle, and the teams that are participating in it.
 import type { GameSpec } from '@/GameSpec.ts';
 import type { RNGFunction } from '@/prng.ts';
+import type { BattleStatus, BattleSummary } from '@/GameSummary.ts';
 
 export class BattleArgs {
   halfTimePercent: number;
@@ -68,7 +69,7 @@ declare type TeamData = AntDescriptor & {
   foodKnown: number;
 };
 
-declare type SquareData = {
+export type SquareData = {
   numAnts: number;
   base: boolean;
   team: number;
@@ -150,8 +151,7 @@ export class Battle {
       return this.resetTeam(team);
     });
 
-    this.initializeBattle();
-
+    // Initialize battle stats before calling initializeBattle
     this.numBorn = 0;
     this.numAnts = 0;
     this.antPointer = 0;
@@ -159,6 +159,8 @@ export class Battle {
     this.numBases = 0;
     this.basesBuilt = 0;
     this.currentTurn = 0;
+
+    this.initializeBattle();
   }
 
   mapData(x: number, y: number) {
@@ -229,20 +231,19 @@ export class Battle {
 
         this.ants.push(ant);
         const square = this.mapData(basePos.x, basePos.y);
-        square.numAnts++;
 
+        // Add ant to the square's linked list (for future use)
         ant.mapNext = square.lastAnt?.mapPrev;
         ant.mapPrev = square.lastAnt;
         if (square.lastAnt) square.lastAnt.mapNext = ant;
         square.lastAnt = ant;
+
+        // Update counters (only once per ant)
         square.numAnts++;
         this.numAnts++;
         this.numBorn++;
         team.numBorn++;
         team.numAnts++;
-        // OPTIMIZE: having the ant implementation produce a brain template would allow us to only
-        //  shuffle primitive values during the battle, which may save the GC some work
-        ant.brain = { random: this.rng() };
       }
     });
 
@@ -333,6 +334,62 @@ export class Battle {
     }
   }
 
+  emitStatus() {
+    const status: BattleStatus = {};
+    // TODO: Emit status message to the UI via postMessage
+  }
+
+  async run(): Promise<BattleSummary> {
+    const startTime = Date.now();
+    let terminated = false;
+
+    // Main battle loop - equivalent to the C do-while structure
+    do {
+      // Execute one turn (equivalent to DoTurn() in C)
+      this.doTurn();
+
+      // Emit status for UI updates (equivalent to SysDrawMap() in C)
+      this.emitStatus();
+
+      // Check for termination conditions (equivalent to TermCheck() in C)
+      terminated = this.checkTermination();
+
+      // Allow for async operations and UI responsiveness
+      // Yield control periodically for non-blocking execution
+      if (this.currentTurn % 10 === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+
+      // Optional: Check for system events (pause/stop/resume) - equivalent to SysCheck() in C
+      // This could be implemented later when UI controls are added
+    } while (!terminated);
+
+    return this.generateBattleSummary(startTime);
+  }
+
+  private generateBattleSummary(startTime: number): BattleSummary {
+    // Find the winning team
+    const baseValue = 75;
+    let maxTeamValue = 0;
+    let winnerName = 'Draw';
+
+    for (const team of this.teams) {
+      const teamValue = team.numAnts + baseValue * team.numBases;
+      if (teamValue > maxTeamValue) {
+        maxTeamValue = teamValue;
+        winnerName = team.name;
+      }
+    }
+
+    return {
+      startTime,
+      winner: winnerName,
+      teams: this.teams.map((t) => t.name),
+      turns: this.currentTurn,
+      args: this.args,
+    };
+  }
+
   // Battle simulation
   doTurn() {
     this.currentTurn++;
@@ -360,10 +417,9 @@ export class Battle {
 
     // Place new food if needed
     const baseValue = 75; // NewBaseAnts (25) + NewBaseFood (50)
-    const totalValue = this.numAnts + this.numFood + baseValue * this.numBases;
     const targetValue = (this.args.mapWidth * this.args.mapHeight) / this.args.newFoodSpace;
 
-    while (totalValue < targetValue) {
+    while (this.numAnts + this.numFood + baseValue * this.numBases < targetValue) {
       this.placeFood();
     }
   }
@@ -650,8 +706,8 @@ export class Battle {
       if (teamValue > 0) activeTeams++;
     }
 
-    // Single team wins
-    if (activeTeams <= 1) {
+    // Single team wins (only applies to multi-team battles)
+    if (this.teams.length > 1 && activeTeams <= 1) {
       return true;
     }
 
@@ -660,16 +716,16 @@ export class Battle {
       return true;
     }
 
-    // Win percentage reached
-    if (totalValue > 0) {
+    // Win percentage reached (only applies to multi-team battles)
+    if (this.teams.length > 1 && totalValue > 0) {
       const winThreshold = (totalValue * this.args.winPercent) / 100;
       if (maxTeamValue >= winThreshold) {
         return true;
       }
     }
 
-    // Half-time advantage
-    if (this.currentTurn >= this.args.halfTimeTurn && totalValue > 0) {
+    // Half-time advantage (only applies to multi-team battles)
+    if (this.teams.length > 1 && this.currentTurn >= this.args.halfTimeTurn && totalValue > 0) {
       const halfTimeThreshold = (totalValue * this.args.halfTimePercent) / 100;
       if (maxTeamValue >= halfTimeThreshold) {
         return true;
