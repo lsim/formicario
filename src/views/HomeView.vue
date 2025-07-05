@@ -7,7 +7,7 @@ worker.onmessage = (e) => {
   console.log('Worker sent message', e.data);
 };
 
-async function doStuff() {
+async function startGame() {
   const reluctant = (await import('@/../ants/ReluctAnt.js?raw')).default;
   worker.postMessage({
     type: 'run-game',
@@ -27,11 +27,17 @@ async function doStuff() {
     },
   });
 }
+
+async function stopGame() {
+  worker.postMessage({
+    type: 'stop-game',
+  });
+}
 </script>
 
 <template>
-  <button @click="doStuff">Do stuff</button>
-  <button @click="doStuff">Do stuff</button>
+  <button @click="startGame">Start</button>
+  <button @click="stopGame">Stop</button>
 </template>
 
 <style scoped></style>

@@ -1,5 +1,3 @@
-// A battle holds the state of an ongoing battle. It has the specific parameters
-// of the battle, and the teams that are participating in it.
 import type { GameSpec } from '@/GameSpec.ts';
 import type { RNGFunction } from '@/prng.ts';
 import type { BattleStatus, BattleSummary } from '@/GameSummary.ts';
@@ -141,6 +139,7 @@ export class Battle {
   basesBuilt: number;
   currentTurn: number;
   rng: RNGFunction;
+  private stopRequested = false;
 
   constructor(spec: GameSpec, antFunctions: AntFunction[]) {
     this.args = BattleArgs.fromGameSpec(spec);
@@ -365,6 +364,10 @@ export class Battle {
     } while (!terminated);
 
     return this.generateBattleSummary(startTime);
+  }
+
+  public stop() {
+    this.stopRequested = true;
   }
 
   private generateBattleSummary(startTime: number): BattleSummary {
@@ -697,6 +700,8 @@ export class Battle {
     let totalValue = 0;
     let maxTeamValue = 0;
     let activeTeams = 0;
+
+    if (this.stopRequested) return true;
 
     // Calculate team values
     for (const team of this.teams) {
