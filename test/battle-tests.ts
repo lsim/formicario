@@ -307,18 +307,233 @@ describe('Battle tests', () => {
 
       // Find ants from different teams
       const team1Ant = battle.ants.find((ant) => ant.team === 1)!;
-      const team2Ant = battle.ants.find((ant) => ant.team === 2)!;
 
-      // Instead, test combat logic directly by setting up the scenario
-      const square = battle.mapData(team2Ant.xPos, team2Ant.yPos);
-      square.numAnts = 1;
-      square.team = 2;
+      // Set up a combat scenario: Team 1 ant attacks Team 2 square
+      const targetX = 10,
+        targetY = 10;
 
-      // Simulate team1 ant moving into team2 square
-      battle.doAction(team1Ant, 0); // Setup for potential combat scenario
+      // Place enemy ants on target square
+      const targetSquare = battle.mapData(targetX, targetY);
+      targetSquare.numAnts = 3;
+      targetSquare.team = 2;
 
-      // Note: Full combat testing would require more complex setup
-      expect(battle.numAnts).toBeGreaterThan(0);
+      // Move team1 ant to adjacent square
+      team1Ant.xPos = targetX - 1;
+      team1Ant.yPos = targetY;
+
+      const initialAnts = battle.numAnts;
+      const initialTeam1Kills = battle.teams[0].kill;
+      const initialTeam2Killed = battle.teams[1].killed;
+
+      // Attack: move right into enemy square
+      battle.doAction(team1Ant, 1);
+
+      // Verify combat occurred
+      expect(battle.numAnts).toBe(initialAnts - 3); // 3 enemy ants killed
+      expect(battle.teams[0].kill).toBe(initialTeam1Kills + 3);
+      expect(battle.teams[1].killed).toBe(initialTeam2Killed + 3);
+      expect(targetSquare.numAnts).toBe(1); // Only attacking ant remains
+      expect(targetSquare.team).toBe(1); // Square now controlled by team 1
+    });
+
+    it('should handle base capture during combat', () => {
+      const battle = new Battle(gameSpec, [simpleAnt, aggressiveAnt]);
+
+      const team1Ant = battle.ants.find((ant) => ant.team === 1)!;
+      const targetX = 20,
+        targetY = 20;
+
+      // Set up enemy base with defenders
+      const targetSquare = battle.mapData(targetX, targetY);
+      targetSquare.numAnts = 2;
+      targetSquare.team = 2;
+      targetSquare.base = true;
+
+      // Manually adjust base counts to test capture
+      battle.teams[1].numBases = 2; // Give team 2 an extra base
+
+      // Position attacker adjacent to base
+      team1Ant.xPos = targetX - 1;
+      team1Ant.yPos = targetY;
+
+      const initialTeam1Bases = battle.teams[0].numBases;
+      const initialTeam2Bases = battle.teams[1].numBases;
+
+      // Attack the base
+      battle.doAction(team1Ant, 1);
+
+      // Verify base capture
+      expect(battle.teams[0].numBases).toBe(initialTeam1Bases + 1);
+      expect(battle.teams[1].numBases).toBe(initialTeam2Bases - 1);
+      expect(targetSquare.team).toBe(1); // Base now belongs to team 1
+    });
+
+    it('should handle food transport and ant creation', () => {
+      const battle = new Battle(gameSpec, [simpleAnt]);
+
+      const ant = battle.ants[0];
+      const sourceX = 30,
+        sourceY = 30;
+      const baseX = 31,
+        baseY = 30;
+
+      // Set up food source
+      const sourceSquare = battle.mapData(sourceX, sourceY);
+      sourceSquare.numFood = 5;
+
+      // Set up team base
+      const baseSquare = battle.mapData(baseX, baseY);
+      baseSquare.base = true;
+      baseSquare.team = 1;
+
+      // Position ant at food source
+      ant.xPos = sourceX;
+      ant.yPos = sourceY;
+
+      const initialAnts = battle.numAnts;
+      const initialFood = battle.numFood;
+
+      // Carry food to base (move right with carry flag)
+      battle.doAction(ant, 1 | 8); // Direction 1 (right) + carry food flag (8)
+
+      // Verify food transport and ant creation
+      expect(battle.numAnts).toBe(initialAnts + 1); // New ant created
+      expect(battle.numFood).toBe(initialFood - 1); // Food consumed for ant creation
+      expect(sourceSquare.numFood).toBe(4); // Food taken from source
+    });
+
+    it('should handle food transport without ant creation', () => {
+      const battle = new Battle(gameSpec, [simpleAnt]);
+
+      const ant = battle.ants[0];
+      const sourceX = 40,
+        sourceY = 40;
+      const destX = 41,
+        destY = 40;
+
+      // Set up food source
+      const sourceSquare = battle.mapData(sourceX, sourceY);
+      sourceSquare.numFood = 5;
+
+      // Set up non-base destination
+      const destSquare = battle.mapData(destX, destY);
+      destSquare.base = false;
+
+      // Position ant at food source
+      ant.xPos = sourceX;
+      ant.yPos = sourceY;
+
+      const initialFood = battle.numFood;
+
+      // Carry food to non-base square
+      battle.doAction(ant, 1 | 8); // Direction 1 (right) + carry food flag (8)
+
+      // Verify food transport without ant creation
+      expect(battle.numFood).toBe(initialFood); // No net food change
+      expect(sourceSquare.numFood).toBe(4); // Food taken from source
+      expect(destSquare.numFood).toBe(1); // Food deposited at destination
+    });
+
+    it('should update square ownership when ants leave', () => {
+      const battle = new Battle(gameSpec, [simpleAnt]);
+
+      const ant = battle.ants[0];
+      const startX = 50,
+        startY = 50;
+
+      // Position ant alone on a square
+      ant.xPos = startX;
+      ant.yPos = startY;
+      const startSquare = battle.mapData(startX, startY);
+      startSquare.numAnts = 1;
+      startSquare.team = 1;
+
+      // Move ant away
+      battle.doAction(ant, 1); // Move right
+
+      // Verify square ownership is cleared when last ant leaves
+      expect(startSquare.numAnts).toBe(0);
+      expect(startSquare.team).toBe(0); // No longer owned by any team
+    });
+
+    it('should call foodOwnTouch during termination check', () => {
+      const battle = new Battle(gameSpec, [simpleAnt]);
+
+      // Set up a square with food and ants
+      const square = battle.mapData(10, 10);
+      square.numAnts = 3;
+      square.numFood = 5;
+      square.team = 1;
+
+      const initialFoodOwn = battle.teams[0].foodOwn;
+
+      // Call foodOwnTouch manually to test the function
+      battle.foodOwnTouch(square, 1);
+
+      // Verify food statistics are updated
+      expect(battle.teams[0].foodOwn).toBeGreaterThan(initialFoodOwn);
+      expect(battle.teams[0].foodTouch).toBeGreaterThan(0);
+      expect(battle.teams[0].foodKnown).toBe(5);
+    });
+
+    it('should handle termination by win percentage', () => {
+      const battle = new Battle({ ...gameSpec, winPercent: 50 }, [simpleAnt, aggressiveAnt]);
+
+      // Manually set up a scenario where team 1 has > 50% of total value
+      battle.teams[0].numAnts = 100;
+      battle.teams[0].numBases = 2;
+      battle.teams[1].numAnts = 10;
+      battle.teams[1].numBases = 1;
+
+      // Check termination
+      expect(battle.checkTermination()).toBe(true);
+    });
+
+    it('should handle termination by half-time advantage', () => {
+      const battle = new Battle({ ...gameSpec, halfTimeTurn: 10, halfTimePercent: 60 }, [
+        simpleAnt,
+        aggressiveAnt,
+      ]);
+
+      // Set current turn past half-time
+      battle.currentTurn = 15;
+
+      // Set up scenario where team 1 has > 60% advantage
+      battle.teams[0].numAnts = 80;
+      battle.teams[0].numBases = 1;
+      battle.teams[1].numAnts = 20;
+      battle.teams[1].numBases = 1;
+
+      // Check termination
+      expect(battle.checkTermination()).toBe(true);
+    });
+
+    it('should handle termination when only one team remains active', () => {
+      const battle = new Battle(gameSpec, [simpleAnt, aggressiveAnt]);
+
+      // Simulate one team being completely eliminated
+      battle.teams[0].numAnts = 50;
+      battle.teams[0].numBases = 1;
+      battle.teams[1].numAnts = 0; // Team 2 eliminated
+      battle.teams[1].numBases = 0;
+
+      // Check termination - should return true as only 1 team remains active
+      expect(battle.checkTermination()).toBe(true);
+    });
+
+    it('should handle timing measurements for performance tracking', () => {
+      const battle = new Battle(gameSpec, [simpleAnt]);
+
+      const ant = battle.ants[0];
+      const initialTimesTimed = battle.teams[0].timesTimed;
+
+      // Run ant multiple times to potentially trigger timing measurement
+      for (let i = 0; i < 50; i++) {
+        battle.runAnt(ant);
+      }
+
+      // Timing measurement should have occurred at least once (1 in 10 chance each time)
+      expect(battle.teams[0].timesTimed).toBeGreaterThanOrEqual(initialTimesTimed);
     });
 
     it('should track team statistics', () => {

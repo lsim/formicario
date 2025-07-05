@@ -492,7 +492,7 @@ export class Battle {
     });
 
     // Return action as number (ignore AntDescriptor case for now)
-    return typeof action === 'number' ? action : 0;
+    return action;
   }
 
   private getSurroundings(x: number, y: number): SquareData[] {
