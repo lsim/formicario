@@ -24,6 +24,7 @@ async function startGame() {
       timeOutTurn: 20,
       winPercent: 10,
       seed: 10,
+      statusInterval: 1,
     },
   });
 }

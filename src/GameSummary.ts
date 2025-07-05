@@ -1,7 +1,28 @@
 import type { BattleArgs } from '@/Battle.ts';
 
+export type SquareStatus = {
+  numAnts: number;
+  base: boolean;
+  team: number;
+  numFood: number;
+};
+
+export type TeamStatus = {
+  name: string;
+  color: string;
+  numBorn: number;
+  numAnts: number;
+  numBases: number;
+  basesBuilt: number;
+  kill: number;
+  killed: number;
+  dieAge: number;
+};
+
 export type BattleStatus = {
-  // TODO: Can we send deltas or do we need the full square table?
+  teams: TeamStatus[];
+  // OPTIMIZE: Can we send square deltas somehow? Most squares won't change from turn to turn
+  squares: SquareStatus[];
 };
 
 export type BattleSummary = {

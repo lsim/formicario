@@ -1,6 +1,7 @@
 import type { RNGFunction } from '@/prng.ts';
 
 export type GameSpec = {
+  statusInterval: number;
   mapWidth: [number, number];
   mapHeight: [number, number];
   newFoodSpace: [number, number];

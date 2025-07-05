@@ -13,6 +13,7 @@ export class BattleArgs {
   startAnts: number;
   timeOutTurn: number;
   winPercent: number;
+  statusInterval: number;
 
   constructor(spec: GameSpec) {
     // Choose specific parameters for the battle from the game spec values/ranges
@@ -37,6 +38,7 @@ export class BattleArgs {
     this.halfTimePercent = spec.halfTimePercent;
     this.timeOutTurn = spec.timeOutTurn;
     this.winPercent = spec.winPercent;
+    this.statusInterval = spec.statusInterval;
   }
 
   private determineParameter(min: number, max: number, rng: RNGFunction): number {
@@ -334,8 +336,26 @@ export class Battle {
   }
 
   emitStatus() {
-    const status: BattleStatus = {};
-    // TODO: Emit status message to the UI via postMessage
+    const status: BattleStatus = {
+      teams: this.teams.map((team) => ({
+        name: team.name,
+        color: team.color,
+        numBorn: team.numBorn,
+        numAnts: team.numAnts,
+        numBases: team.numBases,
+        basesBuilt: team.basesBuilt,
+        kill: team.kill,
+        killed: team.killed,
+        dieAge: team.dieAge,
+      })),
+      squares: this.map.map((square) => ({
+        numAnts: square.numAnts,
+        base: square.base,
+        team: square.team,
+        numFood: square.numFood,
+      })),
+    };
+    postMessage({ type: 'battle-status', status });
   }
 
   async run(): Promise<BattleSummary> {
@@ -348,7 +368,9 @@ export class Battle {
       this.doTurn();
 
       // Emit status for UI updates (equivalent to SysDrawMap() in C)
-      this.emitStatus();
+      if (this.currentTurn % this.args.statusInterval === 0) {
+        this.emitStatus();
+      }
 
       // Check for termination conditions (equivalent to TermCheck() in C)
       terminated = this.checkTermination();
