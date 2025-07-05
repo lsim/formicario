@@ -337,6 +337,7 @@ export class Battle {
 
   emitStatus() {
     const status: BattleStatus = {
+      args: this.args,
       teams: this.teams.map((team) => ({
         name: team.name,
         color: team.color,

@@ -20,6 +20,7 @@ export type TeamStatus = {
 };
 
 export type BattleStatus = {
+  args: BattleArgs;
   teams: TeamStatus[];
   // OPTIMIZE: Can we send square deltas somehow? Most squares won't change from turn to turn
   squares: SquareStatus[];

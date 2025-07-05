@@ -1,11 +1,19 @@
 <script setup lang="ts">
 import Worker from '../workers/worker?worker';
+import BattleFeed from '@/components/BattleFeed.vue';
+import type { BattleStatus } from '@/GameSummary.ts';
+import { ref } from 'vue';
 
 const worker = new Worker();
 
 worker.onmessage = (e) => {
   console.log('Worker sent message', e.data);
+  if (e.data.type === 'battle-status') {
+    battleStatus.value = e.data.status;
+  }
 };
+
+const battleStatus = ref<BattleStatus>();
 
 async function startGame() {
   const reluctant = (await import('@/../ants/ReluctAnt.js?raw')).default;
@@ -39,6 +47,7 @@ async function stopGame() {
 <template>
   <button @click="startGame">Start</button>
   <button @click="stopGame">Stop</button>
+  <battle-feed v-if="battleStatus" :battle="battleStatus" />
 </template>
 
 <style scoped></style>
