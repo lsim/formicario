@@ -164,8 +164,12 @@ export class Battle {
     this.initializeBattle();
   }
 
+  mapIndex(x: number, y: number) {
+    return x + y * this.args.mapWidth;
+  }
+
   mapData(x: number, y: number) {
-    return this.map[x + y * this.args.mapWidth];
+    return this.map[this.mapIndex(x, y)];
   }
 
   resetTeam(p: Partial<TeamData> & { func: AntFunction } & AntDescriptor): TeamData {
@@ -349,13 +353,18 @@ export class Battle {
         killed: team.killed,
         dieAge: team.dieAge,
       })),
-      squares: this.map.map((square) => ({
-        numAnts: square.numAnts,
-        base: square.base,
-        team: square.team,
-        numFood: square.numFood,
-      })),
+      deltaSquares: Array.from(this.touchedSquares).map((i) => {
+        const square = this.map[i];
+        return {
+          index: i,
+          numAnts: square.numAnts,
+          base: square.base,
+          team: square.team,
+          numFood: square.numFood,
+        };
+      }),
     };
+    this.touchedSquares.clear();
     postMessage({ type: 'battle-status', status });
   }
 
@@ -415,6 +424,9 @@ export class Battle {
       args: this.args,
     };
   }
+
+  // Squares that have been touched since the last status update
+  touchedSquares: Set<number> = new Set();
 
   // Battle simulation
   doTurn() {
@@ -576,6 +588,7 @@ export class Battle {
         // Remove consumed ants from global count
         this.numAnts -= 25;
         this.teams[ant.team - 1].numAnts -= 25;
+        this.touchedSquares.add(this.mapIndex(ant.xPos, ant.yPos));
       }
       return;
     }
@@ -602,7 +615,9 @@ export class Battle {
     }
 
     const oldSquare = this.mapData(ant.xPos, ant.yPos);
+    this.touchedSquares.add(this.mapIndex(ant.xPos, ant.yPos));
     const newSquare = this.mapData(newX, newY);
+    this.touchedSquares.add(this.mapIndex(newX, newY));
 
     // Handle combat - kill all enemy ants on target square
     if (newSquare.numAnts > 0 && newSquare.team !== ant.team) {

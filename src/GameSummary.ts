@@ -1,6 +1,7 @@
 import type { BattleArgs } from '@/Battle.ts';
 
 export type SquareStatus = {
+  index: number;
   numAnts: number;
   base: boolean;
   team: number;
@@ -23,7 +24,8 @@ export type BattleStatus = {
   args: BattleArgs;
   teams: TeamStatus[];
   // OPTIMIZE: Can we send square deltas somehow? Most squares won't change from turn to turn
-  squares: SquareStatus[];
+  // squares: SquareStatus[];
+  deltaSquares: SquareStatus[];
 };
 
 export type BattleSummary = {

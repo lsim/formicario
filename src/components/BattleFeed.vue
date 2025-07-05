@@ -17,13 +17,13 @@ watch(
     if (!ctx) return;
     ctx.clearRect(0, 0, c.width, c.height);
 
-    // squares is a single dimensional array, made up from concatenated rows from the 2D map
-    const squares = newVal.squares;
+    // squares is a list of squares that have changed since the last status update
+    const squares = newVal.deltaSquares;
     const teams = newVal.teams;
     for (let i = 0; i < squares.length; i++) {
       const square = squares[i];
-      const x = i % props.battle.args.mapWidth;
-      const y = Math.floor(i / props.battle.args.mapWidth);
+      const x = square.index % props.battle.args.mapWidth;
+      const y = Math.floor(square.index / props.battle.args.mapWidth);
       ctx.fillStyle = square.team ? teams[square.team - 1].color : 'black';
       ctx.fillRect(x, y, 1, 1);
     }
