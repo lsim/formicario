@@ -2,38 +2,49 @@
 import Worker from '../workers/worker?worker';
 import BattleFeed from '@/components/BattleFeed.vue';
 import type { BattleStatus } from '@/GameSummary.ts';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
 const worker = new Worker();
 
 worker.onmessage = (e) => {
-  console.log('Worker sent message', e.data);
   if (e.data.type === 'battle-status') {
     battleStatus.value = e.data.status;
+  } else {
+    console.log('Worker sent message', e.data);
   }
 };
 
 const battleStatus = ref<BattleStatus>();
 
+const pause = ref(false);
+
+async function loadAnt(name: string) {
+  return (await import(`../../ants/${name}.js?raw`)).default;
+}
+
 async function startGame() {
-  const reluctant = (await import('@/../ants/ReluctAnt.js?raw')).default;
+  battleStatus.value = undefined;
+  // const reluctant = await loadAnt('reluctAnt');
+  const infant = await loadAnt('infAnt');
+  const theDoctor = await loadAnt('TheDoctor');
   worker.postMessage({
     type: 'run-game',
     game: {
       mapWidth: [250, 250],
       mapHeight: [250, 250],
       newFoodSpace: [10, 10],
-      newFoodMin: [10, 10],
-      newFoodDiff: [10, 10],
-      halfTimeTurn: 10,
-      halfTimePercent: 10,
+      newFoodMin: [10, 50],
+      newFoodDiff: [10, 100],
+      halfTimeTurn: 10000,
+      halfTimePercent: 60,
       startAnts: [10, 10],
-      teams: [reluctant],
-      timeOutTurn: 20,
-      winPercent: 10,
-      seed: 10,
-      statusInterval: 1,
+      teams: [infant, theDoctor],
+      timeOutTurn: 20000,
+      winPercent: 85,
+      seed: 125,
+      statusInterval: 5,
     },
+    pause: pause.value,
   });
 }
 
@@ -42,12 +53,47 @@ async function stopGame() {
     type: 'stop-game',
   });
 }
+
+async function pauseGame() {
+  worker.postMessage({
+    type: 'pause-game',
+  });
+}
+
+async function resumeGame() {
+  worker.postMessage({
+    type: 'resume-game',
+  });
+}
+
+async function stepGame() {
+  worker.postMessage({
+    type: 'step-game',
+  });
+}
+
+watch(
+  () => pause.value,
+  (newVal) => {
+    if (newVal) {
+      pauseGame();
+    } else {
+      resumeGame();
+    }
+  },
+);
 </script>
 
 <template>
+  <label>Pause <input type="checkbox" v-model="pause" /></label>
   <button @click="startGame">Start</button>
   <button @click="stopGame">Stop</button>
-  <battle-feed v-if="battleStatus" :battle="battleStatus" />
+  <button @click="stepGame">Step</button>
+  <battle-feed class="battle-feed" v-if="battleStatus" :battle="battleStatus" />
 </template>
 
-<style scoped></style>
+<style scoped lang="scss">
+.battle-feed {
+  border: 5px solid rgba(white, 0.5);
+}
+</style>

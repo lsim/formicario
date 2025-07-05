@@ -10,12 +10,13 @@ const props = defineProps<{
 
 watch(
   () => props.battle,
-  (newVal) => {
+  (newVal, oldVal) => {
     if (!canvas.value) return;
-    const c = canvas.value;
     const ctx = canvas.value.getContext('2d');
     if (!ctx) return;
-    ctx.clearRect(0, 0, c.width, c.height);
+    if (newVal && !oldVal) {
+      ctx.clearRect(0, 0, canvas.value.width, canvas.value.height);
+    }
 
     // squares is a list of squares that have changed since the last status update
     const squares = newVal.deltaSquares;
@@ -24,8 +25,19 @@ watch(
       const square = squares[i];
       const x = square.index % props.battle.args.mapWidth;
       const y = Math.floor(square.index / props.battle.args.mapWidth);
-      ctx.fillStyle = square.team ? teams[square.team - 1].color : 'black';
-      ctx.fillRect(x, y, 1, 1);
+      if (square.team) {
+        const col = teams[square.team - 1].color;
+        const alpha = square.numAnts > 0 ? 100 : 20;
+        const fillStyle = `color-mix(in srgb, ${col} ${alpha}%, black)`;
+        ctx.fillStyle = fillStyle;
+        ctx.fillRect(x, y, 1, 1);
+      } else if (square.numFood > 0) {
+        const maxFood = props.battle.args.newFoodMin + props.battle.args.newFoodDiff;
+        const alpha = (Math.min(square.numFood, maxFood) / maxFood) * 100;
+        const fillStyle = `color-mix(in srgb, white ${alpha}%, black)`;
+        ctx.fillStyle = fillStyle;
+        ctx.fillRect(x, y, 1, 1);
+      }
     }
   },
 );
@@ -43,4 +55,8 @@ watch(
   </div>
 </template>
 
-<style scoped></style>
+<style scoped lang="scss">
+canvas {
+  zoom: 1.5;
+}
+</style>

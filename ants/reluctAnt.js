@@ -17,11 +17,11 @@ function ReluctAnt(squareData, antInfo) {
       // Brain size is defined by the number of expressions in the structure. No arrays or nested objects.
       brainTemplate: {},
       name: 'ReluctAnt',
-      color: '#8956ff',
+      color: 'red',
     };
 
   // Each ant is born with a random number in its brain in addition to its brain structure.
 
   // This very basic ReluctAnt strategy has each ant move exclusively in one of the four directions.
-  return (antInfo.brains[0].random % 3) + 1;
+  return (antInfo.brains[0].random % 4) + 1;
 }

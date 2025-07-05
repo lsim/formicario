@@ -1,5 +1,6 @@
 import type { WorkerMessage } from '@/workers/WorkerMessage.ts';
 import { Game } from '@/Game.ts';
+import type { GameSummary } from '@/GameSummary.ts';
 
 let activeGame: Game | undefined;
 
@@ -11,14 +12,31 @@ onmessage = async (e) => {
     if (command?.type === 'run-game') {
       activeGame?.stop();
       activeGame = new Game(command.game);
-      const p = activeGame.run();
+      const p = activeGame.run(command.pause);
       postMessage({ type: 'ok' });
       const summary = await p;
+      if (!summary) return;
       activeGame = undefined;
       postMessage({ type: 'game-summary', results: summary });
     } else if (command?.type === 'stop-game') {
       activeGame?.stop();
       postMessage({ type: 'ok' });
+    } else if (command?.type === 'pause-game') {
+      activeGame?.pause();
+      postMessage({ type: 'ok' });
+    } else if (command?.type === 'resume-game') {
+      const p = activeGame?.resume();
+      postMessage({ type: 'ok' });
+      const summary = await p;
+      if (!summary) return;
+      activeGame = undefined;
+      postMessage({ type: 'game-summary', results: summary });
+    } else if (command?.type === 'step-game') {
+      activeGame?.step();
+      postMessage({ type: 'ok' });
+    } else {
+      console.error('Unknown command', command);
+      postMessage({ type: 'error', error: 'Unknown command' });
     }
   } catch (error) {
     console.error('Error processing message: ' + command?.type, error);

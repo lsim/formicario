@@ -142,6 +142,8 @@ export class Battle {
   currentTurn: number;
   rng: RNGFunction;
   private stopRequested = false;
+  paused = false;
+  startTime = Date.now();
 
   constructor(spec: GameSpec, antFunctions: AntFunction[]) {
     this.args = BattleArgs.fromGameSpec(spec);
@@ -231,7 +233,7 @@ export class Battle {
           team: teamId,
           age: 0,
           nextTurn: this.currentTurn + 1,
-          brain: { random: this.rng() }, // Empty brain object for team memory
+          brain: { ...structuredClone(this.teams[teamId - 1].brainTemplate), random: this.rng() }, // Empty brain object for team memory
         };
 
         this.ants.push(ant);
@@ -340,6 +342,7 @@ export class Battle {
   }
 
   emitStatus() {
+    if (this.touchedSquares.size === 0) return;
     const status: BattleStatus = {
       args: this.args,
       teams: this.teams.map((team) => ({
@@ -368,8 +371,7 @@ export class Battle {
     postMessage({ type: 'battle-status', status });
   }
 
-  async run(): Promise<BattleSummary> {
-    const startTime = Date.now();
+  async run(singleStep = false): Promise<BattleSummary | undefined> {
     let terminated = false;
 
     // Main battle loop - equivalent to the C do-while structure
@@ -390,19 +392,16 @@ export class Battle {
       if (this.currentTurn % 10 === 0) {
         await new Promise((resolve) => setTimeout(resolve, 0));
       }
+    } while (!terminated && !this.paused && !singleStep);
 
-      // Optional: Check for system events (pause/stop/resume) - equivalent to SysCheck() in C
-      // This could be implemented later when UI controls are added
-    } while (!terminated);
-
-    return this.generateBattleSummary(startTime);
+    return terminated ? this.generateBattleSummary() : undefined;
   }
 
   public stop() {
     this.stopRequested = true;
   }
 
-  private generateBattleSummary(startTime: number): BattleSummary {
+  public generateBattleSummary(): BattleSummary {
     // Find the winning team
     const baseValue = 75;
     let maxTeamValue = 0;
@@ -417,7 +416,7 @@ export class Battle {
     }
 
     return {
-      startTime,
+      startTime: this.startTime,
       winner: winnerName,
       teams: this.teams.map((t) => t.name),
       turns: this.currentTurn,
@@ -638,16 +637,19 @@ export class Battle {
         this.teams[ant.team - 1].numBases++;
       }
 
+      this.teams[enemyTeam - 1].squareOwn--;
+      this.teams[ant.team - 1].squareOwn++;
+
       // Clear the square
       newSquare.numAnts = 0;
       newSquare.team = 0;
+    } else if (newSquare.team > 0 && newSquare.team !== ant.team) {
+      this.teams[newSquare.team - 1].squareOwn--;
+      this.teams[ant.team - 1].squareOwn++;
     }
 
     // Move ant
     oldSquare.numAnts--;
-    if (oldSquare.numAnts === 0) {
-      oldSquare.team = 0;
-    }
 
     ant.xPos = newX;
     ant.yPos = newY;
@@ -669,7 +671,7 @@ export class Battle {
           team: ant.team,
           age: 0,
           nextTurn: this.currentTurn + 1,
-          brain: { random: this.rng() },
+          brain: { ...structuredClone(this.teams[ant.team - 1].brainTemplate), random: this.rng() },
         };
 
         this.ants.push(newAnt);
@@ -687,35 +689,78 @@ export class Battle {
     }
   }
 
+  // Static array to track last food placements (equivalent to C static variables)
+  private static lastFoodMemory: { x: number; y: number }[] = [];
+  private static lastFoodIndex = 0;
+  private static readonly LAST_FOOD_MEM = 42; // From C constant
+
   placeFood() {
-    const maxTries = 20;
-    let bestX = 0,
-      bestY = 0;
-    // let bestMinDist = -1;
+    const maxTries = 20; // From C implementation
+    let bestX = 0;
+    let bestY = 0;
+    let bestMinDist = -1;
 
+    // Try 20 different positions to find the best one
     for (let attempt = 0; attempt < maxTries; attempt++) {
-      let x, y;
+      let x: number, y: number;
 
-      // Find empty square
+      // Find empty square (equivalent to C do-while loop)
       do {
-        x = Math.floor(this.rng(this.args.mapWidth));
-        y = Math.floor(this.rng(this.args.mapHeight));
+        x = this.rng(this.args.mapWidth);
+        y = this.rng(this.args.mapHeight);
       } while (
         this.mapData(x, y).numAnts > 0 ||
         this.mapData(x, y).numFood > 0 ||
         this.mapData(x, y).base
       );
 
-      // For simplicity, just use the first valid position
-      // TODO: Implement distance optimization like C version
-      bestX = x;
-      bestY = y;
-      break;
+      // Calculate minimum distance to previous food placements
+      let minDist = this.args.mapWidth + this.args.mapHeight; // Start with max possible distance
+      const memorySize =
+        Battle.lastFoodIndex < Battle.LAST_FOOD_MEM ? Battle.lastFoodIndex : Battle.LAST_FOOD_MEM;
+
+      for (let j = 0; j < memorySize; j++) {
+        const lastFood = Battle.lastFoodMemory[j];
+        if (!lastFood) continue;
+
+        // Calculate toroidal distance (accounting for map wrapping)
+        let xDist = x - lastFood.x;
+        let yDist = y - lastFood.y;
+
+        // Convert to absolute values
+        if (xDist < 0) xDist = -xDist;
+        if (yDist < 0) yDist = -yDist;
+
+        // Handle toroidal wrapping (shortest distance around edges)
+        if (xDist > this.args.mapWidth / 2) xDist = this.args.mapWidth - xDist;
+        if (yDist > this.args.mapHeight / 2) yDist = this.args.mapHeight - yDist;
+
+        // Manhattan distance
+        const totalDist = xDist + yDist;
+        if (totalDist < minDist) minDist = totalDist;
+      }
+
+      // Keep the position with the best (largest) minimum distance
+      if (minDist > bestMinDist) {
+        bestMinDist = minDist;
+        bestX = x;
+        bestY = y;
+      }
     }
 
-    // Place food
-    const foodAmount = this.args.newFoodMin + Math.floor(this.rng(this.args.newFoodDiff + 1));
+    // Record this food placement in the circular buffer
+    const memoryIndex = Battle.lastFoodIndex % Battle.LAST_FOOD_MEM;
+    if (!Battle.lastFoodMemory[memoryIndex]) {
+      Battle.lastFoodMemory[memoryIndex] = { x: 0, y: 0 };
+    }
+    Battle.lastFoodMemory[memoryIndex].x = bestX;
+    Battle.lastFoodMemory[memoryIndex].y = bestY;
+    Battle.lastFoodIndex++;
+
+    // Place food with random amount (equivalent to C: Used.NewFoodMin+Random(Used.NewFoodDiff+1))
+    const foodAmount = this.args.newFoodMin + this.rng(this.args.newFoodDiff + 1);
     this.mapData(bestX, bestY).numFood += foodAmount;
+    this.touchedSquares.add(this.mapIndex(bestX, bestY));
     this.numFood += foodAmount;
   }
 
@@ -751,11 +796,13 @@ export class Battle {
 
     // Single team wins (only applies to multi-team battles)
     if (this.teams.length > 1 && activeTeams <= 1) {
+      console.debug('Single team wins', this.teams, activeTeams);
       return true;
     }
 
     // Timeout
     if (this.currentTurn >= this.args.timeOutTurn) {
+      console.debug('Timeout', this.currentTurn, this.args.timeOutTurn);
       return true;
     }
 
@@ -763,6 +810,13 @@ export class Battle {
     if (this.teams.length > 1 && totalValue > 0) {
       const winThreshold = (totalValue * this.args.winPercent) / 100;
       if (maxTeamValue >= winThreshold) {
+        // console.debug(
+        //   'Win percentage reached',
+        //   'maxTeamValue', maxTeamValue,
+        //   'winThreshold', winThreshold,
+        //   'baseValue', baseValue,
+        //   'this.args.winPercent', this.args.winPercent,
+        // );
         return true;
       }
     }
@@ -771,6 +825,7 @@ export class Battle {
     if (this.teams.length > 1 && this.currentTurn >= this.args.halfTimeTurn && totalValue > 0) {
       const halfTimeThreshold = (totalValue * this.args.halfTimePercent) / 100;
       if (maxTeamValue >= halfTimeThreshold) {
+        console.debug('Half-time advantage reached', maxTeamValue, halfTimeThreshold);
         return true;
       }
     }

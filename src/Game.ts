@@ -9,7 +9,7 @@ import { createRestrictedEval, shadowedGlobals } from '@/safe-eval.ts';
 
 // Static analysis for obvious violations
 function auditParticipant(teamCode: string) {
-  const ast = parse(teamCode) as Program;
+  const ast = parse(teamCode, { ecmaVersion: 6 }) as Program;
 
   walk(ast, {
     enter(node) {
@@ -31,34 +31,58 @@ function instantiateParticipant(team: string) {
 
 export class Game {
   public id = 0;
-  stopRequested = false;
   activeBattle: Battle | null = null;
+  teamFunctions: AntFunction[];
 
   constructor(private spec: GameSpec) {
     this.id = Date.now();
+    this.spec.rng = getRNG(this.spec.seed);
+    this.teamFunctions = this.spec.teams.map(instantiateParticipant);
   }
 
-  public async run(): Promise<GameSummary> {
-    console.log('Running game', this.spec);
-    this.spec.rng = getRNG(this.spec.seed);
-    const teamFunctions = this.spec.teams.map(instantiateParticipant);
+  public async run(pause = false): Promise<GameSummary | undefined> {
+    console.log('Running game', this.spec, pause);
 
-    this.activeBattle = new Battle(this.spec, teamFunctions);
+    this.activeBattle = new Battle(this.spec, this.teamFunctions);
 
     // Run the complete battle using the do-while loop structure
-    const battleSummary = await this.activeBattle.run();
-    this.activeBattle = null;
+    const battleSummary = await this.activeBattle.run(pause);
+    if (battleSummary) {
+      this.activeBattle = null;
 
-    console.log('Battle summary', battleSummary);
+      console.log('Battle summary', battleSummary);
 
-    return {
-      seed: this.spec.seed,
-      battles: [battleSummary],
-    };
+      return {
+        seed: this.spec.seed,
+        battles: [battleSummary],
+      };
+    }
+    return undefined;
   }
 
   public stop() {
-    this.stopRequested = true;
     this.activeBattle?.stop();
+  }
+
+  public pause() {
+    if (!this.activeBattle) return;
+    this.activeBattle.paused = true;
+  }
+
+  public async resume() {
+    if (!this.activeBattle) return;
+    const battleSummary = await this.activeBattle.run();
+    if (battleSummary) {
+      this.activeBattle = null;
+      return {
+        seed: this.spec.seed,
+        battles: [battleSummary],
+      };
+    }
+    return undefined;
+  }
+
+  public step() {
+    this.activeBattle?.run(true);
   }
 }

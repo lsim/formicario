@@ -10,6 +10,10 @@ export default mergeConfig(
       include: ['test/**/*-tests.ts'],
       exclude: [...configDefaults.exclude, 'e2e/**'],
       root: fileURLToPath(new URL('./', import.meta.url)),
+      coverage: {
+        enabled: false,
+        exclude: ['ants/*'],
+      },
     },
   }),
 );

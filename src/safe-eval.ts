@@ -14,6 +14,10 @@ export const prohibitedGlobalNames = [
   'setInterval',
   'clearTimeout',
   'clearInterval',
+  'console',
+  'alert',
+  'prompt',
+  'confirm',
 ];
 
 const allowedGlobalNames = ['name'];
