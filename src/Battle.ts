@@ -424,7 +424,7 @@ export class Battle {
     }
   }
 
-  private runAnt(ant: AntData): number {
+  runAnt(ant: AntData): number {
     const team = this.teams[ant.team - 1];
     if (!team) return 0;
 
