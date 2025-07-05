@@ -11,6 +11,7 @@ describe('Battle tests', () => {
 
   beforeEach(() => {
     gameSpec = {
+      statusInterval: 100,
       halfTimePercent: 60,
       halfTimeTurn: 100,
       mapHeight: [128, 128],

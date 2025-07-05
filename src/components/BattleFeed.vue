@@ -12,9 +12,10 @@ watch(
   () => props.battle,
   (newVal) => {
     if (!canvas.value) return;
+    const c = canvas.value;
     const ctx = canvas.value.getContext('2d');
     if (!ctx) return;
-    ctx.clearRect(0, 0, canvas.value.width, canvas.value.height);
+    ctx.clearRect(0, 0, c.width, c.height);
 
     // squares is a single dimensional array, made up from concatenated rows from the 2D map
     const squares = newVal.squares;
