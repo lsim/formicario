@@ -3,6 +3,7 @@ import Worker from '../workers/worker?worker';
 import BattleFeed from '@/components/BattleFeed.vue';
 import type { BattleStatus } from '@/GameSummary.ts';
 import { ref, watch } from 'vue';
+import type { GameSpec } from '@/GameSpec.ts';
 
 const worker = new Worker();
 
@@ -17,35 +18,44 @@ worker.onmessage = (e) => {
 const battleStatus = ref<BattleStatus>();
 
 const pause = ref(false);
+const seed = ref(42);
 
 async function loadAnt(name: string) {
   return (await import(`../../ants/${name}.js?raw`)).default;
 }
+
+const gameSpec: Partial<GameSpec> = {
+  mapWidth: [250, 500],
+  mapHeight: [250, 500],
+  newFoodSpace: [10, 50],
+  newFoodMin: [10, 30],
+  newFoodDiff: [5, 20],
+  halfTimeTurn: 10000,
+  halfTimePercent: 60,
+  startAnts: [15, 40],
+  timeOutTurn: 20000,
+  winPercent: 75,
+};
 
 async function startGame() {
   battleStatus.value = undefined;
   // const reluctant = await loadAnt('reluctAnt');
   const infant = await loadAnt('infAnt');
   const theDoctor = await loadAnt('TheDoctor');
+  const bayimayi = await loadAnt('BayiMayi');
+  const firkAnt = await loadAnt('FirkAnt');
+  const lightCore3 = await loadAnt('LightCore3');
   worker.postMessage({
     type: 'run-game',
     game: {
-      mapWidth: [250, 250],
-      mapHeight: [250, 250],
-      newFoodSpace: [10, 10],
-      newFoodMin: [10, 50],
-      newFoodDiff: [10, 100],
-      halfTimeTurn: 10000,
-      halfTimePercent: 60,
-      startAnts: [10, 10],
-      teams: [infant, theDoctor],
-      timeOutTurn: 20000,
-      winPercent: 85,
-      seed: 125,
-      statusInterval: 5,
+      ...gameSpec,
+      teams: [firkAnt, bayimayi, lightCore3],
+      seed: seed.value,
+      statusInterval: 1,
     },
     pause: pause.value,
   });
+  seed.value++;
 }
 
 async function stopGame() {
@@ -86,6 +96,7 @@ watch(
 
 <template>
   <label>Pause <input type="checkbox" v-model="pause" /></label>
+  <label>Seed <input type="number" v-model="seed" /></label>
   <button @click="startGame">Start</button>
   <button @click="stopGame">Stop</button>
   <button @click="stepGame">Step</button>

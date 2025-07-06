@@ -1,8 +1,9 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 
 import type { GameSpec } from '@/GameSpec';
 import { Battle, BattleArgs, type AntFunction, type AntInfo, type SquareData } from '@/Battle';
 import { getRNG } from '@/prng.ts';
+import type { BattleStatusMessage } from '@/workers/WorkerMessage.ts';
 
 describe('Battle tests', () => {
   let gameSpec: GameSpec;
@@ -34,8 +35,8 @@ describe('Battle tests', () => {
       }
       // Use deterministic movement based on brain state
       const brain = antInfo.brains[0];
-      brain.counter = (brain.counter || 0) + 1;
-      return (brain.counter % 5); // Deterministic direction cycle
+      // brain.counter = (brain.counter || 0) + 1;
+      return brain.random % 5; // Deterministic direction cycle
     }) as AntFunction;
 
     // Aggressive ant that tries to move toward enemies
@@ -51,6 +52,12 @@ describe('Battle tests', () => {
       }
       return 0; // Stay if no enemies found
     }) as AntFunction;
+
+    vi.spyOn(global, 'postMessage').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('BattleArgs', () => {
@@ -863,77 +870,62 @@ describe('Battle tests', () => {
       const battle = new Battle(gameSpec, [simpleAnt]);
 
       // Mock postMessage to capture status emissions
-      const originalPostMessage = global.postMessage;
-      const statusMessages: any[] = [];
-      global.postMessage = (message: any) => {
+      const statusMessages: BattleStatusMessage[] = [];
+      vi.spyOn(global, 'postMessage').mockImplementation((message: BattleStatusMessage) => {
         statusMessages.push(message);
-      };
+      });
 
-      try {
-        // Add some touched squares by moving an ant
-        const ant = battle.ants[0];
-        battle.doAction(ant, 1); // This should touch squares
+      // Add some touched squares by moving an ant
+      const ant = battle.ants[0];
+      battle.doAction(ant, 1); // This should touch squares
 
-        // Emit status
-        battle.emitStatus();
+      // Emit status
+      battle.emitStatus();
 
-        // Should have emitted a status message
-        expect(statusMessages.length).toBeGreaterThan(0);
-        const lastMessage = statusMessages[statusMessages.length - 1];
-        expect(lastMessage.type).toBe('battle-status');
-        expect(lastMessage.status).toBeDefined();
-        expect(lastMessage.status.teams).toBeDefined();
-        expect(lastMessage.status.deltaSquares).toBeDefined();
-      } finally {
-        global.postMessage = originalPostMessage;
-      }
+      // Should have emitted a status message
+      expect(statusMessages.length).toBeGreaterThan(0);
+      const lastMessage = statusMessages[statusMessages.length - 1];
+      expect(lastMessage.type).toBe('battle-status');
+      expect(lastMessage.status).toBeDefined();
+      expect(lastMessage.status.teams).toBeDefined();
+      expect(lastMessage.status.deltaSquares).toBeDefined();
     });
 
     it('should handle status emission with no touched squares', () => {
       const battle = new Battle(gameSpec, [simpleAnt]);
 
       // Mock postMessage
-      const originalPostMessage = global.postMessage;
       let statusEmitted = false;
-      global.postMessage = () => {
+      vi.spyOn(global, 'postMessage').mockImplementation(() => {
         statusEmitted = true;
-      };
+      });
 
-      try {
-        // Clear touched squares
-        battle.touchedSquares.clear();
+      // Clear touched squares
+      battle.touchedSquares.clear();
 
-        // Emit status - should return early with no touched squares
-        battle.emitStatus();
+      // Emit status - should return early with no touched squares
+      battle.emitStatus();
 
-        // No status should have been emitted
-        expect(statusEmitted).toBe(false);
-      } finally {
-        global.postMessage = originalPostMessage;
-      }
+      // No status should have been emitted
+      expect(statusEmitted).toBe(false);
     });
 
     it('should emit status during battle run at specified intervals', () => {
       const battle = new Battle({ ...gameSpec, statusInterval: 2, timeOutTurn: 5 }, [simpleAnt]);
 
       // Mock postMessage
-      const originalPostMessage = global.postMessage;
-      const statusMessages: any[] = [];
-      global.postMessage = (message: any) => {
+      const statusMessages: BattleStatusMessage[] = [];
+      vi.spyOn(global, 'postMessage').mockImplementation((message: BattleStatusMessage) => {
         if (message.type === 'battle-status') {
           statusMessages.push(message);
         }
-      };
+      });
 
-      try {
-        // Run battle
-        battle.run();
+      // Run battle
+      battle.run();
 
-        // Should have emitted status at intervals
-        expect(statusMessages.length).toBeGreaterThan(0);
-      } finally {
-        global.postMessage = originalPostMessage;
-      }
+      // Should have emitted status at intervals
+      expect(statusMessages.length).toBeGreaterThan(0);
     });
   });
 
@@ -951,8 +943,8 @@ describe('Battle tests', () => {
       // Run first battle
       const battle1 = new Battle(testSpec, [simpleAnt]);
       const firstBattleState = {
-        mapState: battle1.map.map(s => ({ ...s })),
-        antPositions: battle1.ants.map(a => ({ x: a.xPos, y: a.yPos, team: a.team })),
+        mapState: battle1.map.map((s) => ({ ...s })),
+        antPositions: battle1.ants.map((a) => ({ x: a.xPos, y: a.yPos, team: a.team })),
         foodMemory: [...battle1['lastFoodMemory']],
         foodIndex: battle1['lastFoodIndex'],
       };
@@ -960,8 +952,8 @@ describe('Battle tests', () => {
       // Run second battle with same seed
       const battle2 = new Battle({ ...testSpec, rng: getRNG(seed) }, [simpleAnt]);
       const secondBattleState = {
-        mapState: battle2.map.map(s => ({ ...s })),
-        antPositions: battle2.ants.map(a => ({ x: a.xPos, y: a.yPos, team: a.team })),
+        mapState: battle2.map.map((s) => ({ ...s })),
+        antPositions: battle2.ants.map((a) => ({ x: a.xPos, y: a.yPos, team: a.team })),
         foodMemory: [...battle2['lastFoodMemory']],
         foodIndex: battle2['lastFoodIndex'],
       };
@@ -983,7 +975,7 @@ describe('Battle tests', () => {
         turn: battle1.currentTurn,
         numAnts: battle1.numAnts,
         numFood: battle1.numFood,
-        antPositions: battle1.ants.map(a => ({ x: a.xPos, y: a.yPos, team: a.team })),
+        antPositions: battle1.ants.map((a) => ({ x: a.xPos, y: a.yPos, team: a.team })),
         foodMemory: [...battle1['lastFoodMemory']],
         foodIndex: battle1['lastFoodIndex'],
       };
@@ -992,7 +984,7 @@ describe('Battle tests', () => {
         turn: battle2.currentTurn,
         numAnts: battle2.numAnts,
         numFood: battle2.numFood,
-        antPositions: battle2.ants.map(a => ({ x: a.xPos, y: a.yPos, team: a.team })),
+        antPositions: battle2.ants.map((a) => ({ x: a.xPos, y: a.yPos, team: a.team })),
         foodMemory: [...battle2['lastFoodMemory']],
         foodIndex: battle2['lastFoodIndex'],
       };
@@ -1031,13 +1023,13 @@ describe('Battle tests', () => {
       const finalState1 = {
         numAnts: battle1.numAnts,
         numFood: battle1.numFood,
-        antPositions: battle1.ants.map(a => ({ x: a.xPos, y: a.yPos, team: a.team })),
+        antPositions: battle1.ants.map((a) => ({ x: a.xPos, y: a.yPos, team: a.team })),
       };
 
       const finalState2 = {
         numAnts: battle2.numAnts,
         numFood: battle2.numFood,
-        antPositions: battle2.ants.map(a => ({ x: a.xPos, y: a.yPos, team: a.team })),
+        antPositions: battle2.ants.map((a) => ({ x: a.xPos, y: a.yPos, team: a.team })),
       };
 
       expect(finalState2).not.toEqual(finalState1);

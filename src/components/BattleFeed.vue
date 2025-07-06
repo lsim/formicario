@@ -16,17 +16,22 @@ function updateCanvas(ctx: CanvasRenderingContext2D, newVal: BattleStatus) {
     const square = squares[i];
     const x = square.index % props.battle.args.mapWidth;
     const y = Math.floor(square.index / props.battle.args.mapWidth);
+    const col = square.team === 0 ? 'black' : teams[square.team - 1].color;
+    let pixelColor;
     if (square.team) {
-      const col = teams[square.team - 1].color;
-      const alpha = square.numAnts > 0 ? 100 : 20;
-      const fillStyle = `color-mix(in srgb, ${col} ${alpha}%, black)`;
-      ctx.fillStyle = fillStyle;
-      ctx.fillRect(x, y, 1, 1);
-    } else if (square.numFood > 0) {
-      const maxFood = props.battle.args.newFoodMin + props.battle.args.newFoodDiff;
-      const alpha = (Math.min(square.numFood, maxFood) / maxFood) * 100;
-      const fillStyle = `color-mix(in srgb, white ${alpha}%, black)`;
-      ctx.fillStyle = fillStyle;
+      pixelColor = square.numAnts === 0 ? `color-mix(in srgb, ${col} 20%, black)` : col;
+    }
+    if (square.numFood > 0) {
+      const maxFood = props.battle.args.newFoodMin + props.battle.args.newFoodDiff || 1;
+      const whitePercentage = (Math.min(square.numFood, maxFood) / maxFood) * 100;
+      pixelColor = `color-mix(in srgb, white ${whitePercentage}%, ${col})`;
+    }
+
+    if (square.base) {
+      pixelColor = 'white';
+    }
+    if (pixelColor) {
+      ctx.fillStyle = pixelColor;
       ctx.fillRect(x, y, 1, 1);
     }
   }
@@ -42,7 +47,6 @@ watch(
       ctx.clearRect(0, 0, canvas.value.width, canvas.value.height);
     }
     requestAnimationFrame(() => updateCanvas(ctx, newVal));
-    // updateCanvas(ctx, newVal);
   },
 );
 </script>

@@ -380,7 +380,7 @@ export class Battle {
       this.doTurn();
 
       // Emit status for UI updates (equivalent to SysDrawMap() in C)
-      if (this.currentTurn % this.args.statusInterval === 0) {
+      if (singleStep || this.currentTurn % this.args.statusInterval === 0) {
         this.emitStatus();
       }
 
