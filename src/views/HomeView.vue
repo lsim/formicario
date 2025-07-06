@@ -49,11 +49,12 @@ async function startGame() {
   const bayimayi = await loadAnt('BayiMayi');
   const firkAnt = await loadAnt('FirkAnt');
   const lightCore3 = await loadAnt('LightCore3');
+  const sunMyre = await loadAnt('SunMyre');
   worker.postMessage({
     type: 'run-game',
     game: {
       ...gameSpec,
-      teams: [lightCore3, firkAnt, bayimayi],
+      teams: [firkAnt, lightCore3, sunMyre],
       seed: seed.value,
       statusInterval: 1,
     },

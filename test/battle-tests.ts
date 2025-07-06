@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 
 import type { GameSpec } from '@/GameSpec';
-import { Battle, BattleArgs, type AntFunction, type AntInfo, type SquareData } from '@/Battle';
+import { Battle, BattleArgs, type AntFunction, type AntInfo, type SquareData, type AntData } from '@/Battle';
 import { getRNG } from '@/prng.ts';
 import type { BattleStatusMessage } from '@/workers/WorkerMessage.ts';
 
@@ -1066,10 +1066,6 @@ describe('Battle tests', () => {
   describe('Linked List Integrity', () => {
     // Helper function to validate linked list integrity for a square
     function validateLinkedList(battle: Battle, square: SquareData): void {
-      const antsOnSquare = battle.ants.filter(ant => 
-        ant.alive && ant.xPos === battle.map.indexOf(square) % battle.args.mapWidth && 
-        ant.yPos === Math.floor(battle.map.indexOf(square) / battle.args.mapWidth)
-      );
       
       // Validate forward traversal
       let forwardCount = 0;
@@ -1467,7 +1463,7 @@ describe('Battle tests', () => {
       movingAnt.mapPrev = destSquare.lastAnt;
       movingAnt.mapNext = undefined;
       if (destSquare.lastAnt) {
-        destSquare.lastAnt.mapNext = movingAnt;
+        (destSquare.lastAnt as AntData).mapNext = movingAnt;
       } else {
         destSquare.firstAnt = movingAnt;
       }

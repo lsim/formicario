@@ -16,6 +16,8 @@ const statusProperties: StatusProperty[] = [
 ];
 
 const propertyLabels: Record<StatusProperty, string> = {
+  name: 'Name',
+  color: 'Color',
   numBorn: 'Born',
   numAnts: 'Ants',
   numBases: 'Bases',

@@ -1,6 +1,5 @@
 import type { WorkerMessage } from '@/workers/WorkerMessage.ts';
 import { Game } from '@/Game.ts';
-import type { GameSummary } from '@/GameSummary.ts';
 
 let activeGame: Game | undefined;
 

@@ -80,7 +80,7 @@ export type SquareData = {
 
 // This is all the information we store about each ant while running the battle
 // This is *not* the object that is given to the ant function
-declare type AntData = {
+export type AntData = {
   mapNext?: AntData;
   mapPrev?: AntData;
   index: number;
@@ -89,7 +89,8 @@ declare type AntData = {
   team: number;
   age: number;
   nextTurn: number;
-  brain: object & { random: number };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  brain: any;
   alive: boolean;
 };
 
@@ -102,14 +103,8 @@ export type AntInfo = {
 
 // Individual ant brain data that gets passed to the team function
 // This represents the custom memory structure each team can define
-declare type AntBrain = {
-  // Core brain data that all ants have
-  random: number; // Random seed for this ant
-
-  // Custom brain data - this is a flexible object that each team can structure
-  // In the C implementation, this would be team-specific structs like DummyBrain
-  [key: string]: number | boolean;
-};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type AntBrain = any;
 
 // Returned by the AntFunction when called with no arguments
 declare type AntDescriptor = {
@@ -206,21 +201,21 @@ export class Battle {
   // Helper method to remove an ant from its square's linked list
   private removeAntFromSquareList(ant: AntData) {
     const square = this.mapData(ant.xPos, ant.yPos);
-    
+
     if (ant.mapPrev) {
       ant.mapPrev.mapNext = ant.mapNext;
     } else {
       // This ant was first in list, update square's firstAnt
       square.firstAnt = ant.mapNext;
     }
-    
+
     if (ant.mapNext) {
       ant.mapNext.mapPrev = ant.mapPrev;
     } else {
       // This ant was last in list, update square's lastAnt
       square.lastAnt = ant.mapPrev;
     }
-    
+
     // Clear the ant's linked list pointers
     ant.mapNext = undefined;
     ant.mapPrev = undefined;
@@ -589,14 +584,14 @@ export class Battle {
           if (index === callingAntIndex) {
             brainIndex = 0; // The calling ant's brain is now at position 0
           } else if (index === 0) {
-            brainIndex = callingAntIndex; // The ant that was at position 0 has its brain at callingAntIndex  
+            brainIndex = callingAntIndex; // The ant that was at position 0 has its brain at callingAntIndex
           } else {
             brainIndex = index; // Other positions unchanged
           }
         } else {
           brainIndex = index; // No swap occurred
         }
-        
+
         squareAnt.brain = { ...antInfo.brains[brainIndex] };
       }
     });
@@ -635,7 +630,7 @@ export class Battle {
     // Use linked list for efficient traversal of ants on this square
     const square = this.mapData(x, y);
     const antsOnSquare: AntData[] = [];
-    
+
     let current = square.firstAnt;
     while (current) {
       if (current.alive) {
@@ -643,7 +638,7 @@ export class Battle {
       }
       current = current.mapNext;
     }
-    
+
     return antsOnSquare;
   }
 
@@ -757,7 +752,7 @@ export class Battle {
 
     // Move ant
     oldSquare.numAnts--;
-    
+
     // Remove ant from old square's linked list
     this.removeAntFromSquareList(ant);
 
@@ -785,10 +780,10 @@ export class Battle {
           nextTurn: this.currentTurn + 1,
           brain: { ...structuredClone(this.teams[ant.team - 1].brainTemplate), random: this.rng() },
         });
-        
+
         // Add new ant to square's linked list
         this.addAntToSquareList(newAnt, newSquare);
-        
+
         this.numAnts++;
         this.numBorn++;
         this.teams[ant.team - 1].numAnts++;
