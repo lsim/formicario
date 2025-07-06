@@ -9,6 +9,7 @@ const worker = new Worker();
 
 worker.onmessage = (e) => {
   if (e.data.type === 'battle-status') {
+    if (!gameRunning.value) return;
     battleStatus.value = e.data.status;
   } else {
     console.log('Worker sent message', e.data);
@@ -38,8 +39,9 @@ const gameSpec: Partial<GameSpec> = {
 };
 
 async function startGame() {
+  gameRunning.value = true;
   battleStatus.value = undefined;
-  // const reluctant = await loadAnt('reluctAnt');
+  const reluctant = await loadAnt('reluctAnt');
   const infant = await loadAnt('infAnt');
   const theDoctor = await loadAnt('TheDoctor');
   const bayimayi = await loadAnt('BayiMayi');
@@ -49,7 +51,7 @@ async function startGame() {
     type: 'run-game',
     game: {
       ...gameSpec,
-      teams: [firkAnt, bayimayi, lightCore3],
+      teams: [lightCore3, firkAnt, bayimayi],
       seed: seed.value,
       statusInterval: 1,
     },
@@ -58,7 +60,10 @@ async function startGame() {
   seed.value++;
 }
 
+const gameRunning = ref(false);
 async function stopGame() {
+  gameRunning.value = false;
+  battleStatus.value = undefined;
   worker.postMessage({
     type: 'stop-game',
   });

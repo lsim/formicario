@@ -373,6 +373,7 @@ export class Battle {
 
   async run(singleStep = false): Promise<BattleSummary | undefined> {
     let terminated = false;
+    let firstTurn = true;
 
     // Main battle loop - equivalent to the C do-while structure
     do {
@@ -380,8 +381,9 @@ export class Battle {
       this.doTurn();
 
       // Emit status for UI updates (equivalent to SysDrawMap() in C)
-      if (singleStep || this.currentTurn % this.args.statusInterval === 0) {
+      if (firstTurn || this.currentTurn % this.args.statusInterval === 0) {
         this.emitStatus();
+        firstTurn = false;
       }
 
       // Check for termination conditions (equivalent to TermCheck() in C)
