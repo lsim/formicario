@@ -30,9 +30,12 @@ describe('Battle tests', () => {
     // Simple ant that moves randomly
     simpleAnt = ((map?: SquareData[], antInfo?: AntInfo) => {
       if (!map || !antInfo) {
-        return { name: 'SimpleAnt', color: '#FF0000', brainTemplate: {} };
+        return { name: 'SimpleAnt', color: '#FF0000', brainTemplate: { counter: 0 } };
       }
-      return Math.floor(Math.random() * 5); // Random direction
+      // Use deterministic movement based on brain state
+      const brain = antInfo.brains[0];
+      brain.counter = (brain.counter || 0) + 1;
+      return (brain.counter % 5); // Deterministic direction cycle
     }) as AntFunction;
 
     // Aggressive ant that tries to move toward enemies
@@ -931,6 +934,113 @@ describe('Battle tests', () => {
       } finally {
         global.postMessage = originalPostMessage;
       }
+    });
+  });
+
+  describe('Battle determinism', () => {
+    it('should produce identical results with identical seeds', () => {
+      const seed = 12345;
+      const testSpec = {
+        ...gameSpec,
+        seed,
+        rng: getRNG(seed),
+        timeOutTurn: 10,
+        statusInterval: 1000, // Prevent status emission during short test
+      };
+
+      // Run first battle
+      const battle1 = new Battle(testSpec, [simpleAnt]);
+      const firstBattleState = {
+        mapState: battle1.map.map(s => ({ ...s })),
+        antPositions: battle1.ants.map(a => ({ x: a.xPos, y: a.yPos, team: a.team })),
+        foodMemory: [...battle1['lastFoodMemory']],
+        foodIndex: battle1['lastFoodIndex'],
+      };
+
+      // Run second battle with same seed
+      const battle2 = new Battle({ ...testSpec, rng: getRNG(seed) }, [simpleAnt]);
+      const secondBattleState = {
+        mapState: battle2.map.map(s => ({ ...s })),
+        antPositions: battle2.ants.map(a => ({ x: a.xPos, y: a.yPos, team: a.team })),
+        foodMemory: [...battle2['lastFoodMemory']],
+        foodIndex: battle2['lastFoodIndex'],
+      };
+
+      // Initial states should be identical
+      expect(secondBattleState.antPositions).toEqual(firstBattleState.antPositions);
+      expect(secondBattleState.foodMemory).toEqual(firstBattleState.foodMemory);
+      expect(secondBattleState.foodIndex).toEqual(firstBattleState.foodIndex);
+
+      // Run both battles for a few turns
+      for (let i = 0; i < 5; i++) {
+        battle1.doTurn();
+        battle2.doTurn();
+      }
+
+      // After identical operations, states should still be identical
+      // Note: startTime is excluded as it's intentionally non-deterministic for battle identification
+      const finalState1 = {
+        turn: battle1.currentTurn,
+        numAnts: battle1.numAnts,
+        numFood: battle1.numFood,
+        antPositions: battle1.ants.map(a => ({ x: a.xPos, y: a.yPos, team: a.team })),
+        foodMemory: [...battle1['lastFoodMemory']],
+        foodIndex: battle1['lastFoodIndex'],
+      };
+
+      const finalState2 = {
+        turn: battle2.currentTurn,
+        numAnts: battle2.numAnts,
+        numFood: battle2.numFood,
+        antPositions: battle2.ants.map(a => ({ x: a.xPos, y: a.yPos, team: a.team })),
+        foodMemory: [...battle2['lastFoodMemory']],
+        foodIndex: battle2['lastFoodIndex'],
+      };
+
+      expect(finalState2).toEqual(finalState1);
+    });
+
+    it('should produce different results with different seeds', () => {
+      const testSpec1 = {
+        ...gameSpec,
+        seed: 12345,
+        rng: getRNG(12345),
+        timeOutTurn: 10,
+        statusInterval: 1000,
+      };
+
+      const testSpec2 = {
+        ...gameSpec,
+        seed: 54321,
+        rng: getRNG(54321),
+        timeOutTurn: 10,
+        statusInterval: 1000,
+      };
+
+      // Run battles with different seeds
+      const battle1 = new Battle(testSpec1, [simpleAnt]);
+      const battle2 = new Battle(testSpec2, [simpleAnt]);
+
+      // Run both battles for a few turns
+      for (let i = 0; i < 5; i++) {
+        battle1.doTurn();
+        battle2.doTurn();
+      }
+
+      // Final states should be different
+      const finalState1 = {
+        numAnts: battle1.numAnts,
+        numFood: battle1.numFood,
+        antPositions: battle1.ants.map(a => ({ x: a.xPos, y: a.yPos, team: a.team })),
+      };
+
+      const finalState2 = {
+        numAnts: battle2.numAnts,
+        numFood: battle2.numFood,
+        antPositions: battle2.ants.map(a => ({ x: a.xPos, y: a.yPos, team: a.team })),
+      };
+
+      expect(finalState2).not.toEqual(finalState1);
     });
   });
 });

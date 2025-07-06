@@ -143,7 +143,7 @@ export class Battle {
   rng: RNGFunction;
   private stopRequested = false;
   paused = false;
-  startTime = Date.now();
+  startTime = Date.now(); // Battle start timestamp for identification
 
   constructor(spec: GameSpec, antFunctions: AntFunction[]) {
     this.args = BattleArgs.fromGameSpec(spec);
@@ -689,10 +689,10 @@ export class Battle {
     }
   }
 
-  // Static array to track last food placements (equivalent to C static variables)
-  private static lastFoodMemory: { x: number; y: number }[] = [];
-  private static lastFoodIndex = 0;
-  private static readonly LAST_FOOD_MEM = 42; // From C constant
+  // Instance array to track last food placements (converted from C static variables)
+  private lastFoodMemory: { x: number; y: number }[] = [];
+  private lastFoodIndex = 0;
+  private readonly LAST_FOOD_MEM = 42; // From C constant
 
   placeFood() {
     const maxTries = 20; // From C implementation
@@ -717,10 +717,10 @@ export class Battle {
       // Calculate minimum distance to previous food placements
       let minDist = this.args.mapWidth + this.args.mapHeight; // Start with max possible distance
       const memorySize =
-        Battle.lastFoodIndex < Battle.LAST_FOOD_MEM ? Battle.lastFoodIndex : Battle.LAST_FOOD_MEM;
+        this.lastFoodIndex < this.LAST_FOOD_MEM ? this.lastFoodIndex : this.LAST_FOOD_MEM;
 
       for (let j = 0; j < memorySize; j++) {
-        const lastFood = Battle.lastFoodMemory[j];
+        const lastFood = this.lastFoodMemory[j];
         if (!lastFood) continue;
 
         // Calculate toroidal distance (accounting for map wrapping)
@@ -749,13 +749,13 @@ export class Battle {
     }
 
     // Record this food placement in the circular buffer
-    const memoryIndex = Battle.lastFoodIndex % Battle.LAST_FOOD_MEM;
-    if (!Battle.lastFoodMemory[memoryIndex]) {
-      Battle.lastFoodMemory[memoryIndex] = { x: 0, y: 0 };
+    const memoryIndex = this.lastFoodIndex % this.LAST_FOOD_MEM;
+    if (!this.lastFoodMemory[memoryIndex]) {
+      this.lastFoodMemory[memoryIndex] = { x: 0, y: 0 };
     }
-    Battle.lastFoodMemory[memoryIndex].x = bestX;
-    Battle.lastFoodMemory[memoryIndex].y = bestY;
-    Battle.lastFoodIndex++;
+    this.lastFoodMemory[memoryIndex].x = bestX;
+    this.lastFoodMemory[memoryIndex].y = bestY;
+    this.lastFoodIndex++;
 
     // Place food with random amount (equivalent to C: Used.NewFoodMin+Random(Used.NewFoodDiff+1))
     const foodAmount = this.args.newFoodMin + this.rng(this.args.newFoodDiff + 1);
