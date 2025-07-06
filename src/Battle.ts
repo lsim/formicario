@@ -90,6 +90,7 @@ declare type AntData = {
   age: number;
   nextTurn: number;
   brain: object & { random: number };
+  alive: boolean;
 };
 
 // This is the information passed to the ant function - represents the AntTemp structure from C
@@ -125,8 +126,8 @@ export class Battle {
   // An array of squares, each with a linked list of ants on that square
   map: SquareData[] = [];
   ants: AntData[] = [];
-  // Pool of dead ants ready for reuse (AntFreeList). This is an optimization we will tend to later
-  // deadAnts: AntData[] = [];
+  // Pool of dead ant indices ready for reuse (AntFreeList optimization)
+  deadAntIndices: number[] = [];
 
   // Team shuffle tables for obfuscating team numbers
   teamShuffleTables: number[][] = [];
@@ -172,6 +173,69 @@ export class Battle {
 
   mapData(x: number, y: number) {
     return this.map[this.mapIndex(x, y)];
+  }
+
+  // Ant lifecycle management methods
+  private createAnt(antData: Omit<AntData, 'index' | 'alive'>): AntData {
+    let antIndex: number;
+    let ant: AntData;
+
+    if (this.deadAntIndices.length > 0) {
+      // Recycle a dead ant slot
+      antIndex = this.deadAntIndices.pop()!;
+      ant = { ...antData, index: antIndex, alive: true };
+      this.ants[antIndex] = ant;
+    } else {
+      // Create new slot
+      antIndex = this.ants.length;
+      ant = { ...antData, index: antIndex, alive: true };
+      this.ants.push(ant);
+    }
+
+    return ant;
+  }
+
+  private killAnt(ant: AntData) {
+    if (ant.alive) {
+      ant.alive = false;
+      this.deadAntIndices.push(ant.index);
+      this.removeAntFromSquareList(ant);
+    }
+  }
+
+  // Helper method to remove an ant from its square's linked list
+  private removeAntFromSquareList(ant: AntData) {
+    const square = this.mapData(ant.xPos, ant.yPos);
+    
+    if (ant.mapPrev) {
+      ant.mapPrev.mapNext = ant.mapNext;
+    } else {
+      // This ant was first in list, update square's firstAnt
+      square.firstAnt = ant.mapNext;
+    }
+    
+    if (ant.mapNext) {
+      ant.mapNext.mapPrev = ant.mapPrev;
+    } else {
+      // This ant was last in list, update square's lastAnt
+      square.lastAnt = ant.mapPrev;
+    }
+    
+    // Clear the ant's linked list pointers
+    ant.mapNext = undefined;
+    ant.mapPrev = undefined;
+  }
+
+  // Helper method to add an ant to a square's linked list
+  private addAntToSquareList(ant: AntData, square: SquareData) {
+    ant.mapNext = undefined;
+    ant.mapPrev = square.lastAnt;
+    if (square.lastAnt) {
+      square.lastAnt.mapNext = ant;
+    } else {
+      square.firstAnt = ant;
+    }
+    square.lastAnt = ant;
   }
 
   resetTeam(p: Partial<TeamData> & { func: AntFunction } & AntDescriptor): TeamData {
@@ -226,24 +290,18 @@ export class Battle {
 
       // Create initial ants at base position
       for (let i = 0; i < this.args.startAnts; i++) {
-        const ant: AntData = {
-          index: i,
+        const ant = this.createAnt({
           xPos: basePos.x,
           yPos: basePos.y,
           team: teamId,
           age: 0,
           nextTurn: this.currentTurn + 1,
-          brain: { ...structuredClone(this.teams[teamId - 1].brainTemplate), random: this.rng() }, // Empty brain object for team memory
-        };
-
-        this.ants.push(ant);
+          brain: { ...structuredClone(this.teams[teamId - 1].brainTemplate), random: this.rng() },
+        });
         const square = this.mapData(basePos.x, basePos.y);
 
-        // Add ant to the square's linked list (for future use)
-        ant.mapNext = square.lastAnt?.mapPrev;
-        ant.mapPrev = square.lastAnt;
-        if (square.lastAnt) square.lastAnt.mapNext = ant;
-        square.lastAnt = ant;
+        // Add ant to the square's linked list
+        this.addAntToSquareList(ant, square);
 
         // Update counters (only once per ant)
         square.numAnts++;
@@ -432,17 +490,20 @@ export class Battle {
   // Battle simulation
   doTurn() {
     this.currentTurn++;
-    let turnAnts = this.numAnts;
 
-    // Create array of ant indices for random processing
-    const antIndices = Array.from(Array(this.ants.length).keys());
+    // Get all living ants for this turn
+    const livingAnts = this.ants.filter((ant) => ant.alive);
+    let turnAnts = livingAnts.length;
 
-    // Process all ants in random order
+    // Create array of living ant indices for random processing
+    const antIndices = Array.from(Array(livingAnts.length).keys());
+
+    // Process all living ants in random order
     while (turnAnts > 0) {
       // Pick random ant from remaining unprocessed ants
       const randomIndex = Math.floor(this.rng(turnAnts));
       const antIndex = antIndices[randomIndex];
-      const ant = this.ants[antIndex];
+      const ant = livingAnts[antIndex];
 
       // Move ant from unprocessed to processed list
       antIndices[randomIndex] = antIndices[turnAnts - 1];
@@ -518,15 +579,25 @@ export class Battle {
       action = 0;
     }
 
-    // Update ant's brain with any changes from the first brain (calling ant)
-    if (antInfo.brains.length > 0) {
-      ant.brain = { ...antInfo.brains[0] };
-    }
-
-    // Update other ants' brains on the same square
+    // Update all ants' brains with any changes made during execution
     antsOnSquare.forEach((squareAnt, index) => {
-      if (index < antInfo.brains.length && squareAnt.index !== ant.index) {
-        squareAnt.brain = { ...antInfo.brains[index === 0 ? callingAntIndex : index] };
+      if (index < antInfo.brains.length) {
+        // Map brain index back to original position, accounting for the swap we did earlier
+        let brainIndex;
+        if (callingAntIndex > 0) {
+          // We swapped calling ant's brain to position 0, so reverse the mapping
+          if (index === callingAntIndex) {
+            brainIndex = 0; // The calling ant's brain is now at position 0
+          } else if (index === 0) {
+            brainIndex = callingAntIndex; // The ant that was at position 0 has its brain at callingAntIndex  
+          } else {
+            brainIndex = index; // Other positions unchanged
+          }
+        } else {
+          brainIndex = index; // No swap occurred
+        }
+        
+        squareAnt.brain = { ...antInfo.brains[brainIndex] };
       }
     });
 
@@ -561,8 +632,19 @@ export class Battle {
   }
 
   private getAntsOnSquare(x: number, y: number): AntData[] {
-    // Find all ants on the specified square
-    return this.ants.filter((ant) => ant.xPos === x && ant.yPos === y);
+    // Use linked list for efficient traversal of ants on this square
+    const square = this.mapData(x, y);
+    const antsOnSquare: AntData[] = [];
+    
+    let current = square.firstAnt;
+    while (current) {
+      if (current.alive) {
+        antsOnSquare.push(current);
+      }
+      current = current.mapNext;
+    }
+    
+    return antsOnSquare;
   }
 
   doAction(ant: AntData, action: number) {
@@ -574,8 +656,20 @@ export class Battle {
     if (buildBase) {
       const square = this.mapData(ant.xPos, ant.yPos);
       if (square.numAnts >= 25 && square.numFood >= 50 && !square.base) {
-        // Build base - consume ants and food
-        square.numAnts -= 25;
+        // Kill 25 ants to build the base using the linked list
+        let killedAnts = 0;
+        let currentAnt = square.firstAnt;
+        while (currentAnt && killedAnts < 25) {
+          const nextAnt = currentAnt.mapNext;
+          if (currentAnt.alive && currentAnt.team === ant.team) {
+            this.killAnt(currentAnt);
+            killedAnts++;
+          }
+          currentAnt = nextAnt;
+        }
+
+        // Build base - consume food
+        square.numAnts -= killedAnts;
         square.numFood -= 50;
         square.base = true;
         square.team = ant.team;
@@ -587,8 +681,8 @@ export class Battle {
         this.teams[ant.team - 1].basesBuilt++;
 
         // Remove consumed ants from global count
-        this.numAnts -= 25;
-        this.teams[ant.team - 1].numAnts -= 25;
+        this.numAnts -= killedAnts;
+        this.teams[ant.team - 1].numAnts -= killedAnts;
         this.touchedSquares.add(this.mapIndex(ant.xPos, ant.yPos));
       }
       return;
@@ -623,13 +717,24 @@ export class Battle {
     // Handle combat - kill all enemy ants on target square
     if (newSquare.numAnts > 0 && newSquare.team !== ant.team) {
       const enemyTeam = newSquare.team;
-      const killedAnts = newSquare.numAnts;
+      let killedAnts = 0;
+
+      // Kill all enemy ants on this square using the linked list
+      let currentAnt = newSquare.firstAnt;
+      while (currentAnt) {
+        const nextAnt = currentAnt.mapNext;
+        if (currentAnt.alive && currentAnt.team === enemyTeam) {
+          this.killAnt(currentAnt);
+          killedAnts++;
+        }
+        currentAnt = nextAnt;
+      }
 
       // Update kill statistics
       this.teams[ant.team - 1].kill += killedAnts;
       this.teams[enemyTeam - 1].killed += killedAnts;
 
-      // Remove killed ants
+      // Remove killed ants from counters
       this.numAnts -= killedAnts;
       this.teams[enemyTeam - 1].numAnts -= killedAnts;
 
@@ -652,9 +757,15 @@ export class Battle {
 
     // Move ant
     oldSquare.numAnts--;
+    
+    // Remove ant from old square's linked list
+    this.removeAntFromSquareList(ant);
 
     ant.xPos = newX;
     ant.yPos = newY;
+
+    // Add ant to new square's linked list
+    this.addAntToSquareList(ant, newSquare);
 
     newSquare.numAnts++;
     newSquare.team = ant.team;
@@ -666,17 +777,18 @@ export class Battle {
 
       // If moving to own base, create new ant
       if (newSquare.base && newSquare.team === ant.team) {
-        const newAnt: AntData = {
-          index: this.ants.length,
+        const newAnt = this.createAnt({
           xPos: newX,
           yPos: newY,
           team: ant.team,
           age: 0,
           nextTurn: this.currentTurn + 1,
           brain: { ...structuredClone(this.teams[ant.team - 1].brainTemplate), random: this.rng() },
-        };
-
-        this.ants.push(newAnt);
+        });
+        
+        // Add new ant to square's linked list
+        this.addAntToSquareList(newAnt, newSquare);
+        
         this.numAnts++;
         this.numBorn++;
         this.teams[ant.team - 1].numAnts++;

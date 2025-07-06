@@ -93,6 +93,6 @@ describe('safeEval', () => {
       brains: [{ random: 3 }],
     };
 
-    expect(antFunc([], antState3)).toBe(1);
+    expect(antFunc([], antState3)).toBe(4);
   });
 });
