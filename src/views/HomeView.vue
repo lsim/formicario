@@ -4,6 +4,7 @@ import BattleFeed from '@/components/BattleFeed.vue';
 import type { BattleStatus } from '@/GameSummary.ts';
 import { ref, watch } from 'vue';
 import type { GameSpec } from '@/GameSpec.ts';
+import BattleArgs from '@/components/BattleArgs.vue';
 
 const worker = new Worker();
 
@@ -106,6 +107,7 @@ watch(
   <button @click="stopGame">Stop</button>
   <button @click="stepGame">Step</button>
   <battle-feed class="battle-feed" v-if="battleStatus" :battle="battleStatus" />
+  <battle-args class="battle-args" v-if="battleStatus" :battle-status="battleStatus" />
 </template>
 
 <style scoped lang="scss">
