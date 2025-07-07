@@ -451,7 +451,7 @@ describe('Battle tests', () => {
       if (summary) {
         expect(summary.turns).toBeGreaterThan(0);
         expect(summary.winner).toBeDefined();
-        expect(summary.teams).toContain('SimpleAnt');
+        expect(summary.teams.map(t => t.name)).toContain('SimpleAnt');
         expect(summary.startTime).toBeGreaterThan(0);
         expect(summary.args).toBe(battle.args);
       }
@@ -465,8 +465,8 @@ describe('Battle tests', () => {
 
       if (summary) {
         expect(summary.teams).toHaveLength(2);
-        expect(summary.teams).toContain('SimpleAnt');
-        expect(summary.teams).toContain('AggressiveAnt');
+        expect(summary.teams.map(t => t.name)).toContain('SimpleAnt');
+        expect(summary.teams.map(t => t.name)).toContain('AggressiveAnt');
         expect(['SimpleAnt', 'AggressiveAnt', 'Draw']).toContain(summary.winner);
       }
     });
@@ -1718,7 +1718,7 @@ describe('Battle tests', () => {
         yPos: 15,
         team: 1,
         age: 0,
-        nextTurn: battle.currentTurn + 1,
+        nextTurn: battle.currentTurn, // Should be able to act immediately for this test
         brain: { 
           ...structuredClone(battle.teams[0].brainTemplate), 
           random: battle.rng(),

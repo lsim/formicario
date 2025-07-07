@@ -2,6 +2,19 @@ import type { GameSpec } from '@/GameSpec.ts';
 import type { RNGFunction } from '@/prng.ts';
 import type { BattleStatus, BattleSummary } from '@/GameSummary.ts';
 
+// Constants from MyreKrig.h
+const NEW_BASE_ANTS = 25;
+const NEW_BASE_FOOD = 50;
+const MAX_SQUARE_ANTS = 100;
+const MAX_SQUARE_FOOD = 200;
+const BASE_VALUE = NEW_BASE_ANTS + NEW_BASE_FOOD;
+
+// Action constants
+const ACTION_DIRECTION_MASK = 7;
+const ACTION_CARRY_FOOD_FLAG = 8;
+const ACTION_BUILD_BASE = 16;
+const MAP_TILE_SIZE = 64;
+
 export class BattleArgs {
   halfTimePercent: number;
   halfTimeTurn: number;
@@ -19,12 +32,12 @@ export class BattleArgs {
     // Choose specific parameters for the battle from the game spec values/ranges
 
     // Map width and height must be divisible by 64 and be randomly chosen between the min and max from the game spec
-    const mapWidthMin = Math.max(Math.round(spec.mapWidth[0] / 64), 1);
-    const mapWidthMax = Math.max(Math.round(spec.mapWidth[1] / 64), 1);
-    const mapHeightMin = Math.max(Math.round(spec.mapHeight[0] / 64), 1);
-    const mapHeightMax = Math.max(Math.round(spec.mapHeight[1] / 64), 1);
-    this.mapWidth = this.determineParameter(mapWidthMin, mapWidthMax, spec.rng) * 64;
-    this.mapHeight = this.determineParameter(mapHeightMin, mapHeightMax, spec.rng) * 64;
+    const mapWidthMin = Math.max(Math.round(spec.mapWidth[0] / MAP_TILE_SIZE), 1);
+    const mapWidthMax = Math.max(Math.round(spec.mapWidth[1] / MAP_TILE_SIZE), 1);
+    const mapHeightMin = Math.max(Math.round(spec.mapHeight[0] / MAP_TILE_SIZE), 1);
+    const mapHeightMax = Math.max(Math.round(spec.mapHeight[1] / MAP_TILE_SIZE), 1);
+    this.mapWidth = this.determineParameter(mapWidthMin, mapWidthMax, spec.rng) * MAP_TILE_SIZE;
+    this.mapHeight = this.determineParameter(mapHeightMin, mapHeightMax, spec.rng) * MAP_TILE_SIZE;
     // Random values for food space, minimum and difference
     this.newFoodSpace = this.determineParameter(
       spec.newFoodSpace[0],
@@ -194,6 +207,11 @@ export class Battle {
     if (ant.alive) {
       ant.alive = false;
       this.deadAntIndices.push(ant.index);
+
+      // Decrement the square's ant counter before removing from list
+      const square = this.mapData(ant.xPos, ant.yPos);
+      square.numAnts--;
+
       this.removeAntFromSquareList(ant);
     }
   }
@@ -290,7 +308,7 @@ export class Battle {
           yPos: basePos.y,
           team: teamId,
           age: 0,
-          nextTurn: this.currentTurn + 1,
+          nextTurn: this.currentTurn, // Initial ants should be able to act immediately
           brain: { ...structuredClone(this.teams[teamId - 1].brainTemplate), random: this.rng() },
         });
         const square = this.mapData(basePos.x, basePos.y);
@@ -394,21 +412,25 @@ export class Battle {
     }
   }
 
+  getTeamSummary(team: TeamData) {
+    return {
+      name: team.name,
+      color: team.color,
+      numBorn: team.numBorn,
+      numAnts: team.numAnts,
+      numBases: team.numBases,
+      basesBuilt: team.basesBuilt,
+      kill: team.kill,
+      killed: team.killed,
+      dieAge: team.dieAge,
+    };
+  }
+
   emitStatus() {
     if (this.touchedSquares.size === 0) return;
     const status: BattleStatus = {
       args: this.args,
-      teams: this.teams.map((team) => ({
-        name: team.name,
-        color: team.color,
-        numBorn: team.numBorn,
-        numAnts: team.numAnts,
-        numBases: team.numBases,
-        basesBuilt: team.basesBuilt,
-        kill: team.kill,
-        killed: team.killed,
-        dieAge: team.dieAge,
-      })),
+      teams: this.teams.map((team) => this.getTeamSummary(team)),
       deltaSquares: Array.from(this.touchedSquares).map((i) => {
         const square = this.map[i];
         return {
@@ -458,7 +480,7 @@ export class Battle {
 
   public generateBattleSummary(): BattleSummary {
     // Find the winning team
-    const baseValue = 75;
+    const baseValue = BASE_VALUE;
     let maxTeamValue = 0;
     let winnerName = 'Draw';
 
@@ -473,7 +495,7 @@ export class Battle {
     return {
       startTime: this.startTime,
       winner: winnerName,
-      teams: this.teams.map((t) => t.name),
+      teams: this.teams.map((t) => this.getTeamSummary(t)),
       turns: this.currentTurn,
       args: this.args,
     };
@@ -486,8 +508,8 @@ export class Battle {
   doTurn() {
     this.currentTurn++;
 
-    // Get all living ants for this turn
-    const livingAnts = this.ants.filter((ant) => ant.alive);
+    // Get all living ants that should act this turn
+    const livingAnts = this.ants.filter((ant) => ant.alive && ant.nextTurn <= this.currentTurn);
     let turnAnts = livingAnts.length;
 
     // Create array of living ant indices for random processing
@@ -505,13 +527,18 @@ export class Battle {
       antIndices[turnAnts - 1] = antIndex;
       turnAnts--;
 
+      // Safety check: ant may have died during this turn
+      if (!ant.alive) {
+        continue;
+      }
+
       // Execute ant's brain and perform its action
       const action = this.runAnt(ant);
       this.doAction(ant, action);
     }
 
     // Place new food if needed
-    const baseValue = 75; // NewBaseAnts (25) + NewBaseFood (50)
+    const baseValue = BASE_VALUE;
     const targetValue = (this.args.mapWidth * this.args.mapHeight) / this.args.newFoodSpace;
 
     while (this.numAnts + this.numFood + baseValue * this.numBases < targetValue) {
@@ -523,11 +550,6 @@ export class Battle {
     const team = this.teams[ant.team - 1];
     if (!team) return 0;
 
-    // Update ant age and statistics
-    ant.age++;
-    ant.nextTurn = this.currentTurn + 1;
-    team.timesRun++;
-
     // Prepare 5 SquareData structures (current + 4 adjacent squares)
     const mapData = this.getSurroundings(ant.xPos, ant.yPos);
 
@@ -538,11 +560,17 @@ export class Battle {
       team: square.numAnts || square.base ? shuffleTable[square.team] || 0 : 0,
     }));
 
-    // Collect brain data for all ants on current square
+    // Collect brain data for all living ants on current square to match square.numAnts
+    // This must be done BEFORE updating ant.nextTurn
     const antsOnSquare = this.getAntsOnSquare(ant.xPos, ant.yPos);
     const antInfo: AntInfo = {
       brains: antsOnSquare.map((a) => ({ ...a.brain })),
     };
+
+    // Update ant age and statistics (AFTER collecting brain data)
+    ant.age++;
+    ant.nextTurn = this.currentTurn + 1;
+    team.timesRun++;
 
     // Ensure calling ant's brain is first in the array
     const callingAntIndex = antsOnSquare.findIndex((a) => a.index === ant.index);
@@ -559,6 +587,7 @@ export class Battle {
     try {
       // Random timing measurement (1 in 10 chance like C implementation)
       const shouldTime = this.rng(10) === 0;
+      //console.log('Calling ant with args', obfuscatedMapData, antInfo, 'in turn', this.currentTurn);
       if (shouldTime) {
         const startTime = performance.now();
         action = team.func(obfuscatedMapData, antInfo);
@@ -570,7 +599,21 @@ export class Battle {
       }
     } catch (error) {
       // If ant function fails, default to no action
-      console.error(`Ant function error for team ${ant.team}:`, error);
+      console.error(
+        `Ant function error for team ${ant.team}:`,
+        '\nerror:',
+        error,
+        '\nant:',
+        ant,
+        '\nantsOnSquare:',
+        antsOnSquare,
+        '\nantInfo:',
+        antInfo,
+        '\nsquare:',
+        this.mapData(ant.xPos, ant.yPos),
+      );
+      // // Temporarily halt on error, to facilitate debugging
+      // this.stop();
       action = 0;
     }
 
@@ -606,7 +649,6 @@ export class Battle {
 
     // Current square (index 0)
     surroundings.push(this.mapData(x, y));
-
     // Right square (index 1) - wraps around
     const rightX = (x + 1) % this.args.mapWidth;
     surroundings.push(this.mapData(rightX, y));
@@ -642,19 +684,35 @@ export class Battle {
     return antsOnSquare;
   }
 
+  private getActiveAntsOnSquare(x: number, y: number): AntData[] {
+    // Use linked list for efficient traversal of ants that should act this turn
+    const square = this.mapData(x, y);
+    const antsOnSquare: AntData[] = [];
+
+    let current = square.firstAnt;
+    while (current) {
+      if (current.alive && current.nextTurn <= this.currentTurn) {
+        antsOnSquare.push(current);
+      }
+      current = current.mapNext;
+    }
+
+    return antsOnSquare;
+  }
+
   doAction(ant: AntData, action: number) {
-    const direction = action & 7;
-    const carryFood = (action & 8) !== 0;
-    const buildBase = action === 16;
+    const direction = action & ACTION_DIRECTION_MASK;
+    const carryFood = (action & ACTION_CARRY_FOOD_FLAG) !== 0;
+    const buildBase = action === ACTION_BUILD_BASE;
 
     // Handle base building
     if (buildBase) {
       const square = this.mapData(ant.xPos, ant.yPos);
-      if (square.numAnts >= 25 && square.numFood >= 50 && !square.base) {
-        // Kill 25 ants to build the base using the linked list
+      if (square.numAnts >= NEW_BASE_ANTS && square.numFood >= NEW_BASE_FOOD && !square.base) {
+        // Kill NEW_BASE_ANTS ants to build the base using the linked list
         let killedAnts = 0;
         let currentAnt = square.firstAnt;
-        while (currentAnt && killedAnts < 25) {
+        while (currentAnt && killedAnts < NEW_BASE_ANTS) {
           const nextAnt = currentAnt.mapNext;
           if (currentAnt.alive && currentAnt.team === ant.team) {
             this.killAnt(currentAnt);
@@ -663,9 +721,8 @@ export class Battle {
           currentAnt = nextAnt;
         }
 
-        // Build base - consume food
-        square.numAnts -= killedAnts;
-        square.numFood -= 50;
+        // Build base - consume food (numAnts already decremented by killAnt calls)
+        square.numFood -= NEW_BASE_FOOD;
         square.base = true;
         square.team = ant.team;
 
@@ -888,7 +945,7 @@ export class Battle {
 
   // Check if battle should terminate
   checkTermination(): boolean {
-    const baseValue = 75;
+    const baseValue = BASE_VALUE;
     let totalValue = 0;
     let maxTeamValue = 0;
     let activeTeams = 0;
