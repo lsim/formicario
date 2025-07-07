@@ -28,6 +28,10 @@ function Caesar(squareData, antInfo) {
     return abs(x1 - x2) + abs(y1 - y2);
   }
 
+  function floor(n) {
+    return n >= 0 ? (n | 0) : ((n | 0) - 1);
+  }
+
   function sqrt(n) {
     if (n < 65536) {
       let r = 0x100; // 8 loops
@@ -283,7 +287,7 @@ function Caesar(squareData, antInfo) {
           
           if (guardCount < 3 && nonGuardIndex !== 0 && myBrain.count > 500) {
             antInfo.brains[nonGuardIndex].state = GUARD;
-            myBrain.count = Math.floor(myBrain.count / 2);
+            myBrain.count = floor(myBrain.count / 2);
             antInfo.brains[nonGuardIndex].count = myBrain.count;
           }
           

@@ -26,6 +26,10 @@ function GridAnt(squareData, antInfo) {
     return abs(x1 - x2) + abs(y1 - y2);
   }
 
+  function floor(n) {
+    return n >= 0 ? (n | 0) : ((n | 0) - 1);
+  }
+
   function random(brain) {
     // Linear congruential generator
     const a = 1588635695;
@@ -33,13 +37,13 @@ function GridAnt(squareData, antInfo) {
     const q = 2;
     const r = 1117695901;
     
-    brain.rnd = a * (brain.rnd % q) - r * Math.floor(brain.rnd / q);
+    brain.rnd = a * (brain.rnd % q) - r * floor(brain.rnd / q);
     if (brain.rnd < 0) brain.rnd += m;
     return brain.rnd / m;
   }
 
   function randomInt(brain, min, max) {
-    return Math.floor(random(brain) * (max - min + 1)) + min;
+    return floor(random(brain) * (max - min + 1)) + min;
   }
 
   function fuzzyWalk(brain, x1, y1, x2, y2) {
