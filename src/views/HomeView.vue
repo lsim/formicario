@@ -15,7 +15,6 @@ worker.onmessage = (e) => {
     if (!gameRunning.value) return;
     battleStatus.value = e.data.status;
   } else if (e.data.type === 'game-summary') {
-    if (!gameRunning.value) return;
     gameSummary.value = e.data.results;
   } else {
     console.log('Worker sent unhandled message', e.data);
