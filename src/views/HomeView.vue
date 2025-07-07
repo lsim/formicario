@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import Worker from '../workers/worker?worker';
 import BattleFeed from '@/components/BattleFeed.vue';
-import type { BattleStatus } from '@/GameSummary.ts';
+import type { BattleStatus, GameSummary } from '@/GameSummary.ts';
 import { ref, watch } from 'vue';
 import type { GameSpec } from '@/GameSpec.ts';
 import BattleArgs from '@/components/BattleArgs.vue';
 import TeamBattleStats from '@/components/TeamBattleStats.vue';
+import TeamChooser from '@/components/TeamChooser.vue';
 
 const worker = new Worker();
 
@@ -13,19 +14,20 @@ worker.onmessage = (e) => {
   if (e.data.type === 'battle-status') {
     if (!gameRunning.value) return;
     battleStatus.value = e.data.status;
+  } else if (e.data.type === 'game-summary') {
+    if (!gameRunning.value) return;
+    gameSummary.value = e.data.results;
   } else {
-    console.log('Worker sent message', e.data);
+    console.log('Worker sent unhandled message', e.data);
   }
 };
 
 const battleStatus = ref<BattleStatus>();
+const gameSummary = ref<GameSummary>();
 
 const pause = ref(false);
 const seed = ref(42);
-
-async function loadAnt(name: string) {
-  return (await import(`../../ants/${name}.js?raw`)).default;
-}
+const selectedTeamCodes = ref<string[]>([]);
 
 const gameSpec: Partial<GameSpec> = {
   mapWidth: [250, 500],
@@ -43,18 +45,12 @@ const gameSpec: Partial<GameSpec> = {
 async function startGame() {
   gameRunning.value = true;
   battleStatus.value = undefined;
-  const reluctant = await loadAnt('reluctAnt');
-  const infant = await loadAnt('infAnt');
-  const theDoctor = await loadAnt('TheDoctor');
-  const bayimayi = await loadAnt('BayiMayi');
-  const firkAnt = await loadAnt('FirkAnt');
-  const lightCore3 = await loadAnt('LightCore3');
-  const sunMyre = await loadAnt('SunMyre');
+  console.log('launching with teams', selectedTeamCodes.value);
   worker.postMessage({
     type: 'run-game',
     game: {
       ...gameSpec,
-      teams: [firkAnt, lightCore3, sunMyre],
+      teams: Array.from(selectedTeamCodes.value),
       seed: seed.value,
       statusInterval: 1,
     },
@@ -111,6 +107,24 @@ watch(
   <battle-feed class="battle-feed" v-if="battleStatus" :battle="battleStatus" />
   <team-battle-stats class="team-stats" v-if="battleStatus" :teams="battleStatus.teams" />
   <battle-args class="battle-args" v-if="battleStatus" :battle-status="battleStatus" />
+  <team-chooser
+    class="team-chooser"
+    v-show="!gameRunning"
+    @update:teams="selectedTeamCodes = $event"
+  />
+  <div class="game-summary" v-if="gameSummary">
+    <h2>Previous game</h2>
+    <div class="stat">Seed: {{ gameSummary.seed }}</div>
+    <template v-for="(battle, index) in gameSummary.battles" :key="index">
+      <h3>Battle {{ index + 1 }}</h3>
+      <div class="stat">Turns: {{ battle.turns }}</div>
+      <div class="stat">Winner: {{ battle.winner }}</div>
+      <div class="stat">Start time: {{ new Date(battle.startTime).toLocaleString() }}</div>
+      <team-battle-stats class="team-stats" :teams="battle.teams" />
+      <battle-args class="battle-args" :battle-status="battle" />
+      <hr />
+    </template>
+  </div>
 </template>
 
 <style scoped lang="scss">

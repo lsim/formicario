@@ -1,10 +1,10 @@
 <script setup lang="ts">
-// This component shows the randomized parameters of an ongoing battle
+// This component shows the randomized parameters of an ongoing or finished battle
 
-import type { BattleStatus } from '@/GameSummary.ts';
+import type { BattleInfo } from '@/GameSummary.ts';
 
 const props = defineProps<{
-  battleStatus: BattleStatus;
+  battleStatus: BattleInfo;
 }>();
 </script>
 

@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { BattleStatus, SquareStatus } from '@/GameSummary.ts';
+import type { BattleInfo, BattleStatus, SquareStatus } from '@/GameSummary.ts';
 import { useTemplateRef, watch } from 'vue';
 
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
 
 const props = defineProps<{
-  battle: BattleStatus;
+  battle: BattleInfo;
 }>();
 
 function getEmptySquareColor(s: SquareStatus, teamCol: string) {

@@ -20,18 +20,19 @@ export type TeamStatus = {
   dieAge: number;
 };
 
-export type BattleStatus = {
+export type BattleInfo = {
   args: BattleArgs;
   teams: TeamStatus[];
+};
+
+export type BattleStatus = BattleInfo & {
   deltaSquares: SquareStatus[];
 };
 
-export type BattleSummary = {
+export type BattleSummary = BattleInfo & {
   startTime: number;
   winner: string;
-  teams: string[];
   turns: number;
-  args: BattleArgs;
 };
 
 export type GameSummary = {
