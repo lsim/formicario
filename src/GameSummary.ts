@@ -27,6 +27,8 @@ export type BattleInfo = {
 
 export type BattleStatus = BattleInfo & {
   deltaSquares: SquareStatus[];
+  turns: number;
+  turnsPerSecond: number;
 };
 
 export type BattleSummary = BattleInfo & {

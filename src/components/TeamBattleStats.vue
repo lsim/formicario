@@ -29,6 +29,8 @@ const propertyLabels: Record<StatusProperty, string> = {
 
 const props = defineProps<{
   teams: TeamStatus[];
+  turn?: number;
+  tps?: number;
 }>();
 
 const selectedStatusProperty = ref<StatusProperty>('numAnts');
@@ -46,6 +48,8 @@ const maxForSelectedProperty = computed(() => {
           {{ propertyLabels[prop] }}
         </option>
       </select>
+      <span v-show="props.turn">Simulated turns {{ props.turn }}</span>
+      <span v-show="props.tps">Simulated turns/second {{ props.tps }}</span>
     </div>
     <template v-for="(team, index) in teams" :key="index">
       <div class="team-name">{{ team.name }}</div>

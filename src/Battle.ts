@@ -154,6 +154,11 @@ export class Battle {
   paused = false;
   startTime = Date.now(); // Battle start timestamp for identification
 
+  // Performance tracking
+  private lastTpsUpdate = Date.now();
+  private turnsAtLastUpdate = 0;
+  turnsPerSecond = 0;
+
   constructor(spec: GameSpec, antFunctions: AntFunction[]) {
     this.args = BattleArgs.fromGameSpec(spec);
     this.rng = spec.rng;
@@ -428,6 +433,19 @@ export class Battle {
 
   emitStatus() {
     if (this.touchedSquares.size === 0) return;
+
+    // Update turns per second calculation
+    const now = Date.now();
+    const elapsed = now - this.lastTpsUpdate;
+
+    // Update TPS every second or more
+    if (elapsed >= 1000) {
+      const turnsSinceLastUpdate = this.currentTurn - this.turnsAtLastUpdate;
+      this.turnsPerSecond = (turnsSinceLastUpdate * 1000) / elapsed;
+      this.lastTpsUpdate = now;
+      this.turnsAtLastUpdate = this.currentTurn;
+    }
+
     const status: BattleStatus = {
       args: this.args,
       teams: this.teams.map((team) => this.getTeamSummary(team)),
@@ -441,6 +459,8 @@ export class Battle {
           numFood: square.numFood,
         };
       }),
+      turns: this.currentTurn,
+      turnsPerSecond: Math.round(this.turnsPerSecond * 100) / 100, // Round to 2 decimal places
     };
     this.touchedSquares.clear();
     postMessage({ type: 'battle-status', status });
@@ -563,8 +583,9 @@ export class Battle {
     // Collect brain data for all living ants on current square to match square.numAnts
     // This must be done BEFORE updating ant.nextTurn
     const antsOnSquare = this.getAntsOnSquare(ant.xPos, ant.yPos);
+    // Because we don't copy the brain objects, they will be mutated directly by the ant function - obviating the need for subsequent copying
     const antInfo: AntInfo = {
-      brains: antsOnSquare.map((a) => ({ ...a.brain })),
+      brains: antsOnSquare.map((a) => a.brain),
     };
 
     // Update ant age and statistics (AFTER collecting brain data)
@@ -616,28 +637,6 @@ export class Battle {
       // this.stop();
       action = 0;
     }
-
-    // Update all ants' brains with any changes made during execution
-    antsOnSquare.forEach((squareAnt, index) => {
-      if (index < antInfo.brains.length) {
-        // Map brain index back to original position, accounting for the swap we did earlier
-        let brainIndex;
-        if (callingAntIndex > 0) {
-          // We swapped calling ant's brain to position 0, so reverse the mapping
-          if (index === callingAntIndex) {
-            brainIndex = 0; // The calling ant's brain is now at position 0
-          } else if (index === 0) {
-            brainIndex = callingAntIndex; // The ant that was at position 0 has its brain at callingAntIndex
-          } else {
-            brainIndex = index; // Other positions unchanged
-          }
-        } else {
-          brainIndex = index; // No swap occurred
-        }
-
-        squareAnt.brain = { ...antInfo.brains[brainIndex] };
-      }
-    });
 
     // Return action as number (ignore AntDescriptor case for now)
     return action;

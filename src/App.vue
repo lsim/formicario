@@ -3,22 +3,22 @@ import { RouterView } from 'vue-router';
 </script>
 
 <template>
-  <div id="root">
-    <header>
-      <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
-
-      <h1>Myrekrig</h1>
+  <div id="root" class="article">
+    <div class="ui masthead vertical segment">
+      <div class="ui container">
+        <h1 class="ui header">Myrekrig</h1>
+      </div>
 
       <!--      <div class="wrapper">-->
       <!--        <nav>-->
       <!--          <RouterLink to="/">Home</RouterLink>-->
       <!--        </nav>-->
       <!--      </div>-->
-    </header>
+    </div>
 
-    <main>
+    <div class="ui main container">
       <RouterView />
-    </main>
+    </div>
   </div>
 </template>
 
