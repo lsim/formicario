@@ -1,16 +1,6 @@
-# Myrekrig
+# Ant wars
 
-This ancient project was popularized by the [Myrekrig](https://en.wikipedia.org/wiki/Myrekrig) in the 19th century.
-
-
-## TODO
-
-- [x] Experiment with service workers
-- [ ] Experiment with isolated execution of a potentially hostile code snippet
-- [ ] Rendering of the playing field (canvas?)
-- [x] Creating the types for game, battle, team, participant, ant, square etc
-- [x] Initializing a battle
-- [ ] Running a battle
+This ancient programming game was popularized by the [Myrekrig](https://en.wikipedia.org/wiki/Myrekrig) community in Aarhus, Denmark in the late 20th century.
 
 ## Customize configuration
 

@@ -66,6 +66,7 @@ async function startGame() {
 async function stopGame() {
   battleStatus.value = undefined;
   gameRunning.value = false;
+  gamePaused.value = false;
   worker.postMessage({
     type: 'stop-game',
   });
@@ -99,46 +100,60 @@ async function stepGame(stepSize: number) {
 </script>
 
 <template>
-  <div class="ui segment">
-    <game-setup
-      :is-running="gameRunning"
-      :is-paused="gamePaused"
-      @start-game="startGame"
-      @stop-game="stopGame"
-      @pause-game="pauseGame"
-      @resume-game="resumeGame"
-      @step-game="stepGame"
-      @update:teams="selectedTeamCodes = $event.map((t) => t.code)"
-    />
-    <label>Status interval <input type="number" v-model="statusInterval" /></label>
-    <label>Seed <input type="number" v-model="seed" /></label>
-    <battle-feed class="battle-feed" v-if="battleStatus" :battle="battleStatus" />
-    <team-battle-stats
-      class="team-stats"
-      v-if="battleStatus"
-      :teams="battleStatus.teams"
-      :turn="battleStatus.turns"
-      :tps="battleStatus.turnsPerSecond"
-    />
-    <battle-args class="battle-args" v-if="battleStatus" :battle-status="battleStatus" />
-    <div class="game-summary" v-if="gameSummary">
-      <h2>Previous game</h2>
-      <div class="stat">Seed: {{ gameSummary.seed }}</div>
-      <template v-for="(battle, index) in gameSummary.battles" :key="index">
-        <h3>Battle {{ index + 1 }}</h3>
-        <div class="stat">Turns: {{ battle.turns }}</div>
-        <div class="stat">Winner: {{ battle.winner }}</div>
-        <div class="stat">Start time: {{ new Date(battle.startTime).toLocaleString() }}</div>
-        <team-battle-stats class="team-stats" :teams="battle.teams" />
-        <battle-args class="battle-args" :battle-status="battle" />
-        <hr />
-      </template>
+  <div class="columns">
+    <div class="column">
+      <game-setup
+        :is-running="gameRunning"
+        :is-paused="gamePaused"
+        @start-game="startGame"
+        @stop-game="stopGame"
+        @pause-game="pauseGame"
+        @resume-game="resumeGame"
+        @step-game="stepGame"
+        @update:teams="selectedTeamCodes = $event.map((t) => t.code)"
+      />
+      <label>Status interval <input type="number" v-model="statusInterval" /></label>
+      <label>Seed <input type="number" v-model="seed" /></label>
+    </div>
+    <div class="column">
+      <Transition name="battle-feed">
+        <div class="box" v-if="battleStatus">
+          <battle-feed class="battle-feed" :battle="battleStatus" />
+        </div>
+      </Transition>
+      <team-battle-stats
+        class="team-stats"
+        v-if="battleStatus"
+        :teams="battleStatus.teams"
+        :turn="battleStatus.turns"
+        :tps="battleStatus.turnsPerSecond"
+      />
+      <battle-args class="battle-args" v-if="battleStatus" :battle-status="battleStatus" />
+      <div class="game-summary" v-if="gameSummary">
+        <h2>Previous game</h2>
+        <div class="stat">Seed: {{ gameSummary.seed }}</div>
+        <template v-for="(battle, index) in gameSummary.battles" :key="index">
+          <h3>Battle {{ index + 1 }}</h3>
+          <div class="stat">Turns: {{ battle.turns }}</div>
+          <div class="stat">Winner: {{ battle.winner }}</div>
+          <div class="stat">Start time: {{ new Date(battle.startTime).toLocaleString() }}</div>
+          <team-battle-stats class="team-stats" :teams="battle.teams" />
+          <battle-args class="battle-args" :battle-status="battle" />
+          <hr />
+        </template>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped lang="scss">
-.battle-feed {
-  //border: 5px solid rgba(white, 0.5);
+.battle-feed-enter-active,
+.battle-feed-leave-active {
+  transition: all 0.2s ease;
+}
+.battle-feed-enter-from,
+.battle-feed-leave-to {
+  opacity: 0;
+  transform: translateX(-1em);
 }
 </style>

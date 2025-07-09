@@ -58,21 +58,25 @@ watch(
           </button>
         </div>
       </div>
-      <div class="box" v-if="selectedTeams.length > 0">
-        <div class="selected-teams grid" style="max-width: 15em">
-          <button
-            v-for="name in selectedTeams"
-            :key="name"
-            class="cell button is-primary"
-            @click.exact="teamSelections[name] = false"
-            @click.ctrl="teamSelections = { [name]: true }"
-            @click.meta="teamSelections = { [name]: true }"
-            type="button"
-          >
-            {{ name }}
-          </button>
+      <Transition name="selected-box">
+        <div class="box" v-if="selectedTeams.length > 0">
+          <div class="selected-teams grid" style="max-width: 15em">
+            <TransitionGroup name="selected-teams">
+              <button
+                v-for="name in selectedTeams"
+                :key="name"
+                class="cell button is-primary"
+                @click.exact="teamSelections[name] = false"
+                @click.ctrl="teamSelections = { [name]: true }"
+                @click.meta="teamSelections = { [name]: true }"
+                type="button"
+              >
+                {{ name }}
+              </button>
+            </TransitionGroup>
+          </div>
         </div>
-      </div>
+      </Transition>
     </div>
   </div>
 </template>
@@ -91,9 +95,34 @@ watch(
   }
 }
 
+.box {
+  transition: all 0.2s ease;
+  opacity: 1;
+  transform: translateX(0);
+  &.selected-box-enter-active,
+  &.selected-box-leave-active {
+    transition: all 0.2s ease;
+  }
+  &.selected-box-enter-from,
+  &.selected-box-leave-to {
+    opacity: 0;
+    transform: translateX(-1em);
+  }
+}
+
 .grid {
   button {
     width: 10em;
+
+    &.selected-teams-enter-active,
+    &.selected-teams-leave-active {
+      transition: all 0.2s ease;
+    }
+    &.selected-teams-enter-from,
+    &.selected-teams-leave-to {
+      opacity: 0;
+      transform: translateX(1em);
+    }
   }
 }
 </style>
