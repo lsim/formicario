@@ -35,6 +35,7 @@ export interface ResumeGameCommand extends TypedMessage {
 
 export interface StepGameCommand extends TypedMessage {
   type: 'step-game';
+  stepSize: number;
 }
 
 export interface GameSummaryMessage extends TypedMessage {

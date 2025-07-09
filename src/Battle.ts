@@ -466,30 +466,36 @@ export class Battle {
     postMessage({ type: 'battle-status', status });
   }
 
-  async run(singleStep = false): Promise<BattleSummary | undefined> {
+  async run(steps = 0): Promise<BattleSummary | undefined> {
     let terminated = false;
-    let firstTurn = true;
+    let stepCount = 0;
 
     // Main battle loop - equivalent to the C do-while structure
     do {
       // Execute one turn (equivalent to DoTurn() in C)
       this.doTurn();
+      stepCount++;
 
       // Emit status for UI updates (equivalent to SysDrawMap() in C)
-      if (firstTurn || this.currentTurn % this.args.statusInterval === 0) {
+      if (
+        stepCount === steps ||
+        this.currentTurn === 1 ||
+        this.currentTurn % this.args.statusInterval === 0
+      ) {
         this.emitStatus();
-        firstTurn = false;
       }
+
+      if (this.paused && stepCount >= steps) break;
 
       // Check for termination conditions (equivalent to TermCheck() in C)
       terminated = this.checkTermination();
 
       // Allow for async operations and UI responsiveness
       // Yield control periodically for non-blocking execution
-      if (this.currentTurn % 10 === 0) {
-        await new Promise((resolve) => setTimeout(resolve, 0));
+      if (this.currentTurn % 20 === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 20));
       }
-    } while (!terminated && !this.paused && !singleStep);
+    } while (!terminated);
 
     return terminated ? this.generateBattleSummary() : undefined;
   }

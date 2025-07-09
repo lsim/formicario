@@ -1,0 +1,18 @@
+@charset "utf-8";
+//styles will go here
+@use "bulma/sass/base";
+@use "bulma/sass/themes";
+
+@use "bulma/sass/elements";
+@use "bulma/sass/components";
+@use "bulma/sass/grid";
+@use "bulma/sass/helpers";
+@use "bulma/sass/layout";
+@use "bulma/sass/form";
+// icons
+@use "bulma/sass/helpers/color";
+@use "bulma/sass/helpers/flexbox";
+@use "bulma/sass/helpers/visibility";
+// utilities
+@use "bulma/sass/utilities/mixins";
+@use "bulma/sass/utilities/controls";

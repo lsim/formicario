@@ -31,7 +31,7 @@ onmessage = async (e) => {
       activeGame = undefined;
       postMessage({ type: 'game-summary', results: summary });
     } else if (command?.type === 'step-game') {
-      activeGame?.step();
+      activeGame?.step(command.stepSize);
       postMessage({ type: 'ok' });
     } else {
       console.error('Unknown command', command);

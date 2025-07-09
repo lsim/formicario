@@ -46,7 +46,8 @@ export class Game {
     this.activeBattle = new Battle(this.spec, this.teamFunctions);
 
     // Run the complete battle using the do-while loop structure
-    const battleSummary = await this.activeBattle.run(pause);
+    this.activeBattle.paused = pause;
+    const battleSummary = await this.activeBattle.run(pause ? 1 : 0);
     if (battleSummary) {
       this.activeBattle = null;
 
@@ -82,7 +83,7 @@ export class Game {
     return undefined;
   }
 
-  public step() {
-    this.activeBattle?.run(true);
+  public step(stepSize = 1) {
+    this.activeBattle?.run(stepSize);
   }
 }

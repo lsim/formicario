@@ -2,19 +2,20 @@
 import Worker from '../workers/worker?worker';
 import BattleFeed from '@/components/BattleFeed.vue';
 import type { BattleStatus, GameSummary } from '@/GameSummary.ts';
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 import type { GameSpec } from '@/GameSpec.ts';
 import BattleArgs from '@/components/BattleArgs.vue';
 import TeamBattleStats from '@/components/TeamBattleStats.vue';
-import TeamChooser from '@/components/TeamChooser.vue';
+import GameSetup from '@/components/GameSetup.vue';
 
 const worker = new Worker();
 
 worker.onmessage = (e) => {
   if (e.data.type === 'battle-status') {
-    if (!gameRunning.value) return;
+    gameRunning.value = true;
     battleStatus.value = e.data.status;
   } else if (e.data.type === 'game-summary') {
+    gameRunning.value = false;
     gameSummary.value = e.data.results;
   } else {
     console.log('Worker sent unhandled message', e.data);
@@ -24,7 +25,6 @@ worker.onmessage = (e) => {
 const battleStatus = ref<BattleStatus>();
 const gameSummary = ref<GameSummary>();
 
-const pause = ref(false);
 const seed = ref(42);
 const selectedTeamCodes = ref<string[]>([]);
 const statusInterval = ref(20);
@@ -42,10 +42,14 @@ const gameSpec: Partial<GameSpec> = {
   winPercent: 75,
 };
 
+// TODO: BattleSummary could be sent after each battle. And if battlefeed is disengaged, it could include all pixels, so an end picture could be shown
+// TODO: Figure out a way to parallelize battles to multiple workers (perhaps a master worker managing the big picture with a couple of slaves?). Difficulty: battle state cannot be easily split up without bending the original rules
+
+const gameRunning = ref(false);
+const gamePaused = ref(false);
+
 async function startGame() {
-  gameRunning.value = true;
   battleStatus.value = undefined;
-  console.log('launching with teams', selectedTeamCodes.value);
   worker.postMessage({
     type: 'run-game',
     game: {
@@ -54,58 +58,60 @@ async function startGame() {
       seed: seed.value,
       statusInterval: statusInterval.value,
     },
-    pause: pause.value,
+    pause: gamePaused.value,
   });
   seed.value++;
 }
 
-const gameRunning = ref(false);
 async function stopGame() {
-  gameRunning.value = false;
   battleStatus.value = undefined;
+  gameRunning.value = false;
   worker.postMessage({
     type: 'stop-game',
   });
 }
 
 async function pauseGame() {
+  gamePaused.value = true;
   worker.postMessage({
     type: 'pause-game',
   });
 }
 
 async function resumeGame() {
+  gamePaused.value = false;
   worker.postMessage({
     type: 'resume-game',
   });
 }
 
-async function stepGame() {
-  worker.postMessage({
-    type: 'step-game',
-  });
+async function stepGame(stepSize: number) {
+  gamePaused.value = true;
+  if (!gameRunning.value) {
+    await startGame();
+  } else {
+    worker.postMessage({
+      type: 'step-game',
+      stepSize,
+    });
+  }
 }
-
-watch(
-  () => pause.value,
-  (newVal) => {
-    if (newVal) {
-      pauseGame();
-    } else {
-      resumeGame();
-    }
-  },
-);
 </script>
 
 <template>
   <div class="ui segment">
+    <game-setup
+      :is-running="gameRunning"
+      :is-paused="gamePaused"
+      @start-game="startGame"
+      @stop-game="stopGame"
+      @pause-game="pauseGame"
+      @resume-game="resumeGame"
+      @step-game="stepGame"
+      @update:teams="selectedTeamCodes = $event.map((t) => t.code)"
+    />
     <label>Status interval <input type="number" v-model="statusInterval" /></label>
-    <label>Pause <input type="checkbox" v-model="pause" /></label>
     <label>Seed <input type="number" v-model="seed" /></label>
-    <button @click="startGame">Start</button>
-    <button @click="stopGame">Stop</button>
-    <button @click="stepGame">Step</button>
     <battle-feed class="battle-feed" v-if="battleStatus" :battle="battleStatus" />
     <team-battle-stats
       class="team-stats"
@@ -115,11 +121,6 @@ watch(
       :tps="battleStatus.turnsPerSecond"
     />
     <battle-args class="battle-args" v-if="battleStatus" :battle-status="battleStatus" />
-    <team-chooser
-      class="team-chooser"
-      v-show="!gameRunning"
-      @update:teams="selectedTeamCodes = $event"
-    />
     <div class="game-summary" v-if="gameSummary">
       <h2>Previous game</h2>
       <div class="stat">Seed: {{ gameSummary.seed }}</div>
@@ -138,6 +139,6 @@ watch(
 
 <style scoped lang="scss">
 .battle-feed {
-  border: 5px solid rgba(white, 0.5);
+  //border: 5px solid rgba(white, 0.5);
 }
 </style>

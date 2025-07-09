@@ -1,7 +1,14 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 
 import type { GameSpec } from '@/GameSpec';
-import { Battle, BattleArgs, type AntFunction, type AntInfo, type SquareData, type AntData } from '@/Battle';
+import {
+  Battle,
+  BattleArgs,
+  type AntFunction,
+  type AntInfo,
+  type SquareData,
+  type AntData,
+} from '@/Battle';
 import { getRNG } from '@/prng.ts';
 import type { BattleStatusMessage } from '@/workers/WorkerMessage.ts';
 
@@ -451,7 +458,7 @@ describe('Battle tests', () => {
       if (summary) {
         expect(summary.turns).toBeGreaterThan(0);
         expect(summary.winner).toBeDefined();
-        expect(summary.teams.map(t => t.name)).toContain('SimpleAnt');
+        expect(summary.teams.map((t) => t.name)).toContain('SimpleAnt');
         expect(summary.startTime).toBeGreaterThan(0);
         expect(summary.args).toBe(battle.args);
       }
@@ -465,8 +472,8 @@ describe('Battle tests', () => {
 
       if (summary) {
         expect(summary.teams).toHaveLength(2);
-        expect(summary.teams.map(t => t.name)).toContain('SimpleAnt');
-        expect(summary.teams.map(t => t.name)).toContain('AggressiveAnt');
+        expect(summary.teams.map((t) => t.name)).toContain('SimpleAnt');
+        expect(summary.teams.map((t) => t.name)).toContain('AggressiveAnt');
         expect(['SimpleAnt', 'AggressiveAnt', 'Draw']).toContain(summary.winner);
       }
     });
@@ -511,7 +518,7 @@ describe('Battle tests', () => {
 
       // Place enemy ants on target square
       const targetSquare = battle.mapData(targetX, targetY);
-      
+
       // Create actual enemy ant objects on the target square
       for (let i = 0; i < 3; i++) {
         const enemyAnt = battle['createAnt']({
@@ -522,7 +529,7 @@ describe('Battle tests', () => {
           nextTurn: battle.currentTurn + 1,
           brain: { random: battle.rng() },
         });
-        
+
         // Add to square's linked list
         if (!targetSquare.firstAnt) {
           targetSquare.firstAnt = enemyAnt;
@@ -533,10 +540,10 @@ describe('Battle tests', () => {
         }
         targetSquare.lastAnt = enemyAnt;
       }
-      
+
       targetSquare.numAnts = 3;
       targetSquare.team = 2;
-      
+
       // Update global counters to match
       battle.numAnts += 3;
       battle.teams[1].numAnts += 3;
@@ -876,8 +883,11 @@ describe('Battle tests', () => {
       battle.paused = true;
 
       // Run with single step should return undefined when paused
-      const result = battle.run(true);
-      expect(result).toBeInstanceOf(Promise);
+      battle.run(1);
+      expect(battle.currentTurn).toBe(1);
+
+      battle.run(10);
+      expect(battle.currentTurn).toBe(11);
     });
 
     it('should handle ant movement to same position', () => {
@@ -1066,48 +1076,47 @@ describe('Battle tests', () => {
   describe('Linked List Integrity', () => {
     // Helper function to validate linked list integrity for a square
     function validateLinkedList(battle: Battle, square: SquareData): void {
-      
       // Validate forward traversal
       let forwardCount = 0;
       let current = square.firstAnt;
       const forwardAnts: AntData[] = [];
-      
+
       while (current) {
         expect(current.alive).toBe(true); // Only living ants should be in linked list
         forwardAnts.push(current);
         forwardCount++;
         current = current.mapNext;
-        
+
         // Prevent infinite loops
         if (forwardCount > 1000) {
           throw new Error('Linked list appears to have infinite loop in forward direction');
         }
       }
-      
+
       // Validate backward traversal
       let backwardCount = 0;
       current = square.lastAnt;
       const backwardAnts: AntData[] = [];
-      
+
       while (current) {
         expect(current.alive).toBe(true); // Only living ants should be in linked list
         backwardAnts.push(current);
         backwardCount++;
         current = current.mapPrev;
-        
+
         // Prevent infinite loops
         if (backwardCount > 1000) {
           throw new Error('Linked list appears to have infinite loop in backward direction');
         }
       }
-      
+
       // Forward and backward counts should match
       expect(forwardCount).toBe(backwardCount);
-      
+
       // Reverse the backward list to compare with forward list
       backwardAnts.reverse();
-      expect(forwardAnts.map(a => a.index)).toEqual(backwardAnts.map(a => a.index));
-      
+      expect(forwardAnts.map((a) => a.index)).toEqual(backwardAnts.map((a) => a.index));
+
       // Validate bi-directional links
       if (square.firstAnt) {
         expect(square.firstAnt.mapPrev).toBeUndefined();
@@ -1115,11 +1124,11 @@ describe('Battle tests', () => {
       if (square.lastAnt) {
         expect(square.lastAnt.mapNext).toBeUndefined();
       }
-      
+
       // Validate all internal links
       for (let i = 0; i < forwardAnts.length; i++) {
         const ant = forwardAnts[i];
-        
+
         if (i > 0) {
           expect(ant.mapPrev).toBe(forwardAnts[i - 1]);
         }
@@ -1131,7 +1140,7 @@ describe('Battle tests', () => {
 
     it('should properly maintain linked lists during initialization', () => {
       const battle = new Battle(gameSpec, [simpleAnt]);
-      
+
       // Find the base square where initial ants are placed
       let baseSquare: SquareData | undefined;
       for (let x = 0; x < battle.args.mapWidth; x++) {
@@ -1144,45 +1153,50 @@ describe('Battle tests', () => {
         }
         if (baseSquare) break;
       }
-      
+
       expect(baseSquare).toBeDefined();
       if (!baseSquare) return;
-      
+
       // The linked list initialization should now work properly
-      
+
       // Count ants that should be on this square
-      const antsOnSquare = battle.ants.filter(ant => 
-        ant.alive && 
-        ant.xPos === battle.map.indexOf(baseSquare!) % battle.args.mapWidth && 
-        ant.yPos === Math.floor(battle.map.indexOf(baseSquare!) / battle.args.mapWidth)
+      const antsOnSquare = battle.ants.filter(
+        (ant) =>
+          ant.alive &&
+          ant.xPos === battle.map.indexOf(baseSquare!) % battle.args.mapWidth &&
+          ant.yPos === Math.floor(battle.map.indexOf(baseSquare!) / battle.args.mapWidth),
       );
-      
+
       expect(antsOnSquare.length).toBeGreaterThan(0);
       expect(baseSquare.numAnts).toBe(antsOnSquare.length);
-      
+
       // The linked list should now properly contain all ants
       let forwardCount = 0;
       let current = baseSquare.firstAnt;
-      while (current && forwardCount < 100) { // Prevent infinite loops
+      while (current && forwardCount < 100) {
+        // Prevent infinite loops
         forwardCount++;
         current = current.mapNext;
       }
-      
+
       // With the fix, the linked list should contain all ants
-      console.log(`Base square has ${baseSquare.numAnts} ants and linked list traversal found ${forwardCount} nodes`);
+      console.log(
+        `Base square has ${baseSquare.numAnts} ants and linked list traversal found ${forwardCount} nodes`,
+      );
       expect(forwardCount).toBe(baseSquare.numAnts);
     });
 
     it('should maintain linked list integrity during ant creation', () => {
       const battle = new Battle(gameSpec, [simpleAnt]);
-      const targetX = 5, targetY = 5;
+      const targetX = 5,
+        targetY = 5;
       const square = battle.mapData(targetX, targetY);
-      
+
       // Clear the square first
       square.numAnts = 0;
       square.firstAnt = undefined;
       square.lastAnt = undefined;
-      
+
       // Create first ant
       const ant1 = battle['createAnt']({
         xPos: targetX,
@@ -1192,18 +1206,18 @@ describe('Battle tests', () => {
         nextTurn: battle.currentTurn + 1,
         brain: { random: battle.rng() },
       });
-      
+
       // Manually add to linked list (simulating what should happen in actual code)
       square.firstAnt = ant1;
       square.lastAnt = ant1;
       square.numAnts = 1;
-      
+
       validateLinkedList(battle, square);
       expect(square.firstAnt).toBe(ant1);
       expect(square.lastAnt).toBe(ant1);
       expect(ant1.mapNext).toBeUndefined();
       expect(ant1.mapPrev).toBeUndefined();
-      
+
       // Create second ant
       const ant2 = battle['createAnt']({
         xPos: targetX,
@@ -1213,7 +1227,7 @@ describe('Battle tests', () => {
         nextTurn: battle.currentTurn + 1,
         brain: { random: battle.rng() },
       });
-      
+
       // Add to linked list
       ant2.mapPrev = square.lastAnt;
       if (square.lastAnt) {
@@ -1221,13 +1235,13 @@ describe('Battle tests', () => {
       }
       square.lastAnt = ant2;
       square.numAnts = 2;
-      
+
       validateLinkedList(battle, square);
       expect(square.firstAnt).toBe(ant1);
       expect(square.lastAnt).toBe(ant2);
       expect(ant1.mapNext).toBe(ant2);
       expect(ant2.mapPrev).toBe(ant1);
-      
+
       // Create third ant
       const ant3 = battle['createAnt']({
         xPos: targetX,
@@ -1237,7 +1251,7 @@ describe('Battle tests', () => {
         nextTurn: battle.currentTurn + 1,
         brain: { random: battle.rng() },
       });
-      
+
       // Add to linked list
       ant3.mapPrev = square.lastAnt;
       if (square.lastAnt) {
@@ -1245,7 +1259,7 @@ describe('Battle tests', () => {
       }
       square.lastAnt = ant3;
       square.numAnts = 3;
-      
+
       validateLinkedList(battle, square);
       expect(square.firstAnt).toBe(ant1);
       expect(square.lastAnt).toBe(ant3);
@@ -1253,9 +1267,10 @@ describe('Battle tests', () => {
 
     it('should maintain linked list integrity when killing ants', () => {
       const battle = new Battle(gameSpec, [simpleAnt]);
-      const targetX = 10, targetY = 10;
+      const targetX = 10,
+        targetY = 10;
       const square = battle.mapData(targetX, targetY);
-      
+
       // Create multiple ants on the same square
       const ants: AntData[] = [];
       for (let i = 0; i < 5; i++) {
@@ -1268,7 +1283,7 @@ describe('Battle tests', () => {
           brain: { random: battle.rng() },
         });
         ants.push(ant);
-        
+
         // Add to linked list
         if (!square.firstAnt) {
           square.firstAnt = ant;
@@ -1280,13 +1295,13 @@ describe('Battle tests', () => {
         square.lastAnt = ant;
       }
       square.numAnts = 5;
-      
+
       validateLinkedList(battle, square);
-      
+
       // Kill middle ant (index 2)
       const middleAnt = ants[2];
       battle['killAnt'](middleAnt);
-      
+
       // Remove from linked list manually (simulating what should happen in actual code)
       if (middleAnt.mapPrev) {
         middleAnt.mapPrev.mapNext = middleAnt.mapNext;
@@ -1299,14 +1314,14 @@ describe('Battle tests', () => {
         square.lastAnt = middleAnt.mapPrev;
       }
       square.numAnts--;
-      
+
       validateLinkedList(battle, square);
       expect(middleAnt.alive).toBe(false);
-      
+
       // Kill first ant
       const firstAnt = ants[0];
       battle['killAnt'](firstAnt);
-      
+
       // Remove from linked list
       square.firstAnt = firstAnt.mapNext;
       if (square.firstAnt) {
@@ -1315,13 +1330,13 @@ describe('Battle tests', () => {
         square.lastAnt = undefined;
       }
       square.numAnts--;
-      
+
       validateLinkedList(battle, square);
-      
+
       // Kill last ant
       const lastAnt = ants[4];
       battle['killAnt'](lastAnt);
-      
+
       // Remove from linked list
       square.lastAnt = lastAnt.mapPrev;
       if (square.lastAnt) {
@@ -1330,26 +1345,27 @@ describe('Battle tests', () => {
         square.firstAnt = undefined;
       }
       square.numAnts--;
-      
+
       validateLinkedList(battle, square);
-      
+
       // Verify only 2 ants remain alive on the square
-      const livingAnts = battle.ants.filter(ant => 
-        ant.alive && ant.xPos === targetX && ant.yPos === targetY
+      const livingAnts = battle.ants.filter(
+        (ant) => ant.alive && ant.xPos === targetX && ant.yPos === targetY,
       );
       expect(livingAnts).toHaveLength(2);
     });
 
     it('should properly maintain linked lists during combat', () => {
       const battle = new Battle(gameSpec, [simpleAnt, aggressiveAnt]);
-      const targetX = 15, targetY = 15;
+      const targetX = 15,
+        targetY = 15;
       const targetSquare = battle.mapData(targetX, targetY);
-      
+
       // Clear the square
       targetSquare.numAnts = 0;
       targetSquare.firstAnt = undefined;
       targetSquare.lastAnt = undefined;
-      
+
       // Create enemy ants on target square
       const enemyAnts: AntData[] = [];
       for (let i = 0; i < 4; i++) {
@@ -1366,31 +1382,31 @@ describe('Battle tests', () => {
       }
       targetSquare.numAnts = 4;
       targetSquare.team = 2;
-      
+
       validateLinkedList(battle, targetSquare);
-      
+
       // Get an attacking ant
-      const attackingAnt = battle.ants.find(ant => ant.team === 1)!;
+      const attackingAnt = battle.ants.find((ant) => ant.team === 1)!;
       attackingAnt.xPos = targetX - 1;
       attackingAnt.yPos = targetY;
-      
+
       // Perform combat by moving into enemy square
       battle.doAction(attackingAnt, 1); // Move right into enemy square
-      
+
       // Verify enemy ants are dead
       for (const enemyAnt of enemyAnts) {
         expect(enemyAnt.alive).toBe(false);
       }
-      
+
       // With proper linked list maintenance, dead ants are removed from linked list
       validateLinkedList(battle, targetSquare);
-      
+
       // Only the attacking ant should remain in the linked list
       expect(targetSquare.firstAnt).toBe(attackingAnt);
       expect(targetSquare.lastAnt).toBe(attackingAnt);
       expect(attackingAnt.mapNext).toBeUndefined();
       expect(attackingAnt.mapPrev).toBeUndefined();
-      
+
       // The square counters are properly updated
       expect(targetSquare.numAnts).toBe(1); // Only attacking ant counted
       expect(targetSquare.team).toBe(1); // Captured by attacking team
@@ -1398,11 +1414,13 @@ describe('Battle tests', () => {
 
     it('should maintain linked list integrity during ant movement', () => {
       const battle = new Battle(gameSpec, [simpleAnt]);
-      const sourceX = 20, sourceY = 20;
-      const destX = 21, destY = 20;
+      const sourceX = 20,
+        sourceY = 20;
+      const destX = 21,
+        destY = 20;
       const sourceSquare = battle.mapData(sourceX, sourceY);
       const destSquare = battle.mapData(destX, destY);
-      
+
       // Clear both squares
       sourceSquare.numAnts = 0;
       sourceSquare.firstAnt = undefined;
@@ -1410,7 +1428,7 @@ describe('Battle tests', () => {
       destSquare.numAnts = 0;
       destSquare.firstAnt = undefined;
       destSquare.lastAnt = undefined;
-      
+
       // Create ants on source square
       const ants: AntData[] = [];
       for (let i = 0; i < 3; i++) {
@@ -1423,7 +1441,7 @@ describe('Battle tests', () => {
           brain: { random: battle.rng() },
         });
         ants.push(ant);
-        
+
         // Add to source square linked list
         if (!sourceSquare.firstAnt) {
           sourceSquare.firstAnt = ant;
@@ -1435,13 +1453,13 @@ describe('Battle tests', () => {
         sourceSquare.lastAnt = ant;
       }
       sourceSquare.numAnts = 3;
-      
+
       validateLinkedList(battle, sourceSquare);
       validateLinkedList(battle, destSquare);
-      
+
       // Move middle ant to destination
       const movingAnt = ants[1];
-      
+
       // Remove from source linked list
       if (movingAnt.mapPrev) {
         movingAnt.mapPrev.mapNext = movingAnt.mapNext;
@@ -1454,11 +1472,11 @@ describe('Battle tests', () => {
         sourceSquare.lastAnt = movingAnt.mapPrev;
       }
       sourceSquare.numAnts--;
-      
+
       // Move ant position
       movingAnt.xPos = destX;
       movingAnt.yPos = destY;
-      
+
       // Add to destination linked list
       movingAnt.mapPrev = destSquare.lastAnt;
       movingAnt.mapNext = undefined;
@@ -1469,10 +1487,10 @@ describe('Battle tests', () => {
       }
       destSquare.lastAnt = movingAnt;
       destSquare.numAnts = 1;
-      
+
       validateLinkedList(battle, sourceSquare);
       validateLinkedList(battle, destSquare);
-      
+
       // Verify correct number of ants on each square
       expect(sourceSquare.numAnts).toBe(2);
       expect(destSquare.numAnts).toBe(1);
@@ -1482,12 +1500,12 @@ describe('Battle tests', () => {
 
     it('should verify ant recycling system works correctly', () => {
       const battle = new Battle(gameSpec, [simpleAnt]);
-      
+
       // Check initial state - the battle starts with some dead indices from initialization
       const initialAntCount = battle.ants.length;
       const initialDeadIndices = battle['deadAntIndices'].length;
       console.log(`Initial state: ${initialAntCount} ants, ${initialDeadIndices} dead indices`);
-      
+
       // Create and kill some ants to populate the dead ant indices pool
       const antsToKill: AntData[] = [];
       for (let i = 0; i < 3; i++) {
@@ -1502,13 +1520,13 @@ describe('Battle tests', () => {
         antsToKill.push(ant);
         battle['killAnt'](ant);
       }
-      
+
       console.log(`After killing 3 ants: ${battle['deadAntIndices'].length} dead indices`);
-      
+
       // Verify dead ants are in recycling pool (demonstrates current system behavior)
       expect(battle['deadAntIndices'].length).toBeGreaterThan(initialDeadIndices);
       // Note: The array length shows the system has bugs - it should be +3 but isn't
-      
+
       // Create new ants - these should recycle the dead indices
       const recycledAnts: AntData[] = [];
       for (let i = 0; i < 2; i++) {
@@ -1522,18 +1540,18 @@ describe('Battle tests', () => {
         });
         recycledAnts.push(ant);
       }
-      
+
       console.log(`After creating 2 new ants: ${battle['deadAntIndices'].length} dead indices`);
-      
+
       // Verify recycling behavior (demonstrates current system state)
       expect(recycledAnts[0].alive).toBe(true);
       expect(recycledAnts[1].alive).toBe(true);
-      
+
       // The current system does recycle indices, but has issues with the recycling pool management
       // This test documents the current behavior rather than enforcing ideal behavior
-      console.log(`Recycled ant indices: ${recycledAnts.map(a => a.index)}`);
-      console.log(`Killed ant indices: ${antsToKill.map(a => a.index)}`);
-      
+      console.log(`Recycled ant indices: ${recycledAnts.map((a) => a.index)}`);
+      console.log(`Killed ant indices: ${antsToKill.map((a) => a.index)}`);
+
       // Verify that the recycling system is at least partially working
       expect(battle['deadAntIndices'].length).toBeGreaterThanOrEqual(0);
     });
@@ -1544,69 +1562,69 @@ describe('Battle tests', () => {
       // Create an ant that reads and modifies its brain
       const brainTestAnt = ((map?: SquareData[], antInfo?: AntInfo) => {
         if (!map || !antInfo) {
-          return { 
-            name: 'BrainTestAnt', 
-            color: '#FF0000', 
-            brainTemplate: { 
-              counter: 5
-            } 
+          return {
+            name: 'BrainTestAnt',
+            color: '#FF0000',
+            brainTemplate: {
+              counter: 5,
+            },
           };
         }
-        
+
         // Simple test: just modify the brain
         antInfo.brains[0].counter = (antInfo.brains[0].counter || 0) + 1;
-        
+
         return 0; // Stay in place
       }) as AntFunction;
 
       // Create gameSpec with only 1 starting ant
       const singleAntGameSpec = {
         ...gameSpec,
-        startAnts: [1, 1] as [number, number]
+        startAnts: [1, 1] as [number, number],
       };
       const battle = new Battle(singleAntGameSpec, [brainTestAnt]);
       const ant = battle.ants[0];
-      
+
       // Check initial state
       expect(ant.brain.counter).toBe(5);
-      
+
       // Run the ant once
       battle.runAnt(ant);
-      
+
       // Check if brain was updated
       expect(ant.brain.counter).toBe(6);
     });
 
     it('should provide brain data for multiple ants on same square', () => {
       let capturedAntInfo: AntInfo | null = null;
-      
+
       const multiAntTestAnt = ((map?: SquareData[], antInfo?: AntInfo) => {
         if (!map || !antInfo) {
-          return { 
-            name: 'MultiAntTestAnt', 
-            color: '#00FF00', 
-            brainTemplate: { 
+          return {
+            name: 'MultiAntTestAnt',
+            color: '#00FF00',
+            brainTemplate: {
               id: 0,
-              message: 'hello'
-            } 
+              message: 'hello',
+            },
           };
         }
-        
+
         capturedAntInfo = {
-          brains: antInfo.brains.map(brain => ({ ...brain }))
+          brains: antInfo.brains.map((brain) => ({ ...brain })),
         };
-        
+
         return 0; // Stay in place
       }) as AntFunction;
 
       const battle = new Battle(gameSpec, [multiAntTestAnt]);
-      
+
       // Create multiple ants on the same square
-      const baseSquare = battle.map.find(s => s.base)!;
+      const baseSquare = battle.map.find((s) => s.base)!;
       const baseIndex = battle.map.indexOf(baseSquare);
       const baseX = baseIndex % battle.args.mapWidth;
       const baseY = Math.floor(baseIndex / battle.args.mapWidth);
-      
+
       // Add 2 more ants to the base square
       for (let i = 0; i < 2; i++) {
         const newAnt = battle['createAnt']({
@@ -1615,10 +1633,10 @@ describe('Battle tests', () => {
           team: 1,
           age: 0,
           nextTurn: battle.currentTurn + 1,
-          brain: { 
-            ...structuredClone(battle.teams[0].brainTemplate), 
+          brain: {
+            ...structuredClone(battle.teams[0].brainTemplate),
             random: battle.rng(),
-            id: i + 10 // Unique identifier
+            id: i + 10, // Unique identifier
           },
         });
         battle['addAntToSquareList'](newAnt, baseSquare);
@@ -1626,18 +1644,18 @@ describe('Battle tests', () => {
         battle.numAnts++;
         battle.teams[0].numAnts++;
       }
-      
+
       // Run one of the ants
       const testAnt = battle.ants[0];
       battle.runAnt(testAnt);
-      
+
       // Verify we received brain data for all ants on the square
       expect(capturedAntInfo).toBeDefined();
       expect(capturedAntInfo!.brains.length).toBeGreaterThan(1);
-      
+
       // Verify calling ant's brain is first
       expect(capturedAntInfo!.brains[0]).toEqual(testAnt.brain);
-      
+
       // Verify all brains have expected structure
       for (const brain of capturedAntInfo!.brains) {
         expect(brain.random).toBeDefined();
@@ -1648,22 +1666,22 @@ describe('Battle tests', () => {
     it('should properly initialize brain data from brain template during ant creation', () => {
       const templateTestAnt = ((map?: SquareData[], antInfo?: AntInfo) => {
         if (!map || !antInfo) {
-          return { 
-            name: 'TemplateTestAnt', 
-            color: '#0000FF', 
-            brainTemplate: { 
+          return {
+            name: 'TemplateTestAnt',
+            color: '#0000FF',
+            brainTemplate: {
               phase: 'scout',
               energy: 100,
               discovered: false,
-              coordinates: { x: 0, y: 0 }
-            } 
+              coordinates: { x: 0, y: 0 },
+            },
           };
         }
         return 0;
       }) as AntFunction;
 
       const battle = new Battle(gameSpec, [templateTestAnt]);
-      
+
       // Verify initial ants have proper brain template data
       const ant = battle.ants[0];
       expect(ant.brain.phase).toBe('scout');
@@ -1675,43 +1693,43 @@ describe('Battle tests', () => {
 
     it('should maintain brain data through ant recycling', () => {
       let brainAccessCount = 0;
-      
+
       const recyclingTestAnt = ((map?: SquareData[], antInfo?: AntInfo) => {
         if (!map || !antInfo) {
-          return { 
-            name: 'RecyclingTestAnt', 
-            color: '#FFFF00', 
-            brainTemplate: { 
+          return {
+            name: 'RecyclingTestAnt',
+            color: '#FFFF00',
+            brainTemplate: {
               accessCount: 0,
-              recycled: false
-            } 
+              recycled: false,
+            },
           };
         }
-        
+
         brainAccessCount++;
         antInfo.brains[0].accessCount = (antInfo.brains[0].accessCount || 0) + 1;
-        
+
         return 0;
       }) as AntFunction;
 
       // Create gameSpec with only 1 starting ant to have better control
       const singleAntGameSpec = {
         ...gameSpec,
-        startAnts: [1, 1] as [number, number]
+        startAnts: [1, 1] as [number, number],
       };
       const battle = new Battle(singleAntGameSpec, [recyclingTestAnt]);
-      
+
       // Use the existing ant from initialization instead of manually creating one
       const originalAnt = battle.ants[0];
-      
+
       // Run the ant to verify initial brain access
       battle.runAnt(originalAnt);
       expect(originalAnt.brain.accessCount).toBe(1);
-      
+
       // Kill the ant (adds to dead indices pool)
       battle['killAnt'](originalAnt);
       expect(battle['deadAntIndices']).toContain(originalAnt.index);
-      
+
       // Create a new ant (should recycle the index)
       const recycledAnt = battle['createAnt']({
         xPos: 15,
@@ -1719,29 +1737,29 @@ describe('Battle tests', () => {
         team: 1,
         age: 0,
         nextTurn: battle.currentTurn, // Should be able to act immediately for this test
-        brain: { 
-          ...structuredClone(battle.teams[0].brainTemplate), 
+        brain: {
+          ...structuredClone(battle.teams[0].brainTemplate),
           random: battle.rng(),
-          recycled: true 
+          recycled: true,
         },
       });
-      
+
       // Add the recycled ant to the square's linked list so it can be found by runAnt
       const square = battle['mapData'](recycledAnt.xPos, recycledAnt.yPos);
       battle['addAntToSquareList'](recycledAnt, square);
       square.numAnts++;
       battle.numAnts++;
-      
+
       // Verify recycling worked
       expect(recycledAnt.index).toBe(originalAnt.index);
       expect(recycledAnt.alive).toBe(true);
       expect(originalAnt.alive).toBe(false);
-      
+
       // Run recycled ant and verify it has fresh brain data
       battle.runAnt(recycledAnt);
       expect(recycledAnt.brain.accessCount).toBe(1); // Fresh start, not 2
       expect(recycledAnt.brain.recycled).toBe(true);
-      
+
       // Verify brain access count increased properly
       expect(brainAccessCount).toBe(2); // Once for original, once for recycled
     });

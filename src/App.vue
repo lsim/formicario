@@ -4,17 +4,17 @@ import { RouterView } from 'vue-router';
 
 <template>
   <div id="root" class="article">
-    <div class="ui masthead vertical segment">
-      <div class="ui container">
-        <h1 class="ui header">Myrekrig</h1>
+    <section class="hero">
+      <div class="hero-body">
+        <p class="title">Ant Wars!</p>
       </div>
+    </section>
 
-      <!--      <div class="wrapper">-->
-      <!--        <nav>-->
-      <!--          <RouterLink to="/">Home</RouterLink>-->
-      <!--        </nav>-->
-      <!--      </div>-->
-    </div>
+    <!--      <div class="wrapper">-->
+    <!--        <nav>-->
+    <!--          <RouterLink to="/">Home</RouterLink>-->
+    <!--        </nav>-->
+    <!--      </div>-->
 
     <div class="ui main container">
       <RouterView />
@@ -22,17 +22,7 @@ import { RouterView } from 'vue-router';
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 #root {
-  header {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-  }
-
-  main {
-    margin-top: 2rem;
-    width: 100%;
-  }
 }
 </style>
