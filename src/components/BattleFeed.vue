@@ -1,12 +1,49 @@
 <script setup lang="ts">
 import type { BattleStatus, SquareStatus, TeamStatus } from '@/GameSummary.ts';
-import { computed, useTemplateRef, watch } from 'vue';
+import { computed, ref, useTemplateRef, watch } from 'vue';
 import { normal } from 'color-blend';
+import AntMagnifier from '@/components/AntMagnifier.vue';
+import { useMagicKeys, useMouseInElement } from '@vueuse/core';
 
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
+const canvasDefaultZoom = ref(2);
 
 const backBuffer = document.createElement('canvas');
 const backBufferCtx = backBuffer.getContext('2d') as CanvasRenderingContext2D;
+
+// Magnifier stuff
+const { ctrl, meta } = useMagicKeys();
+const { elementX: magnifierX, elementY: magnifierY, isOutside } = useMouseInElement(canvas);
+const magnifierPinned = ref(false);
+const magnifierActive = computed(() => (ctrl.value || meta.value) && !isOutside.value);
+const pinnedX = ref(0);
+const pinnedY = ref(0);
+
+const magX = computed(() => {
+  if (magnifierPinned.value) {
+    return pinnedX.value;
+  }
+  return magnifierX.value;
+});
+
+const magY = computed(() => {
+  if (magnifierPinned.value) {
+    return pinnedY.value;
+  }
+  return magnifierY.value;
+});
+
+const magActive = computed(() => magnifierActive.value || magnifierPinned.value);
+
+watch(
+  () => magnifierPinned.value,
+  (newVal) => {
+    if (newVal) {
+      pinnedX.value = magnifierX.value;
+      pinnedY.value = magnifierY.value;
+    }
+  },
+);
 
 const props = defineProps<{
   battle: BattleStatus;
@@ -40,7 +77,7 @@ function getEmptySquareColor(s: SquareStatus, teamCol: number[]) {
 function getAntSquareColor(s: SquareStatus, teamCol: number[]) {
   if (s.numAnts > 0) {
     // Full brightness when there is food as well as ants else slightly dimmed
-    return s.numFood > 0 ? teamCol : mixColors([0, 0, 0], teamCol, 0.8);
+    return s.numFood > 0 ? teamCol : mixColors([0, 0, 0], teamCol, 0.6);
   }
 }
 
@@ -62,16 +99,6 @@ function getBaseSquareColor(s: SquareStatus, teamCol: number[]) {
     return mixColors([255, 255, 255], teamCol, 0.8);
   }
 }
-
-// color1Weight is in [0,1] and color2Weight is 1 - color1Weight
-// The components of the result is scaled back into [0,255]
-// function mixColors_homebrew(color1: number[], color2: number[], color1Weight: number) {
-//   const r = Math.floor(color1[0] * color1Weight + color2[0] * (1 - color1Weight));
-//   const g = Math.floor(color1[1] * color1Weight + color2[1] * (1 - color1Weight));
-//   const b = Math.floor(color1[2] * color1Weight + color2[2] * (1 - color1Weight));
-//   const scaler = Math.max(r, g, b) / 255;
-//   return [Math.floor(r / scaler), Math.floor(g / scaler), Math.floor(b / scaler)];
-// }
 
 // Color1 is the background color, color2 is the foreground color
 function mixColors(color1: number[], color2: number[], foregroundAlpha: number) {
@@ -114,13 +141,6 @@ watch(
       return;
     }
     const battle = newVal as BattleStatus;
-    // console.log(
-    //   'Received battle data',
-    //   battle.deltaSquares.length,
-    //   lastReceivedTurn,
-    //   battle.turns,
-    //   lastRenderedTurn,
-    // );
     lastReceivedTurn = battle.turns;
     if (!teamColors) {
       // First status from new battle
@@ -168,14 +188,48 @@ function ensureRendering() {
 
 <template>
   <div class="battle-feed">
-    <canvas ref="canvas" :width="props.battle.args.mapWidth" :height="props.battle.args.mapHeight">
+    <canvas
+      ref="canvas"
+      :width="props.battle.args.mapWidth"
+      :height="props.battle.args.mapHeight"
+      :style="{ zoom: canvasDefaultZoom }"
+      @click.exact="magnifierPinned = false"
+      @click.ctrl.exact="magnifierPinned = true"
+      @click.meta.exact="magnifierPinned = true"
+      title="[Ctrl] or [Cmd] for magnifier, click to pin"
+    >
     </canvas>
+    <ant-magnifier
+      v-if="magActive"
+      class="magnifier"
+      :back-buffer="backBuffer"
+      :zoom-level="5"
+      :center-x="magX / canvasDefaultZoom"
+      :center-y="magY / canvasDefaultZoom"
+      :style="{ left: `${magX}px`, top: `${magY}px` }"
+    />
   </div>
 </template>
 
 <style scoped lang="scss">
+.battle-feed {
+  position: relative;
+  width: auto;
+  height: auto;
+}
 canvas {
   background-color: black;
-  zoom: 2;
+}
+
+.magnifier {
+  position: absolute;
+  pointer-events: none;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  width: auto;
+  height: auto;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 0 1rem rgba(white, 0.5));
 }
 </style>

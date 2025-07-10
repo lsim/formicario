@@ -14,7 +14,7 @@ export const prohibitedGlobalNames = [
   'setInterval',
   'clearTimeout',
   'clearInterval',
-  'console',
+  // 'console',
   'alert',
   'prompt',
   'confirm',
@@ -25,6 +25,10 @@ const allowedGlobalNames = ['name'];
 export const shadowedGlobals = Object.keys(self)
   .concat(prohibitedGlobalNames)
   .filter((prop) => !allowedGlobalNames.includes(prop));
+
+function log(...args: unknown[]) {
+  console.log('Ant says', ...args);
+}
 
 function buildScope(allowedGlobals: Record<string, unknown> = {}) {
   const scope: Record<string, unknown> = {};
@@ -43,6 +47,7 @@ function buildScope(allowedGlobals: Record<string, unknown> = {}) {
   scope.RegExp = RegExp;
   scope.Error = Error;
   scope.Symbol = Symbol;
+  scope.console = { log };
 
   return { ...scope, ...allowedGlobals };
 }

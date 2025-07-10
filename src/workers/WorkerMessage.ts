@@ -1,5 +1,6 @@
 import type { GameSpec } from '@/GameSpec.ts';
 import type { BattleStatus, GameSummary } from '@/GameSummary.ts';
+import type { AntData } from '@/Battle.ts';
 
 export type WorkerMessageType =
   | 'run-game'
@@ -9,6 +10,8 @@ export type WorkerMessageType =
   | 'pause-game'
   | 'resume-game'
   | 'step-game'
+  | 'debug-request'
+  | 'debug-reply'
   | 'ok';
 
 declare type TypedMessage = {
@@ -48,6 +51,15 @@ export interface BattleStatusMessage extends TypedMessage {
   status: BattleStatus;
 }
 
+export interface DebugRequestMessage extends TypedMessage {
+  type: 'debug-request';
+}
+
+export interface DebugReplyMessage extends TypedMessage {
+  type: 'debug-reply';
+  ants: AntData[];
+}
+
 export interface OkReply extends TypedMessage {
   type: 'ok';
 }
@@ -60,6 +72,8 @@ declare type CommandMap = {
   PauseGameCommand: PauseGameCommand;
   ResumeGameCommand: ResumeGameCommand;
   StepGameCommand: StepGameCommand;
+  DebugRequestMessage: DebugRequestMessage;
+  DebugReplyMessage: DebugReplyMessage;
   OkReply: OkReply;
 };
 

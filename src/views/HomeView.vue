@@ -7,6 +7,8 @@ import type { GameSpec } from '@/GameSpec.ts';
 import BattleArgs from '@/components/BattleArgs.vue';
 import TeamBattleStats from '@/components/TeamBattleStats.vue';
 import GameSetup from '@/components/GameSetup.vue';
+import type { AntData } from '@/Battle.ts';
+import AntDebugger from '@/components/AntDebugger.vue';
 
 const worker = new Worker();
 
@@ -17,6 +19,8 @@ worker.onmessage = (e) => {
   } else if (e.data.type === 'game-summary') {
     gameRunning.value = false;
     gameSummary.value = e.data.results;
+  } else if (e.data.type === 'debug-reply') {
+    lastDebugAnts.value = e.data.ants;
   } else {
     console.log('Worker sent unhandled message', e.data);
   }
@@ -24,9 +28,10 @@ worker.onmessage = (e) => {
 
 const battleStatus = ref<BattleStatus>();
 const gameSummary = ref<GameSummary>();
+const lastDebugAnts = ref<AntData[]>([]);
 
-const seed = ref(42);
 const selectedTeamCodes = ref<string[]>([]);
+const seed = ref(42);
 const statusInterval = ref(20);
 
 const gameSpec: Partial<GameSpec> = {
@@ -67,6 +72,7 @@ async function stopGame() {
   battleStatus.value = undefined;
   gameRunning.value = false;
   gamePaused.value = false;
+  lastDebugAnts.value = [];
   worker.postMessage({
     type: 'stop-game',
   });
@@ -97,6 +103,13 @@ async function stepGame(stepSize: number) {
     });
   }
 }
+
+function getDebugAnts() {
+  lastDebugAnts.value = [];
+  worker.postMessage({
+    type: 'debug-request',
+  });
+}
 </script>
 
 <template>
@@ -105,22 +118,30 @@ async function stepGame(stepSize: number) {
       <game-setup
         :is-running="gameRunning"
         :is-paused="gamePaused"
+        :selected-teams="selectedTeamCodes.length"
         @start-game="startGame"
         @stop-game="stopGame"
         @pause-game="pauseGame"
         @resume-game="resumeGame"
         @step-game="stepGame"
         @update:teams="selectedTeamCodes = $event.map((t) => t.code)"
+        v-model:status-interval="statusInterval"
+        v-model:seed="seed"
       />
-      <label>Status interval <input type="number" v-model="statusInterval" /></label>
-      <label>Seed <input type="number" v-model="seed" /></label>
     </div>
     <div class="column">
-      <Transition name="battle-feed">
-        <div class="box" v-if="battleStatus">
-          <battle-feed class="battle-feed" :battle="battleStatus" />
-        </div>
-      </Transition>
+      <div class="box">
+        <Transition name="battle-feed">
+          <battle-feed v-if="battleStatus" class="control battle-feed" :battle="battleStatus" />
+        </Transition>
+        <ant-debugger
+          class="control ant-debugger"
+          v-if="gamePaused"
+          :ants="lastDebugAnts"
+          @debug="getDebugAnts"
+          @clear="lastDebugAnts = []"
+        />
+      </div>
       <team-battle-stats
         class="team-stats"
         v-if="battleStatus"

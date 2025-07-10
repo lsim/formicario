@@ -72,6 +72,7 @@ export class Game {
 
   public async resume() {
     if (!this.activeBattle) return;
+    this.activeBattle.paused = false;
     const battleSummary = await this.activeBattle.run();
     if (battleSummary) {
       this.activeBattle = null;

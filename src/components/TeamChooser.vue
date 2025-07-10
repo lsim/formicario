@@ -37,12 +37,10 @@ watch(
 </script>
 
 <template>
-  <div class="field is-horizontal">
-    <div class="field-label">
+  <div class="field">
+    <div class="control">
       <label class="label">Choose your teams</label>
-    </div>
-    <div class="field-body">
-      <div class="box">
+      <div class="box control">
         <div class="all-teams grid">
           <button
             v-for="(code, name) in codeByName"
@@ -59,8 +57,8 @@ watch(
         </div>
       </div>
       <Transition name="selected-box">
-        <div class="box" v-if="selectedTeams.length > 0">
-          <div class="selected-teams grid" style="max-width: 15em">
+        <div class="box control" v-if="selectedTeams.length > 0">
+          <div class="selected-teams grid">
             <TransitionGroup name="selected-teams">
               <button
                 v-for="name in selectedTeams"
@@ -112,8 +110,6 @@ watch(
 
 .grid {
   button {
-    width: 10em;
-
     &.selected-teams-enter-active,
     &.selected-teams-leave-active {
       transition: all 0.2s ease;

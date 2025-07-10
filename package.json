@@ -15,6 +15,7 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@vueuse/core": "^13.5.0",
     "color-blend": "^4.0.0",
     "espree": "^10.4.0",
     "estree-walker": "^3.0.3",

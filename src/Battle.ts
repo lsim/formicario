@@ -689,22 +689,6 @@ export class Battle {
     return antsOnSquare;
   }
 
-  private getActiveAntsOnSquare(x: number, y: number): AntData[] {
-    // Use linked list for efficient traversal of ants that should act this turn
-    const square = this.mapData(x, y);
-    const antsOnSquare: AntData[] = [];
-
-    let current = square.firstAnt;
-    while (current) {
-      if (current.alive && current.nextTurn <= this.currentTurn) {
-        antsOnSquare.push(current);
-      }
-      current = current.mapNext;
-    }
-
-    return antsOnSquare;
-  }
-
   doAction(ant: AntData, action: number) {
     const direction = action & ACTION_DIRECTION_MASK;
     const carryFood = (action & ACTION_CARRY_FOOD_FLAG) !== 0;
@@ -1002,5 +986,9 @@ export class Battle {
     }
 
     return false;
+  }
+
+  public getAntsForDebug(): AntData[] {
+    return this.ants.filter((a) => a.alive).map((ant) => structuredClone(ant));
   }
 }

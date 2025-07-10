@@ -33,6 +33,9 @@ onmessage = async (e) => {
     } else if (command?.type === 'step-game') {
       activeGame?.step(command.stepSize);
       postMessage({ type: 'ok' });
+    } else if (command?.type === 'debug-request') {
+      const ants = activeGame?.activeBattle?.getAntsForDebug();
+      postMessage({ type: 'debug-reply', ants });
     } else {
       console.error('Unknown command', command);
       postMessage({ type: 'error', error: 'Unknown command' });
