@@ -64,7 +64,7 @@ function infAnt(squareData, antInfo) {
 
   // Helper function to generate random numbers
   function getRand(brain) {
-    brain.random = (brain.random * 245 + 123) & 127;
+    brain.random = ((brain.random * 245 + 123) >>> 0) & 127;
     return (brain.random * 4213 + 421) & 255;
   }
 

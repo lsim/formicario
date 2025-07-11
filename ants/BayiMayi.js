@@ -230,7 +230,7 @@ function BayiMayi(squareData, antInfo) {
 
     // Exploration behavior
     if (myBrain.repXLS < 127) {
-      const pitch = !B1r(seed, floor(myBrain.repXLS / 19) + 2);
+      const pitch = !B1r(seed, floor((myBrain.repXLS / 19) | 0) + 2);
       if (pitch) myBrain.repXLS++;
     } else {
       myBrain.repXLS = BD - 5;

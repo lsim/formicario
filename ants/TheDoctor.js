@@ -47,7 +47,7 @@ function TheDoctor(squareData, antInfo) {
   // Custom random number generator (avoiding Math.floor and Math.random)
   function docGetRand(brain) {
     // Equivalent to DocGetRand from C code
-    brain.random = (brain.random * 1103515245 + 12345) & 0xFFFFFFFF;
+    brain.random = (brain.random * 1103515245 + 12345) >>> 0;
     return (brain.random >> 16) & 0xFFFF;
   }
 

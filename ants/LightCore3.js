@@ -172,8 +172,8 @@ function LightCore3(squareData, antInfo) {
           const ax = abs(x);
           const ay = abs(y);
           if (ax + ay > 0) {
-            myBrain.xrange += floor(ax * (ax * 100 - myBrain.xrange) / (ax + ay) * LCRangeAdapt / 100);
-            myBrain.yrange += floor(ay * (ay * 100 - myBrain.yrange) / (ax + ay) * LCRangeAdapt / 100);
+            myBrain.xrange += ((ax * (ax * 100 - myBrain.xrange) / (ax + ay) * LCRangeAdapt / 100) | 0);
+            myBrain.yrange += ((ay * (ay * 100 - myBrain.yrange) / (ax + ay) * LCRangeAdapt / 100) | 0);
           }
           break;
       }
@@ -219,7 +219,7 @@ function LightCore3(squareData, antInfo) {
               x = nx;
               y = ny;
             }
-            routetemp >>= 1;
+            routetemp = (routetemp >> 1) | 0;
           }
           
           x = floor(x * (floor(myBrain.xrange * (100 + LCMarginPercent) / 10000) + LCMarginExtra) / 0x8000);

@@ -37,7 +37,7 @@ function Caesar(squareData, antInfo) {
       let r = 0x100; // 8 loops
       let t = 0;
       while (r > 0) {
-        const tmp = t | (r >>= 1);
+        const tmp = t | ((r >>= 1) | 0);
         if (tmp * tmp <= n) t = tmp;
       }
       return t;
@@ -45,7 +45,7 @@ function Caesar(squareData, antInfo) {
       let r = 0x10000; // 16 loops  
       let t = 0;
       while (r > 0) {
-        const tmp = t | (r >>= 1);
+        const tmp = t | ((r >>= 1) | 0);
         if (tmp * tmp <= n) t = tmp;
       }
       return t;
@@ -167,7 +167,7 @@ function Caesar(squareData, antInfo) {
             myBrain.xtarget = myBrain.xPos;
             myBrain.ytarget = myBrain.yPos;
             myBrain.state = RETURN_FOOD;
-            myBrain.food = (squareData[0].numFood - returningAnts) / 2;
+            myBrain.food = ((squareData[0].numFood - returningAnts) / 2) | 0;
           }
         } else {
           if (myBrain.xPos === myBrain.xtarget && myBrain.yPos === myBrain.ytarget) {
@@ -188,8 +188,8 @@ function Caesar(squareData, antInfo) {
               }
               
               const radius = sqrt(myBrain.xPos * myBrain.xPos + myBrain.yPos * myBrain.yPos);
-              x = (x * 10 * (radius + 20)) / (14 * radius);
-              y = (y * 10 * (radius + 20)) / (14 * radius);
+              x = ((x * 10 * (radius + 20)) / (14 * radius)) | 0;
+              y = ((y * 10 * (radius + 20)) / (14 * radius)) | 0;
               myBrain.xtarget = x;
               myBrain.ytarget = y;
               myBrain.dir = randomInt(myBrain, 0, 1);
@@ -334,9 +334,9 @@ function Caesar(squareData, antInfo) {
               const maxPatrol = (myBrain.patrolDistance * 2) / 3;
               const range = maxPatrol < 30 ? 30 : maxPatrol;
               
-              antInfo.brains[i].xtarget = ((myBrain.count >> 3) % range) * 3 + 3;
+              antInfo.brains[i].xtarget = (((myBrain.count >> 3) | 0) % range) * 3 + 3;
               antInfo.brains[i].dir = myBrain.count & 1;
-              antInfo.brains[i].food = ((myBrain.count & 6) >> 1) + 1;
+              antInfo.brains[i].food = (((myBrain.count & 6) >> 1) | 0) + 1;
               antInfo.brains[i].ytarget = 0;
               antInfo.brains[i].state = PATROL;
               

@@ -16,7 +16,7 @@ function FormAnt(squareData, antInfo) {
   // Helper function for random number generation (avoiding Math API)
   function random(max, seed) {
     seed.r = (seed.r * 89423309 + 89449237) & 0xFFFFFFFF;
-    return ((seed.r << 13) + (seed.r >> 19)) % max;
+    return (((seed.r << 13) + (seed.r >> 19)) | 0) % max;
   }
 
   function abs(x) {
