@@ -78,19 +78,19 @@ function adamAnt(squares, antInfo) {
 
   if (squares[0].base) {
     brain.guardTurns = 0;
-    const maxDist = 100 + chief.turn / 100;
+    const maxDist = 95 + chief.turn / 85;
     if (!brain.patternSeed) {
       // (Re)initialize ant
       chief.otherRandom += 3;
       // Early bird?
       if (chief.otherRandom < 400)
-        brain.patternSeed = floor(chief.otherRandom % floor(((maxDist * 3) / 4) | 0));
+        brain.patternSeed = floor(chief.otherRandom % floor(((maxDist * 4) / 5) | 0));
       // Custodian of the inner sanctum?
-      else if (brain.random % 40 === 0)
-        brain.patternSeed = floor(chief.otherRandom % floor(((maxDist * 3) / 4) | 0));
+      else if (brain.random % 35 === 0)
+        brain.patternSeed = floor(chief.otherRandom % floor(((maxDist * 4) / 5) | 0));
       // Defender of the rim?
       else {
-        brain.patternSeed = ((chief.otherRandom % (maxDist / 4) | 0) + (maxDist * 3) / 4) | 0;
+        brain.patternSeed = ((chief.otherRandom % (maxDist / 5) | 0) + (maxDist * 4) / 5) | 0;
       }
 
       // const action = maybeSettle(maxDist);
@@ -124,6 +124,34 @@ function adamAnt(squares, antInfo) {
     return move(dir + 8);
   }
 
+  // Check neighboring squares for food/enemies
+  for (let i = 1; i < 5; i++) {
+    // Stomp thine enemy
+    if (squares[i].team > 0) {
+      brain.guardTurns = 400;
+      return dragFood(i);
+    }
+    // Stomp thine food
+    if (
+      brain.guardTurns === 0 &&
+      squares[0].numFood === 0 &&
+      squares[i].numFood > squares[i].numAnts
+    ) {
+      const action = move(i); // Updates x,y
+      brain.foodX = brain.x;
+      brain.foodY = brain.y;
+      brain.foundFood = true;
+      // brain.guardTurns = 0; // Run with the food!
+      return action;
+    }
+  }
+
+  if (brain.guardTurns > 0) {
+    // If we have dragged food home successfully, abort the guard duty
+    brain.guardTurns--;
+    return 0;
+  }
+
   // Drag food towards base
   if (squares[0].numFood > 0) {
     // Home away from home?
@@ -137,29 +165,6 @@ function adamAnt(squares, antInfo) {
     return dragFood(stepTowards(0, 0));
   }
 
-  // Check neighboring squares for food/enemies
-  for (let i = 1; i < 5; i++) {
-    // Stomp thine enemy
-    if (squares[i].team > 0) {
-      brain.guardTurns = 400;
-      return dragFood(i);
-    }
-    // Stomp thine food
-    if (squares[0].numFood === 0 && squares[i].numFood > squares[i].numAnts) {
-      const action = move(i); // Updates x,y
-      brain.foodX = brain.x;
-      brain.foodY = brain.y;
-      brain.foundFood = true;
-      // brain.guardTurns = 0; // Run with the food!
-      return action;
-    }
-  }
-
-  if (brain.guardTurns > 0) {
-    // If we have dragged food home successfully, abort the guard duty
-    brain.guardTurns--;
-  }
-
   // Are we at the stash? (there was no food)
   if (
     brain.foodX !== 0 &&
@@ -171,16 +176,16 @@ function adamAnt(squares, antInfo) {
     return move(explore());
   }
 
-  function stepTowards_old(x, y) {
-    const dx = x - brain.x;
-    const dy = y - brain.y;
-    if (dx === 0 && dy === 0) return 0;
-    if (abs(dx) > abs(dy)) {
-      return dx > 0 ? 1 : 3;
-    } else {
-      return dy > 0 ? 2 : 4;
-    }
-  }
+  // function stepTowards_old(x, y) {
+  //   const dx = x - brain.x;
+  //   const dy = y - brain.y;
+  //   if (dx === 0 && dy === 0) return 0;
+  //   if (abs(dx) > abs(dy)) {
+  //     return dx > 0 ? 1 : 3;
+  //   } else {
+  //     return dy > 0 ? 2 : 4;
+  //   }
+  // }
 
   function stepTowards(destX, destY) {
     if (brain.x === destX && brain.y === destY) return 0;
@@ -188,8 +193,11 @@ function adamAnt(squares, antInfo) {
     const dy = abs(brain.y - destY);
     if (dy > dx) {
       return brain.y > destY ? 4 : 2;
-    } else if (brain.x !== destX) {
+    } else if (dx > dy) {
       return brain.x > destX ? 3 : 1;
+    } else {
+      if (brain.turn % 2 === 0) return brain.y > destY ? 4 : 2;
+      else return brain.x > destX ? 3 : 1;
     }
   }
   // Do we have a destination? Then go there
@@ -210,17 +218,17 @@ function adamAnt(squares, antInfo) {
     return move(stepTowards(brain.foodX, brain.foodY));
   }
 
-  function formRank() {
-    // Step 90 degrees relative to base direction
-    if (abs(brain.x) > abs(brain.y)) return brain.y > 0 ? 2 : 4;
-    else if (abs(brain.x) < abs(brain.y)) return brain.x > 0 ? 3 : 1;
-  }
+  // function formRank() {
+  //   // Step 90 degrees relative to base direction
+  //   if (abs(brain.x) > abs(brain.y)) return brain.y > 0 ? 2 : 4;
+  //   else if (abs(brain.x) < abs(brain.y)) return brain.x > 0 ? 3 : 1;
+  // }
 
-  const othersGuarding = otherBrains.filter((b) => b.guardTurns > 0);
-  if (othersGuarding.length > 0) {
-    brain.guardTurns = 300;
-    return move(formRank());
-  }
+  // const othersGuarding = otherBrains.filter((b) => b.guardTurns > 0);
+  // if (othersGuarding.length > 0) {
+  //   brain.guardTurns = 300;
+  //   return move(formRank());
+  // }
 
   function explore() {
     brain.foundFood = false;
