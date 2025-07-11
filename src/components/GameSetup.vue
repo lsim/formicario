@@ -55,10 +55,7 @@ function resume() {
 }
 
 function step() {
-  if (props.isRunning && !props.isPaused) {
-    pause();
-    return;
-  } else if (props.isRunning) {
+  if (!props.isRunning || (props.isRunning && props.isPaused)) {
     emit('step-game', stepSize.value);
   }
 }

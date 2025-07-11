@@ -24,7 +24,7 @@ function auditParticipant(teamCode: string) {
 
 const safeEval = createRestrictedEval();
 
-function instantiateParticipant(team: string) {
+export function instantiateParticipant(team: string) {
   auditParticipant(team);
   return safeEval(team) as AntFunction;
 }
@@ -32,12 +32,14 @@ function instantiateParticipant(team: string) {
 export class Game {
   public id = 0;
   activeBattle: Battle | null = null;
-  teamFunctions: AntFunction[];
 
-  constructor(private spec: GameSpec) {
+  constructor(
+    private spec: GameSpec,
+    private readonly teamFunctions: AntFunction[],
+  ) {
     this.id = Date.now();
     this.spec.rng = getRNG(this.spec.seed);
-    this.teamFunctions = this.spec.teams.map(instantiateParticipant);
+    this.teamFunctions = teamFunctions;
   }
 
   public async run(pause = false): Promise<GameSummary | undefined> {

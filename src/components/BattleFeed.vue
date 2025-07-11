@@ -5,6 +5,14 @@ import { normal } from 'color-blend';
 import AntMagnifier from '@/components/AntMagnifier.vue';
 import { useMagicKeys, useMouseInElement } from '@vueuse/core';
 
+const props = defineProps<{
+  battle: BattleStatus;
+}>();
+
+const emit = defineEmits<{
+  (event: 'debug-ants', coords: { x: number; y: number }): void;
+}>();
+
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
 const canvasDefaultZoom = ref(2);
 
@@ -44,10 +52,6 @@ watch(
     }
   },
 );
-
-const props = defineProps<{
-  battle: BattleStatus;
-}>();
 
 // const battleTeams = computed(() => props.battle.teams);
 let teamColors: number[][] | undefined;
@@ -184,6 +188,13 @@ function ensureRendering() {
   rendering = true;
   requestAnimationFrame(() => updateCanvas(context.value));
 }
+
+function getAntData() {
+  emit('debug-ants', {
+    x: Math.round(magX.value / canvasDefaultZoom.value),
+    y: Math.round(magY.value / canvasDefaultZoom.value) - 1,
+  });
+}
 </script>
 
 <template>
@@ -194,9 +205,11 @@ function ensureRendering() {
       :height="props.battle.args.mapHeight"
       :style="{ zoom: canvasDefaultZoom }"
       @click.exact="magnifierPinned = false"
-      @click.ctrl.exact="magnifierPinned = true"
-      @click.meta.exact="magnifierPinned = true"
-      title="[Ctrl] or [Cmd] for magnifier, click to pin"
+      @click.ctrl.exact="getAntData"
+      @click.meta.exact="getAntData"
+      @click.ctrl.right.capture.prevent="magnifierPinned = true"
+      @click.meta.right.capture.prevent="magnifierPinned = true"
+      title="[Ctrl] or [Cmd] for magnifier, click to view brain, right click to pin"
     >
     </canvas>
     <ant-magnifier

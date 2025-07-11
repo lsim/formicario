@@ -5,8 +5,8 @@ import type { BattleStatus, BattleSummary } from '@/GameSummary.ts';
 // Constants from MyreKrig.h
 const NEW_BASE_ANTS = 25;
 const NEW_BASE_FOOD = 50;
-const MAX_SQUARE_ANTS = 100;
-const MAX_SQUARE_FOOD = 200;
+// const MAX_SQUARE_ANTS = 100;
+// const MAX_SQUARE_FOOD = 200;
 const BASE_VALUE = NEW_BASE_ANTS + NEW_BASE_FOOD;
 
 // Action constants
@@ -120,7 +120,7 @@ export type AntInfo = {
 export type AntBrain = any;
 
 // Returned by the AntFunction when called with no arguments
-declare type AntDescriptor = {
+export type AntDescriptor = {
   color: string;
   name: string;
   brainTemplate: object;
@@ -988,7 +988,24 @@ export class Battle {
     return false;
   }
 
-  public getAntsForDebug(): AntData[] {
-    return this.ants.filter((a) => a.alive).map((ant) => structuredClone(ant));
+  public getAntsForDebug(x?: number, y?: number): AntData[] {
+    if (x === undefined || y === undefined) {
+      return this.ants.filter((a) => a.alive).map((ant) => structuredClone(ant));
+    } else {
+      // Make it a little easier to select an ant by returning all ants in a small area around the point
+      const antsOnSquare = [];
+      const range = 1;
+      for (let i = x - range; i <= x + range; i++) {
+        for (let j = y - range; j <= y + range; j++) {
+          const square = this.mapData(i, j);
+          let current = square.firstAnt;
+          while (current) {
+            antsOnSquare.push(current);
+            current = current.mapNext;
+          }
+        }
+      }
+      return antsOnSquare;
+    }
   }
 }

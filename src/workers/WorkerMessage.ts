@@ -1,6 +1,6 @@
 import type { GameSpec } from '@/GameSpec.ts';
 import type { BattleStatus, GameSummary } from '@/GameSummary.ts';
-import type { AntData } from '@/Battle.ts';
+import type { AntData, AntDescriptor } from '@/Battle.ts';
 
 export type WorkerMessageType =
   | 'run-game'
@@ -12,10 +12,14 @@ export type WorkerMessageType =
   | 'step-game'
   | 'debug-request'
   | 'debug-reply'
+  | 'ant-info-request'
+  | 'ant-info-reply'
+  | 'error'
   | 'ok';
 
 declare type TypedMessage = {
   type: WorkerMessageType;
+  id: number;
 };
 
 export interface RunGameCommand extends TypedMessage {
@@ -53,6 +57,8 @@ export interface BattleStatusMessage extends TypedMessage {
 
 export interface DebugRequestMessage extends TypedMessage {
   type: 'debug-request';
+  x?: number;
+  y?: number;
 }
 
 export interface DebugReplyMessage extends TypedMessage {
@@ -60,8 +66,23 @@ export interface DebugReplyMessage extends TypedMessage {
   ants: AntData[];
 }
 
+export interface AntInfoRequestMessage extends TypedMessage {
+  type: 'ant-info-request';
+  team: string;
+}
+
+export interface AntInfoReplyMessage extends TypedMessage {
+  type: 'ant-info-reply';
+  info: AntDescriptor;
+}
+
 export interface OkReply extends TypedMessage {
   type: 'ok';
+}
+
+export interface ErrorReply extends TypedMessage {
+  type: 'error';
+  error: string[];
 }
 
 declare type CommandMap = {
@@ -74,7 +95,10 @@ declare type CommandMap = {
   StepGameCommand: StepGameCommand;
   DebugRequestMessage: DebugRequestMessage;
   DebugReplyMessage: DebugReplyMessage;
+  AntInfoRequestMessage: AntInfoRequestMessage;
+  AntInfoReplyMessage: AntInfoReplyMessage;
   OkReply: OkReply;
+  ErrorReply: ErrorReply;
 };
 
 export type WorkerMessage = CommandMap[keyof CommandMap];

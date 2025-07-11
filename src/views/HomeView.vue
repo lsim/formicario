@@ -104,10 +104,12 @@ async function stepGame(stepSize: number) {
   }
 }
 
-function getDebugAnts() {
+function getDebugAnts(x?: number, y?: number) {
   lastDebugAnts.value = [];
   worker.postMessage({
     type: 'debug-request',
+    x,
+    y,
   });
 }
 </script>
@@ -132,7 +134,12 @@ function getDebugAnts() {
     <div class="column">
       <div class="box">
         <Transition name="battle-feed">
-          <battle-feed v-if="battleStatus" class="control battle-feed" :battle="battleStatus" />
+          <battle-feed
+            v-if="battleStatus"
+            class="control battle-feed"
+            :battle="battleStatus"
+            @debug-ants="getDebugAnts($event.x, $event.y)"
+          />
         </Transition>
         <ant-debugger
           class="control ant-debugger"
