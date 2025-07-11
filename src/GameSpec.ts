@@ -11,7 +11,7 @@ export type GameSpec = {
   halfTimePercent: number;
   timeOutTurn: number;
   winPercent: number;
-  teams: string[];
+  teams: { name: string; code: string }[];
 
   startAnts: [number, number];
 

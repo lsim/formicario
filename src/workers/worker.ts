@@ -1,19 +1,28 @@
 import type { WorkerMessage } from '@/workers/WorkerMessage.ts';
 import { Game, instantiateParticipant } from '@/Game.ts';
+import type { AntFunction } from '@/Battle.ts';
 
 let activeGame: Game | undefined;
 
-function getAntFunctions(teamNames: string[]) {
-  return teamNames.map((team) => {
+function getAntFunctions(teams: { name: string; code: string }[]): {
+  name: string;
+  func?: AntFunction;
+  error?: string;
+  line?: number;
+  column?: number;
+}[] {
+  return teams.map((team) => {
     try {
       return {
-        name: team,
-        func: instantiateParticipant(team),
+        name: team.name,
+        func: instantiateParticipant(team.code),
       };
     } catch (error) {
       return {
-        name: team,
-        error,
+        name: team.name,
+        line: (error as { lineNumber: number }).lineNumber,
+        column: (error as { column: number }).column,
+        error: (error as { message: string }).message,
       };
     }
   });
@@ -25,18 +34,18 @@ onmessage = async (e) => {
   try {
     if (command?.type === 'run-game') {
       activeGame?.stop();
-      const antFunctions = getAntFunctions(command.game.teams);
-      const failedAntFunctions = antFunctions.filter((f) => f.error);
+      const teamFunctions = getAntFunctions(command.game.teams);
+      const failedAntFunctions = teamFunctions.filter((f) => f.error);
       if (failedAntFunctions.length > 0) {
         postMessage({
           type: 'error',
-          error: failedAntFunctions.map((f) => `${f.name}: ${f.error}`),
+          error: failedAntFunctions.map((f) => `${f.name}: ${f.error}\n${f.line}:${f.column}`),
         });
         return;
       }
       activeGame = new Game(
         command.game,
-        antFunctions.map((f) => f.func).filter((f) => !!f),
+        teamFunctions.map((f) => f.func).filter((f) => !!f),
       );
       const p = activeGame.run(command.pause);
       postMessage({ type: 'ok' });

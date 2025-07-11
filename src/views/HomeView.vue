@@ -21,6 +21,10 @@ worker.onmessage = (e) => {
     gameSummary.value = e.data.results;
   } else if (e.data.type === 'debug-reply') {
     lastDebugAnts.value = e.data.ants;
+  } else if (e.data.type === 'error') {
+    lastError.value = e.data.error;
+  } else if (e.data.type === 'ok') {
+    lastError.value = [];
   } else {
     console.log('Worker sent unhandled message', e.data);
   }
@@ -29,8 +33,9 @@ worker.onmessage = (e) => {
 const battleStatus = ref<BattleStatus>();
 const gameSummary = ref<GameSummary>();
 const lastDebugAnts = ref<AntData[]>([]);
+const lastError = ref<string[]>([]);
 
-const selectedTeamCodes = ref<string[]>([]);
+const selectedTeams = ref<{ name: string; code: string }[]>([]);
 const seed = ref(42);
 const statusInterval = ref(20);
 
@@ -55,16 +60,22 @@ const gamePaused = ref(false);
 
 async function startGame() {
   battleStatus.value = undefined;
-  worker.postMessage({
+  if (selectedTeams.value.length === 0) {
+    lastError.value = ['No teams selected'];
+    return;
+  }
+  const message = {
     type: 'run-game',
     game: {
       ...gameSpec,
-      teams: Array.from(selectedTeamCodes.value),
+      teams: [...selectedTeams.value.map((t) => ({ name: t.name, code: t.code }))],
       seed: seed.value,
       statusInterval: statusInterval.value,
     },
     pause: gamePaused.value,
-  });
+  };
+  console.log('Sending message', message);
+  worker.postMessage(message);
   seed.value++;
 }
 
@@ -120,16 +131,22 @@ function getDebugAnts(x?: number, y?: number) {
       <game-setup
         :is-running="gameRunning"
         :is-paused="gamePaused"
-        :selected-teams="selectedTeamCodes.length"
+        :selected-teams="selectedTeams.length"
         @start-game="startGame"
         @stop-game="stopGame"
         @pause-game="pauseGame"
         @resume-game="resumeGame"
         @step-game="stepGame"
-        @update:teams="selectedTeamCodes = $event.map((t) => t.code)"
+        @update:teams="selectedTeams = $event"
         v-model:status-interval="statusInterval"
         v-model:seed="seed"
       />
+      <div class="box" v-if="lastError.length">
+        <h3>Last error</h3>
+        <div class="notification is-danger is-family-code" v-for="error in lastError" :key="error">
+          <pre>{{ error }}</pre>
+        </div>
+      </div>
     </div>
     <div class="column">
       <div class="box">
