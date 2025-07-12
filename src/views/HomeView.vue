@@ -18,20 +18,16 @@ import type { RunGameCommand } from '@/workers/WorkerMessage.ts';
 import type { GameSummary } from '@/GameSummary.ts';
 import { toObserver } from '@vueuse/rxjs';
 import { tap } from 'rxjs';
-
-export type Team = {
-  name: string;
-  code: string;
-  color?: string;
-};
+import { useTeamStore } from '@/stores/teams.ts';
 
 const gameSummary = ref<GameSummary>();
+
+const teamStore = useTeamStore();
 
 gameSummarySubject.pipe(tap(() => (gameRunning.value = false))).subscribe(toObserver(gameSummary));
 
 const lastError = ref<string[]>([]);
 
-const selectedTeams = ref<{ name: string; code: string }[]>([]);
 const seed = ref(42);
 const statusInterval = ref(20);
 
@@ -55,14 +51,14 @@ const gameRunning = ref(false);
 const gamePaused = ref(false);
 
 async function startGame() {
-  if (selectedTeams.value.length === 0) {
+  if (teamStore.battleTeams.length === 0) {
     lastError.value = ['No teams selected'];
     return;
   }
   const message = {
     game: {
       ...gameSpec,
-      teams: [...selectedTeams.value.map((t) => ({ name: t.name, code: t.code }))],
+      teams: [...teamStore.battleTeams.map((t) => ({ name: t.name, code: t.code }))],
       seed: seed.value,
       statusInterval: statusInterval.value,
     },
@@ -105,13 +101,11 @@ async function stepGame(stepSize: number) {
       <game-setup
         :is-running="gameRunning"
         :is-paused="gamePaused"
-        :selected-teams="selectedTeams.length"
         @start-game="startGame"
         @stop-game="stopGame"
         @pause-game="pauseGame"
         @resume-game="resumeGame"
         @step-game="stepGame"
-        @update:teams="selectedTeams = $event"
         v-model:status-interval="statusInterval"
         v-model:seed="seed"
       />

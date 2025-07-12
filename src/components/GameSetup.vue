@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import TeamChooser from '@/components/TeamChooser.vue';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useMagicKeys, whenever } from '@vueuse/core';
+import { useTeamStore } from '@/stores/teams.ts';
 
 const props = defineProps<{
   isRunning: boolean;
   isPaused: boolean;
-  selectedTeams: number;
   statusInterval: number;
   seed: number;
 }>();
@@ -17,10 +17,11 @@ const emit = defineEmits<{
   (event: 'pause-game'): void;
   (event: 'resume-game'): void;
   (event: 'step-game', stepSize: number): void;
-  (event: 'update:teams', teams: { name: string; code: string }[]): void;
   (event: 'update:status-interval', statusInterval: number): void;
   (event: 'update:seed', seed: number): void;
 }>();
+
+const teamStore = useTeamStore();
 
 const stepSize = ref(1);
 
@@ -59,6 +60,8 @@ function step() {
     emit('step-game', stepSize.value);
   }
 }
+
+const noTeamsSelected = computed(() => teamStore.battleTeams.length === 0);
 </script>
 
 <template>
@@ -69,7 +72,7 @@ function step() {
           class="button is-primary"
           type="button"
           @click="start"
-          :disabled="!selectedTeams"
+          :disabled="noTeamsSelected"
           title="[Enter]"
         >
           Start game
@@ -79,12 +82,12 @@ function step() {
         <button class="button is-danger" type="button" @click="stop" title="[Escape]">Stop</button>
       </div>
       <div class="control" v-show="!props.isPaused && props.isRunning">
-        <button class="button is-info" type="button" @click="pause" :disabled="!selectedTeams">
+        <button class="button is-info" type="button" @click="pause" :disabled="noTeamsSelected">
           Pause
         </button>
       </div>
       <div class="control" v-show="props.isPaused && props.isRunning">
-        <button class="button is-info" type="button" @click="resume" :disabled="!selectedTeams">
+        <button class="button is-info" type="button" @click="resume" :disabled="noTeamsSelected">
           Resume
         </button>
       </div>
@@ -97,7 +100,7 @@ function step() {
             class="button is-info"
             type="button"
             @click="step"
-            :disabled="!selectedTeams"
+            :disabled="noTeamsSelected"
             title="[Shift + Space]"
           >
             Step
@@ -108,7 +111,7 @@ function step() {
         </div>
       </div>
     </div>
-    <team-chooser @update:teams="emit('update:teams', $event)" />
+    <team-chooser @update:teams="teamStore.battleTeams = $event" />
     <div class="field">
       <div class="control">
         <label class="label"
