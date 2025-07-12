@@ -50,7 +50,8 @@ watch(
 
 // const battleTeams = computed(() => props.battle.teams);
 let teamColors: number[][] | undefined;
-const battleArgs = ref<BattleArgs | undefined>();
+const mapWidth = ref(0);
+const mapHeight = ref(0);
 
 function parseTeamColor(color: string) {
   return (
@@ -81,13 +82,13 @@ function getAntSquareColor(s: SquareStatus, teamCol: number[]) {
   }
 }
 
-function getEmptyFoodSquareColor(s: SquareStatus) {
+function getEmptyFoodSquareColor(s: SquareStatus, battleArgs: BattleArgs) {
   if (!s.numAnts && s.numFood) {
     // 50% white when there is [;minFood] food, [50%-80%] white when there is [minFood;maxFood] food
-    const minFood = battleArgs.value?.newFoodMin || 1;
-    const maxFood = battleArgs.value?.newFoodMin || 1 + (battleArgs.value?.newFoodDiff || 1);
+    const minFood = battleArgs.newFoodMin;
+    const maxFood = battleArgs.newFoodMin + battleArgs.newFoodDiff;
     const whitePercentage =
-      30 + ((Math.min(s.numFood, maxFood) - minFood) / (maxFood - minFood)) * 50;
+      30 + ((Math.min(s.numFood, maxFood) - minFood) / (maxFood - minFood || 1)) * 50;
     return [255, 255, 255].map((x) => Math.floor((x * whitePercentage) / 100));
   }
 }
@@ -140,29 +141,28 @@ battleStatusSubject
         backBuffer.getContext('2d')?.clearRect(0, 0, battle.args.mapWidth, battle.args.mapHeight);
         parseTeamColors(battle.teams);
       }
-      if (!battleArgs.value) {
-        battleArgs.value = battle.args;
-      }
+      if (!mapWidth.value) mapWidth.value = battle.args.mapWidth;
+      if (!mapHeight.value) mapHeight.value = battle.args.mapHeight;
       lastReceivedTurn = battle.turns;
     }),
   )
   .subscribe((battle) => {
-    renderDeltasToBackBuffer(battle.deltaSquares, battle.args.mapWidth);
+    renderDeltasToBackBuffer(battle.deltaSquares, battle.args);
     ensureRendering();
   });
 
-function renderDeltasToBackBuffer(deltas: SquareStatus[], mapWidth: number) {
+function renderDeltasToBackBuffer(deltas: SquareStatus[], battleArgs: BattleArgs) {
   // console.log('Rendering deltas', deltas.length, lastReceivedTurn, lastRenderedTurn);
   for (let i = 0; i < deltas.length; i++) {
     const square = deltas[i];
-    const x = square.index % mapWidth;
-    const y = Math.floor(square.index / mapWidth);
+    const x = square.index % battleArgs.mapWidth;
+    const y = Math.floor(square.index / battleArgs.mapWidth);
     const teamCol: number[] =
       square.team === 0 ? [255, 0, 255] : teamColors?.[square.team - 1] || [255, 0, 255];
 
     const pixelColor =
       getBaseSquareColor(square, teamCol) ||
-      getEmptyFoodSquareColor(square) ||
+      getEmptyFoodSquareColor(square, battleArgs) ||
       getAntSquareColor(square, teamCol) ||
       getEmptySquareColor(square, teamCol);
 
@@ -193,8 +193,8 @@ function getAntData() {
   <div class="battle-feed">
     <canvas
       ref="canvas"
-      :width="battleArgs?.mapWidth || 100"
-      :height="battleArgs?.mapHeight || 100"
+      :width="mapWidth"
+      :height="mapHeight"
       :style="{ zoom: canvasDefaultZoom }"
       @click.exact="magnifierPinned = false"
       @click.ctrl.exact="getAntData"
