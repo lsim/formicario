@@ -123,12 +123,12 @@ async function stepGame(stepSize: number) {
       </div>
     </div>
     <div class="column">
-      <div class="box">
-        <Transition name="battle-feed">
-          <battle-feed v-if="gameRunning" class="control battle-feed" />
-        </Transition>
-        <ant-debugger class="control ant-debugger" v-if="gameRunning && gamePaused" />
-      </div>
+      <Transition name="battle-feed">
+        <div class="box" v-if="gameRunning">
+          <battle-feed class="control battle-feed" />
+          <ant-debugger class="control ant-debugger" v-if="gameRunning && gamePaused" />
+        </div>
+      </Transition>
       <team-battle-stats class="team-stats" v-if="gameRunning" />
       <battle-args class="battle-args" v-if="gameRunning" />
       <div class="game-summary" v-if="gameSummary">
