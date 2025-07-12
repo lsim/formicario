@@ -27,29 +27,29 @@ function FishBone(squareData, antInfo) {
   // Walker state (when signpost bit is 0)
   function getSignpost(brain) { return brain & 1; }
   function setSignpost(brain, val) { return (brain & ~1) | (val ? 1 : 0); }
-  
+
   function getDir(brain) { return (brain >> 1) & 3; }
   function setDir(brain, val) { return (brain & ~6) | ((val & 3) << 1); }
-  
+
   function getPos(brain) { return (brain >> 3) & 3; }
   function setPos(brain, val) { return (brain & ~24) | ((val & 3) << 3); }
-  
+
   function getFound(brain) { return (brain >> 5) & 1; }
   function setFound(brain, val) { return (brain & ~32) | ((val ? 1 : 0) << 5); }
 
   // Signpost state (when signpost bit is 1)
   function getOrient(brain) { return (brain >> 1) & 1; }
   function setOrient(brain, val) { return (brain & ~2) | ((val ? 1 : 0) << 1); }
-  
+
   function getFoodLeft(brain) { return (brain >> 2) & 3; }
   function setFoodLeft(brain, val) { return (brain & ~12) | ((val & 3) << 2); }
-  
+
   function getFoodRight(brain) { return (brain >> 4) & 3; }
   function setFoodRight(brain, val) { return (brain & ~48) | ((val & 3) << 4); }
 
   function fish() {
     let d = 0, n = 0;
-    
+
     // Look for enemies
     for (let i = 1; i < 5; i++) {
       if (squareData[i].team && squareData[i].numAnts > n) {
@@ -57,7 +57,7 @@ function FishBone(squareData, antInfo) {
         d = i;
       }
     }
-    
+
     if (d) {
       myBrain.brain = 0;
       myBrain.brain = setPos(myBrain.brain, POSITION_WAR);
@@ -67,14 +67,14 @@ function FishBone(squareData, antInfo) {
     // Base logic
     if (squareData[0].base) {
       if (squareData[0].numAnts === 1) return 0;
-      
+
       if (antInfo.brains.length > 1 && (antInfo.brains[1].brain & ~1)) {
         antInfo.brains[1].brain = myBrain.brain & 1;
       }
-      
+
       myBrain.brain = 0;
       d = min(min(squareData[0].numAnts, squareData[2].numAnts), squareData[4].numAnts) >> DEFENCE_SHIFT;
-      
+
       if (squareData[1].numAnts < squareData[3].numAnts) {
         if (squareData[1].numAnts < d) {
           myBrain.brain = setPos(myBrain.brain, POSITION_WAR);
@@ -86,7 +86,7 @@ function FishBone(squareData, antInfo) {
           return 3;
         }
       }
-      
+
       if (antInfo.brains.length > 1) {
         antInfo.brains[1].brain = (antInfo.brains[1].brain + 1) & 1;
         myBrain.brain = setDir(myBrain.brain, (antInfo.brains[1].brain << 1) + 1);
@@ -139,7 +139,7 @@ function FishBone(squareData, antInfo) {
         myBrain.brain = setFound(myBrain.brain, 1);
         return 9 + getDir(myBrain.brain);
       }
-      
+
       myBrain.brain = setPos(myBrain.brain, 0);
       if (getFound(myBrain.brain)) {
         switch (getDir(myBrain.brain)) {
@@ -151,10 +151,10 @@ function FishBone(squareData, antInfo) {
             break;
         }
       }
-      
+
       myBrain.brain = 0;
       myBrain.brain = setDir(myBrain.brain, (getOrient(antInfo.brains[1].brain) << 1) + 1);
-      
+
       if (squareData[0].numFood) return getDir(myBrain.brain) + 9;
       if (squareData[1].numFood > squareData[1].numAnts) {
         myBrain.brain = setDir(myBrain.brain, 2);
@@ -164,7 +164,7 @@ function FishBone(squareData, antInfo) {
         myBrain.brain = setDir(myBrain.brain, 0);
         return 3;
       }
-      
+
       if (getFoodLeft(antInfo.brains[1].brain) || getFoodRight(antInfo.brains[1].brain)) {
         if (getFoodLeft(antInfo.brains[1].brain) > getFoodRight(antInfo.brains[1].brain)) {
           antInfo.brains[1].brain = setFoodLeft(antInfo.brains[1].brain, getFoodLeft(antInfo.brains[1].brain) - 1);
@@ -180,7 +180,7 @@ function FishBone(squareData, antInfo) {
       if (squareData[0].numFood) {
         myBrain.brain = setFound(myBrain.brain, 1);
         if (getDir(myBrain.brain) & 1) return getDir(myBrain.brain) + 9;
-        
+
         switch (getPos(myBrain.brain)) {
           case 1: return 10;
           case 2: return 12;
@@ -198,12 +198,12 @@ function FishBone(squareData, antInfo) {
 
   // Main fishbone function
   let retval = fish();
-  const d = retval & 7;
-  
+  let d = retval & 7;
+
   if ((getPos(myBrain.brain) === POSITION_WAR) && !getSignpost(myBrain.brain)) {
     return d;
   }
-  
+
   if (d) {
     if (squareData[d].numAnts >= MaxSquareAnts) {
       retval = d = ((d + 1) & 3) + 1;
@@ -211,16 +211,16 @@ function FishBone(squareData, antInfo) {
       myBrain.brain = 0;
       myBrain.brain = setDir(myBrain.brain, temp);
     }
-    
+
     switch (d) {
-      case 2: 
+      case 2:
         myBrain.brain = setPos(myBrain.brain, (getPos(myBrain.brain) + 2) % 3);
         break;
-      case 4: 
+      case 4:
         myBrain.brain = setPos(myBrain.brain, (getPos(myBrain.brain) + 1) % 3);
         break;
     }
   }
-  
+
   return retval;
 }
