@@ -41,6 +41,7 @@ function unselectTeam(team: Team) {
             @click.ctrl="teamStore.battleTeams = [team]"
             @click.meta="teamStore.battleTeams = [team]"
             type="button"
+            :style="{ backgroundColor: team.color }"
           >
             {{ team.name }}
           </button>
@@ -58,6 +59,7 @@ function unselectTeam(team: Team) {
                 @click.ctrl="teamStore.battleTeams = [team]"
                 @click.meta="teamStore.battleTeams = [team]"
                 type="button"
+                :style="{ backgroundColor: team.color }"
               >
                 {{ team.name }}
               </button>

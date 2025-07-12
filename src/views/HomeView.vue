@@ -46,6 +46,7 @@ const gameSpec: Partial<GameSpec> = {
 
 // TODO: BattleSummary could be sent after each battle. And if battlefeed is disengaged, it could include all pixels, so an end picture could be shown
 // TODO: Figure out a way to parallelize battles to multiple workers (perhaps a master worker managing the big picture with a couple of slaves?). Difficulty: battle state cannot be easily split up without bending the original rules
+// TODO: Collect samples of kills/losses/born, so we can graph them after the battle to help explain the result. Maybe they can even be live?
 
 const gameRunning = ref(false);
 const gamePaused = ref(false);
