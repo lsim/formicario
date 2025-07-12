@@ -1,17 +1,12 @@
 <script setup lang="ts">
-import type { BattleStatus, SquareStatus, TeamStatus } from '@/GameSummary.ts';
+import type { SquareStatus, TeamStatus } from '@/GameSummary.ts';
 import { computed, ref, useTemplateRef, watch } from 'vue';
 import { normal } from 'color-blend';
 import AntMagnifier from '@/components/AntMagnifier.vue';
 import { useMagicKeys, useMouseInElement } from '@vueuse/core';
-
-const props = defineProps<{
-  battle: BattleStatus;
-}>();
-
-const emit = defineEmits<{
-  (event: 'debug-ants', coords: { x: number; y: number }): void;
-}>();
+import { battleStatusSubject, getDebugAnts } from '@/workers/WorkerDispatcher.ts';
+import { filter, tap } from 'rxjs';
+import type { BattleArgs } from '@/Battle.ts';
 
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
 const canvasDefaultZoom = ref(2);
@@ -55,6 +50,7 @@ watch(
 
 // const battleTeams = computed(() => props.battle.teams);
 let teamColors: number[][] | undefined;
+const battleArgs = ref<BattleArgs | undefined>();
 
 function parseTeamColor(color: string) {
   return (
@@ -88,8 +84,8 @@ function getAntSquareColor(s: SquareStatus, teamCol: number[]) {
 function getEmptyFoodSquareColor(s: SquareStatus) {
   if (!s.numAnts && s.numFood) {
     // 50% white when there is [;minFood] food, [50%-80%] white when there is [minFood;maxFood] food
-    const minFood = props.battle.args.newFoodMin || 1;
-    const maxFood = props.battle.args.newFoodMin + props.battle.args.newFoodDiff || 1;
+    const minFood = battleArgs.value?.newFoodMin || 1;
+    const maxFood = battleArgs.value?.newFoodMin || 1 + (battleArgs.value?.newFoodDiff || 1);
     const whitePercentage =
       30 + ((Math.min(s.numFood, maxFood) - minFood) / (maxFood - minFood)) * 50;
     return [255, 255, 255].map((x) => Math.floor((x * whitePercentage) / 100));
@@ -126,41 +122,37 @@ function updateCanvas(ctx?: CanvasRenderingContext2D) {
   // console.log('Rendering turn', lastReceivedTurn, lastRenderedTurn);
 
   // Copy from back buffer to canvas
+  ctx.imageSmoothingEnabled = false;
   ctx.drawImage(backBuffer, 0, 0);
 
   lastRenderedTurn = lastReceivedTurn;
   requestAnimationFrame(() => updateCanvas(ctx));
 }
 
-watch(
-  () => [props.battle, canvas.value],
-  ([newVal], [oldVal]) => {
-    if (!canvas.value || !context.value) {
-      return;
-    }
-    if (!newVal && oldVal) {
-      // A battle ended
-      backBuffer.getContext('2d')?.clearRect(0, 0, backBuffer.width, backBuffer.height);
-      teamColors = undefined;
-      return;
-    }
-    const battle = newVal as BattleStatus;
-    lastReceivedTurn = battle.turns;
-    if (!teamColors) {
-      // First status from new battle
-      backBuffer.width = battle.args.mapWidth;
-      backBuffer.height = battle.args.mapHeight;
-      backBuffer.getContext('2d')?.clearRect(0, 0, battle.args.mapWidth, battle.args.mapHeight);
-      parseTeamColors(battle.teams);
-    }
-    renderDeltasToBackBuffer(battle.deltaSquares);
+battleStatusSubject
+  .pipe(
+    filter(() => !!canvas.value && !!context.value),
+    tap((battle) => {
+      if (!teamColors) {
+        // First status from new battle
+        backBuffer.width = battle.args.mapWidth;
+        backBuffer.height = battle.args.mapHeight;
+        backBuffer.getContext('2d')?.clearRect(0, 0, battle.args.mapWidth, battle.args.mapHeight);
+        parseTeamColors(battle.teams);
+      }
+      if (!battleArgs.value) {
+        battleArgs.value = battle.args;
+      }
+      lastReceivedTurn = battle.turns;
+    }),
+  )
+  .subscribe((battle) => {
+    renderDeltasToBackBuffer(battle.deltaSquares, battle.args.mapWidth);
     ensureRendering();
-  },
-);
+  });
 
-function renderDeltasToBackBuffer(deltas: SquareStatus[]) {
+function renderDeltasToBackBuffer(deltas: SquareStatus[], mapWidth: number) {
   // console.log('Rendering deltas', deltas.length, lastReceivedTurn, lastRenderedTurn);
-  const mapWidth = props.battle.args.mapWidth;
   for (let i = 0; i < deltas.length; i++) {
     const square = deltas[i];
     const x = square.index % mapWidth;
@@ -190,10 +182,10 @@ function ensureRendering() {
 }
 
 function getAntData() {
-  emit('debug-ants', {
-    x: Math.round(magX.value / canvasDefaultZoom.value),
-    y: Math.round(magY.value / canvasDefaultZoom.value) - 1,
-  });
+  getDebugAnts(
+    Math.round(magX.value / canvasDefaultZoom.value),
+    Math.round(magY.value / canvasDefaultZoom.value) - 1,
+  ).then(() => {});
 }
 </script>
 
@@ -201,8 +193,8 @@ function getAntData() {
   <div class="battle-feed">
     <canvas
       ref="canvas"
-      :width="props.battle.args.mapWidth"
-      :height="props.battle.args.mapHeight"
+      :width="battleArgs?.mapWidth || 100"
+      :height="battleArgs?.mapHeight || 100"
       :style="{ zoom: canvasDefaultZoom }"
       @click.exact="magnifierPinned = false"
       @click.ctrl.exact="getAntData"

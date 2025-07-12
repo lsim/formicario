@@ -1261,6 +1261,13 @@
   resolved "https://registry.yarnpkg.com/@vueuse/metadata/-/metadata-13.5.0.tgz#18c24a32489b0a4fb9d7436efc048e836bfc4799"
   integrity sha512-euhItU3b0SqXxSy8u1XHxUCdQ8M++bsRs+TYhOLDU/OykS7KvJnyIFfep0XM5WjIFry9uAPlVSjmVHiqeshmkw==
 
+"@vueuse/rxjs@^13.5.0":
+  version "13.5.0"
+  resolved "https://registry.yarnpkg.com/@vueuse/rxjs/-/rxjs-13.5.0.tgz#e1033be571297d153c48221541f99c8ef8bd8673"
+  integrity sha512-J9CyrtvkRsfEFxgIBgskNY+NiQ+6BnuWuR78wPoUCce+/tG9uCkmpiEApiI/THT80QCt47mrMSE9e6aJJLa6Bw==
+  dependencies:
+    "@vueuse/shared" "13.5.0"
+
 "@vueuse/shared@13.5.0":
   version "13.5.0"
   resolved "https://registry.yarnpkg.com/@vueuse/shared/-/shared-13.5.0.tgz#c36e3e0eafca9c3b92356ccef139db0df7d9905e"
@@ -2750,7 +2757,7 @@ run-parallel@^1.1.9:
   dependencies:
     queue-microtask "^1.2.2"
 
-rxjs@^7.4.0:
+rxjs@^7.4.0, rxjs@^7.8.2:
   version "7.8.2"
   resolved "https://registry.yarnpkg.com/rxjs/-/rxjs-7.8.2.tgz#955bc473ed8af11a002a2be52071bf475638607b"
   integrity sha512-dhKf903U/PQZY6boNNtAGdWbG85WAbjT/1xYoZIC7FAY0yWapOBQVsVrDl58W86//e1VpMNBtRV4MaXfdMySFA==

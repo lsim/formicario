@@ -1,38 +1,34 @@
 <script setup lang="ts">
-import Worker from '../workers/worker?worker';
 import BattleFeed from '@/components/BattleFeed.vue';
-import type { BattleStatus, GameSummary } from '@/GameSummary.ts';
 import { ref } from 'vue';
 import type { GameSpec } from '@/GameSpec.ts';
 import BattleArgs from '@/components/BattleArgs.vue';
 import TeamBattleStats from '@/components/TeamBattleStats.vue';
 import GameSetup from '@/components/GameSetup.vue';
-import type { AntData } from '@/Battle.ts';
 import AntDebugger from '@/components/AntDebugger.vue';
+import {
+  startGame as startGameWorker,
+  stopGame as stopGameWorker,
+  pauseGame as pauseGameWorker,
+  resumeGame as resumeGameWorker,
+  stepGame as stepGameWorker,
+  gameSummarySubject,
+} from '@/workers/WorkerDispatcher.ts';
+import type { RunGameCommand } from '@/workers/WorkerMessage.ts';
+import type { GameSummary } from '@/GameSummary.ts';
+import { toObserver } from '@vueuse/rxjs';
+import { tap } from 'rxjs';
 
-const worker = new Worker();
-
-worker.onmessage = (e) => {
-  if (e.data.type === 'battle-status') {
-    gameRunning.value = true;
-    battleStatus.value = e.data.status;
-  } else if (e.data.type === 'game-summary') {
-    gameRunning.value = false;
-    gameSummary.value = e.data.results;
-  } else if (e.data.type === 'debug-reply') {
-    lastDebugAnts.value = e.data.ants;
-  } else if (e.data.type === 'error') {
-    lastError.value = e.data.error;
-  } else if (e.data.type === 'ok') {
-    lastError.value = [];
-  } else {
-    console.log('Worker sent unhandled message', e.data);
-  }
+export type Team = {
+  name: string;
+  code: string;
+  color?: string;
 };
 
-const battleStatus = ref<BattleStatus>();
 const gameSummary = ref<GameSummary>();
-const lastDebugAnts = ref<AntData[]>([]);
+
+gameSummarySubject.pipe(tap(() => (gameRunning.value = false))).subscribe(toObserver(gameSummary));
+
 const lastError = ref<string[]>([]);
 
 const selectedTeams = ref<{ name: string; code: string }[]>([]);
@@ -59,13 +55,11 @@ const gameRunning = ref(false);
 const gamePaused = ref(false);
 
 async function startGame() {
-  battleStatus.value = undefined;
   if (selectedTeams.value.length === 0) {
     lastError.value = ['No teams selected'];
     return;
   }
   const message = {
-    type: 'run-game',
     game: {
       ...gameSpec,
       teams: [...selectedTeams.value.map((t) => ({ name: t.name, code: t.code }))],
@@ -74,33 +68,25 @@ async function startGame() {
     },
     pause: gamePaused.value,
   };
-  console.log('Sending message', message);
-  worker.postMessage(message);
+  gameRunning.value = true;
+  await startGameWorker(message as Omit<RunGameCommand, 'id' | 'type'>);
   seed.value++;
 }
 
 async function stopGame() {
-  battleStatus.value = undefined;
   gameRunning.value = false;
   gamePaused.value = false;
-  lastDebugAnts.value = [];
-  worker.postMessage({
-    type: 'stop-game',
-  });
+  await stopGameWorker();
 }
 
 async function pauseGame() {
   gamePaused.value = true;
-  worker.postMessage({
-    type: 'pause-game',
-  });
+  await pauseGameWorker();
 }
 
 async function resumeGame() {
   gamePaused.value = false;
-  worker.postMessage({
-    type: 'resume-game',
-  });
+  await resumeGameWorker();
 }
 
 async function stepGame(stepSize: number) {
@@ -108,20 +94,8 @@ async function stepGame(stepSize: number) {
   if (!gameRunning.value) {
     await startGame();
   } else {
-    worker.postMessage({
-      type: 'step-game',
-      stepSize,
-    });
+    await stepGameWorker(stepSize);
   }
-}
-
-function getDebugAnts(x?: number, y?: number) {
-  lastDebugAnts.value = [];
-  worker.postMessage({
-    type: 'debug-request',
-    x,
-    y,
-  });
 }
 </script>
 
@@ -151,29 +125,12 @@ function getDebugAnts(x?: number, y?: number) {
     <div class="column">
       <div class="box">
         <Transition name="battle-feed">
-          <battle-feed
-            v-if="battleStatus"
-            class="control battle-feed"
-            :battle="battleStatus"
-            @debug-ants="getDebugAnts($event.x, $event.y)"
-          />
+          <battle-feed v-if="gameRunning" class="control battle-feed" />
         </Transition>
-        <ant-debugger
-          class="control ant-debugger"
-          v-if="gamePaused"
-          :ants="lastDebugAnts"
-          @debug="getDebugAnts"
-          @clear="lastDebugAnts = []"
-        />
+        <ant-debugger class="control ant-debugger" v-if="gameRunning && gamePaused" />
       </div>
-      <team-battle-stats
-        class="team-stats"
-        v-if="battleStatus"
-        :teams="battleStatus.teams"
-        :turn="battleStatus.turns"
-        :tps="battleStatus.turnsPerSecond"
-      />
-      <battle-args class="battle-args" v-if="battleStatus" :battle-status="battleStatus" />
+      <team-battle-stats class="team-stats" v-if="gameRunning" />
+      <battle-args class="battle-args" v-if="gameRunning" />
       <div class="game-summary" v-if="gameSummary">
         <h2>Previous game</h2>
         <div class="stat">Seed: {{ gameSummary.seed }}</div>

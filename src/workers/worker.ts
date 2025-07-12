@@ -39,6 +39,7 @@ onmessage = async (e) => {
       if (failedAntFunctions.length > 0) {
         postMessage({
           type: 'error',
+          id: command.id,
           error: failedAntFunctions.map((f) => `${f.name}: ${f.error}\n${f.line}:${f.column}`),
         });
         return;
@@ -48,7 +49,7 @@ onmessage = async (e) => {
         teamFunctions.map((f) => f.func).filter((f) => !!f),
       );
       const p = activeGame.run(command.pause);
-      postMessage({ type: 'ok' });
+      postMessage({ type: 'ok', id: command.id });
       const summary = await p;
       if (!summary) {
         postMessage({ type: 'error', error: ['Failed to run game'] });
@@ -58,37 +59,37 @@ onmessage = async (e) => {
       postMessage({ type: 'game-summary', results: summary });
     } else if (command?.type === 'stop-game') {
       activeGame?.stop();
-      postMessage({ type: 'ok' });
+      postMessage({ type: 'ok', id: command.id });
     } else if (command?.type === 'pause-game') {
       activeGame?.pause();
-      postMessage({ type: 'ok' });
+      postMessage({ type: 'ok', id: command.id });
     } else if (command?.type === 'resume-game') {
       const p = activeGame?.resume();
-      postMessage({ type: 'ok' });
+      postMessage({ type: 'ok', id: command.id });
       const summary = await p;
       if (!summary) return;
       activeGame = undefined;
       postMessage({ type: 'game-summary', results: summary });
     } else if (command?.type === 'step-game') {
       activeGame?.step(command.stepSize);
-      postMessage({ type: 'ok' });
+      postMessage({ type: 'ok', id: command.id });
     } else if (command?.type === 'ant-info-request') {
       try {
         const func = instantiateParticipant(command.team);
         const descriptor = func();
-        postMessage({ type: 'ant-info-reply', info: descriptor });
+        postMessage({ type: 'ant-info-reply', info: descriptor, id: command.id });
       } catch (error) {
-        postMessage({ type: 'error', error: [String(error)] });
+        postMessage({ type: 'error', error: [String(error)], id: command.id });
       }
     } else if (command?.type === 'debug-request') {
       const ants = activeGame?.activeBattle?.getAntsForDebug(command.x, command.y);
-      postMessage({ type: 'debug-reply', ants });
+      postMessage({ type: 'debug-reply', ants, id: command.id });
     } else {
       console.error('Unknown command', command);
-      postMessage({ type: 'error', error: 'Unknown command' });
+      postMessage({ type: 'error', error: 'Unexpected command: ' + command?.type, id: command.id });
     }
   } catch (error) {
     console.error('Error processing message: ' + command?.type, error);
-    postMessage({ type: 'error', error: String(error) });
+    postMessage({ type: 'error', error: String(error), id: command.id });
   }
 };

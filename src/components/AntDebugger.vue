@@ -2,15 +2,8 @@
 import type { AntData } from '@/Battle.ts';
 import { computed, ref } from 'vue';
 import { useMagicKeys, whenever } from '@vueuse/core';
-
-const props = defineProps<{
-  ants?: AntData[];
-}>();
-
-const emit = defineEmits<{
-  (event: 'debug'): void;
-  (event: 'clear'): void;
-}>();
+import { toObserver } from '@vueuse/rxjs';
+import { debugAntsSubject, getDebugAnts } from '@/workers/WorkerDispatcher.ts';
 
 const orderByProp = ref<keyof AntData>('team');
 
@@ -25,9 +18,12 @@ const { up, down } = useMagicKeys({
 whenever(up, () => skipAnt(-1));
 whenever(down, () => skipAnt(1));
 
+const ants = ref<AntData[]>([]);
+
+debugAntsSubject.subscribe(toObserver(ants));
+
 const sortedAnts = computed(() => {
-  if (!props.ants) return [];
-  return [...props.ants].sort((a, b) => {
+  return [...ants.value].sort((a, b) => {
     if (a[orderByProp.value] < b[orderByProp.value]) return -1;
     if (a[orderByProp.value] > b[orderByProp.value]) return 1;
     return 0;
@@ -48,12 +44,11 @@ const brainProps = computed(() => {
 });
 
 function clear() {
-  emit('clear');
+  ants.value = [];
   selectedAnt.value = undefined;
 }
 
 function skipAnt(skip: number) {
-  console.log('Skipping ant', skip);
   const ants = sortedAnts.value;
   if (!ants.length) return;
   const index = ants.findIndex((a) => a.index === selectedAnt.value?.index);
@@ -66,7 +61,7 @@ function skipAnt(skip: number) {
   <form class="ant-debugger">
     <div class="field is-grouped is-grouped-right">
       <div class="control">
-        <button class="button is-primary" type="button" @click="emit('debug')">Debug</button>
+        <button class="button is-primary" type="button" @click="() => getDebugAnts()">Debug</button>
       </div>
       <div class="control">
         <button class="button is-link" type="button" @click="clear">Clear</button>

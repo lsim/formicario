@@ -1,35 +1,40 @@
 <script setup lang="ts">
 // This component shows the randomized parameters of an ongoing or finished battle
 
-import type { BattleInfo } from '@/GameSummary.ts';
+import { ref } from 'vue';
+import { first } from 'rxjs';
+import { battleStatusSubject } from '@/workers/WorkerDispatcher.ts';
+import type { BattleStatus } from '@/GameSummary.ts';
 
-const props = defineProps<{
-  battleStatus: BattleInfo;
-}>();
+const battleStatus = ref<BattleStatus | undefined>();
+
+battleStatusSubject.pipe(first()).subscribe((status) => {
+  battleStatus.value = status;
+});
 </script>
 
 <template>
-  <div class="args-table" v-if="props.battleStatus">
+  <div class="args-table" v-if="battleStatus">
     <div class="lbl">Teams:</div>
-    <div class="val">{{ props.battleStatus.teams.map((t) => t.name).join(', ') }}</div>
+    <div class="val">{{ battleStatus.teams.map((t) => t.name).join(', ') }}</div>
     <div class="lbl">Map width:</div>
-    <div class="val">{{ props.battleStatus.args.mapWidth }}</div>
+    <div class="val">{{ battleStatus.args.mapWidth }}</div>
     <div class="lbl">Map height:</div>
-    <div class="val">{{ props.battleStatus.args.mapHeight }}</div>
+    <div class="val">{{ battleStatus.args.mapHeight }}</div>
     <div class="lbl">Start ants:</div>
-    <div class="val">{{ props.battleStatus.args.startAnts }}</div>
+    <div class="val">{{ battleStatus.args.startAnts }}</div>
     <div class="lbl">New food space:</div>
-    <div class="val">{{ props.battleStatus.args.newFoodSpace }}</div>
+    <div class="val">{{ battleStatus.args.newFoodSpace }}</div>
     <div class="lbl">New food min:</div>
-    <div class="val">{{ props.battleStatus.args.newFoodMin }}</div>
+    <div class="val">{{ battleStatus.args.newFoodMin }}</div>
     <div class="lbl">New food diff:</div>
-    <div class="val">{{ props.battleStatus.args.newFoodDiff }}</div>
+    <div class="val">{{ battleStatus.args.newFoodDiff }}</div>
     <div class="lbl">Half time turn:</div>
-    <div class="val">{{ props.battleStatus.args.halfTimeTurn }}</div>
+    <div class="val">{{ battleStatus.args.halfTimeTurn }}</div>
     <div class="lbl">Time out turn:</div>
-    <div class="val">{{ props.battleStatus.args.timeOutTurn }}</div>
+    <div class="val">{{ battleStatus.args.timeOutTurn }}</div>
     <div class="lbl">Win percent:</div>
-    <div class="val">{{ props.battleStatus.args.winPercent }}</div>
+    <div class="val">{{ battleStatus.args.winPercent }}</div>
   </div>
 </template>
 

@@ -19,6 +19,7 @@ const keepRendering = ref(false);
 function render(sourceCanvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
   const subImageWidth = magnifierPixels.value / props.zoomLevel;
 
+  ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, magnifierPixels.value, magnifierPixels.value);
   ctx.drawImage(
     props.backBuffer,

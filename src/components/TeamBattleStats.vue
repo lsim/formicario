@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { TeamStatus } from '@/GameSummary.ts';
 import { computed, ref } from 'vue';
+import { battleStatusSubject } from '@/workers/WorkerDispatcher.ts';
 
 declare type StatusProperty = keyof TeamStatus;
 
@@ -27,16 +28,20 @@ const propertyLabels: Record<StatusProperty, string> = {
   dieAge: 'Die age',
 };
 
-const props = defineProps<{
-  teams: TeamStatus[];
-  turn?: number;
-  tps?: number;
-}>();
-
 const selectedStatusProperty = ref<StatusProperty>('numAnts');
 
+const teams = ref<TeamStatus[]>([]);
+const turn = ref<number>();
+const tps = ref<number>();
+
+battleStatusSubject.subscribe((battleStatus) => {
+  teams.value = battleStatus.teams;
+  turn.value = battleStatus.turns;
+  tps.value = battleStatus.turnsPerSecond;
+});
+
 const maxForSelectedProperty = computed(() => {
-  return Math.max(...props.teams.map((t) => t[selectedStatusProperty.value] as number));
+  return Math.max(...teams.value.map((t) => t[selectedStatusProperty.value] as number));
 });
 </script>
 
@@ -48,8 +53,8 @@ const maxForSelectedProperty = computed(() => {
           {{ propertyLabels[prop] }}
         </option>
       </select>
-      <span v-show="props.turn">Simulated turns {{ props.turn }}</span>
-      <span v-show="props.tps">Simulated turns/second {{ props.tps }}</span>
+      <span v-show="turn">Simulated turns {{ turn }}</span>
+      <span v-show="tps">Simulated turns/second {{ tps }}</span>
     </div>
     <template v-for="(team, index) in teams" :key="index">
       <div class="team-name">{{ team.name }}</div>
