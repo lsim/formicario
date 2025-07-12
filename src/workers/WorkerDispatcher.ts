@@ -1,5 +1,7 @@
 import Worker from './worker?worker';
 import type {
+  AntInfoReplyMessage,
+  AntInfoRequestMessage,
   DebugReplyMessage,
   DebugRequestMessage,
   RunGameCommand,
@@ -9,6 +11,7 @@ import type {
 import { Subject } from 'rxjs';
 import type { BattleStatus, GameSummary } from '@/GameSummary.ts';
 import type { AntData } from '@/Battle.ts';
+import type { Team } from '@/stores/teams.ts';
 
 const worker = new Worker();
 let messageCount = 0;
@@ -74,4 +77,12 @@ export async function getDebugAnts(x?: number, y?: number) {
     y,
   })) as DebugReplyMessage;
   return reply.ants;
+}
+
+export async function getTeamInfo(team: Team) {
+  const reply = (await queueMessage<AntInfoRequestMessage>({
+    type: 'ant-info-request',
+    team: team.code,
+  })) as AntInfoReplyMessage;
+  return reply.info;
 }
