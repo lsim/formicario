@@ -6,14 +6,17 @@ function adamAnt(squares, antInfo) {
         // Position tracking (relative to home base)
         x: 0,
         y: 0,
-        foodX: 0,
-        foodY: 0,
+        fromX: 0,
+        fromY: 0,
+        toX: 0,
+        toY: 0,
         turn: 0,
         chief: false,
         guardTurns: 0,
-        otherRandom: 1, // Chief uses this for assigning ids to new ants
-        patternSeed: 0, // Chief uses this for baseDist
+        antsHatched: 0,
+        patternSeed: 0,
         foundFood: false,
+        travelling: false,
       },
       name: 'AdamAnt',
       color: '#F00080',
@@ -28,6 +31,10 @@ function adamAnt(squares, antInfo) {
 
   function abs(n) {
     return n < 0 ? -n : n;
+  }
+
+  function log(...args) {
+    if (brain.random === 1924775755) console.log(...args);
   }
 
   function max(a, b) {
@@ -47,8 +54,8 @@ function adamAnt(squares, antInfo) {
   }
 
   // function prng() {
-  //   brain.otherRandom = (brain.random * 245 + 123) ^ (brain.otherRandom * 13 + 17);
-  //   return abs(floor(brain.otherRandom * 4213 + 421) & 0xffffffff);
+  //   brain.antsHatched = (brain.random * 245 + 123) ^ (brain.antsHatched * 13 + 17);
+  //   return abs(floor(brain.antsHatched * 4213 + 421) & 0xffffffff);
   // }
 
   brain.turn++;
@@ -57,7 +64,7 @@ function adamAnt(squares, antInfo) {
   if (squares[0].base && !chief) {
     brain.chief = true;
     brain.turn = 0;
-    brain.otherRandom = 0;
+    brain.antsHatched = 0;
     return 0;
   }
 
@@ -65,13 +72,13 @@ function adamAnt(squares, antInfo) {
   //   // New base?
   //   const baseThreshold = 1000; // After n ants are born - look into making another base
   //   const antsToNewBase = 300;
-  //   if (floor(chief.random + chief.turn) % 10 === 0 && chief.otherRandom > baseThreshold) {
-  //     if (chief.otherRandom % baseThreshold < antsToNewBase) {
+  //   if (floor(chief.random + chief.turn) % 10 === 0 && chief.antsHatched > baseThreshold) {
+  //     if (chief.antsHatched % baseThreshold < antsToNewBase) {
   //       brain.x = floor((maxDist * 2) / 3);
-  //       brain.patternSeed = chief.otherRandom % 50; // Start small
+  //       brain.patternSeed = chief.antsHatched % 50; // Start small
   //       return move(explore());
   //     } else {
-  //       chief.otherRandom -= baseThreshold;
+  //       chief.antsHatched -= baseThreshold;
   //     }
   //   }
   // }
@@ -81,16 +88,16 @@ function adamAnt(squares, antInfo) {
     const maxDist = 95 + chief.turn / 85;
     if (!brain.patternSeed) {
       // (Re)initialize ant
-      chief.otherRandom += 3;
+      chief.antsHatched += 1;//3;
       // Early bird?
-      if (chief.otherRandom < 400)
-        brain.patternSeed = floor(chief.otherRandom % floor(((maxDist * 4) / 5) | 0));
+      if (chief.antsHatched < 200)
+        brain.patternSeed = 5 + floor(3 * chief.antsHatched % floor(((maxDist * 4) / 5) | 0));
       // Custodian of the inner sanctum?
       else if (brain.random % 35 === 0)
-        brain.patternSeed = floor(chief.otherRandom % floor(((maxDist * 4) / 5) | 0));
+        brain.patternSeed = 5 + floor(3 * chief.antsHatched % floor(((maxDist * 4) / 5) | 0));
       // Defender of the rim?
       else {
-        brain.patternSeed = ((chief.otherRandom % (maxDist / 5) | 0) + (maxDist * 4) / 5) | 0;
+        brain.patternSeed = (((3 * chief.antsHatched % (maxDist / 5) | 0) + (maxDist * 4) / 5) | 0);
       }
 
       // const action = maybeSettle(maxDist);
@@ -138,10 +145,9 @@ function adamAnt(squares, antInfo) {
       squares[i].numFood > squares[i].numAnts
     ) {
       const action = move(i); // Updates x,y
-      brain.foodX = brain.x;
-      brain.foodY = brain.y;
+      brain.fromX = brain.x;
+      brain.fromY = brain.y;
       brain.foundFood = true;
-      // brain.guardTurns = 0; // Run with the food!
       return action;
     }
   }
@@ -153,82 +159,100 @@ function adamAnt(squares, antInfo) {
   }
 
   // Drag food towards base
-  if (squares[0].numFood > 0) {
+  if (squares[0].numFood >= squares[0].numAnts) {
     // Home away from home?
-    if (brain.x === 0 && brain.y === 0) return 16;
-    // Found stash closer to home?
-    if (squares[0].numFood > squares[0].numAnts) {
-      brain.foodX = brain.x;
-      brain.foodY = brain.y;
-      brain.foundFood = true;
+    // if (brain.x === 0 && brain.y === 0) return 16;
+    // If we weren't headed home, plot a course
+    if (brain.toX !== 0 || brain.toY !== 0) {
+        log('startDragging', brain.x, brain.y, ' -> ', 0, 0, squares[0].numFood, squares[0].numAnts, brain.random);
+      return dragFood(startTowards(0, 0));
     }
-    return dragFood(stepTowards(0, 0));
+    // Else continue on course
+    return dragFood(stepTowards());
   }
 
-  // Are we at the stash? (there was no food)
-  if (
-    brain.foodX !== 0 &&
-    brain.foodY !== 0 &&
-    brain.x === brain.foodX &&
-    brain.y === brain.foodY
-  ) {
-    brain.foundFood = false;
-    return move(explore());
-  }
-
-  // function stepTowards_old(x, y) {
-  //   const dx = x - brain.x;
-  //   const dy = y - brain.y;
-  //   if (dx === 0 && dy === 0) return 0;
-  //   if (abs(dx) > abs(dy)) {
-  //     return dx > 0 ? 1 : 3;
-  //   } else {
-  //     return dy > 0 ? 2 : 4;
-  //   }
-  // }
-
-  function stepTowards(destX, destY) {
-    if (brain.x === destX && brain.y === destY) return 0;
-    const dx = abs(brain.x - destX);
-    const dy = abs(brain.y - destY);
-    if (dy > dx) {
-      return brain.y > destY ? 4 : 2;
-    } else if (dx > dy) {
-      return brain.x > destX ? 3 : 1;
-    } else {
-      if (brain.turn % 2 === 0) return brain.y > destY ? 4 : 2;
-      else return brain.x > destX ? 3 : 1;
+  // Handle travelling
+  if (brain.travelling) {
+    if (
+      brain.x === brain.toX &&
+      brain.y === brain.toY
+    ) {
+      // We arrived - don't reset foundFood if we arrived at the base
+      if (!squares[0].base) brain.foundFood = false;
+      return move(explore());
+    }
+    else {
+      // Continue on course
+      return move(stepTowards());
     }
   }
-  // Do we have a destination? Then go there
-  if (
-    (brain.foodX !== 0 || brain.foodY !== 0) &&
-    (brain.foodX !== brain.x || brain.foodY !== brain.y)
-  ) {
-    return move(stepTowards(brain.foodX, brain.foodY));
+
+  function startTowards(destX, destY) {
+    log('startTowards', brain.x, brain.y, ' -> ', destX, destY, squares[0].numFood, squares[0].numAnts, brain.random);
+    brain.travelling = true;
+    brain.toX = destX;
+    brain.toY = destY;
+    brain.fromX = brain.x;
+    brain.fromY = brain.y;
+    return stepTowards();
   }
 
-  const othersWhoKnowFood = otherBrains.filter((b) => b.foundFood);
-  if (othersWhoKnowFood.length > 0) {
-    const other = othersWhoKnowFood[0];
-    brain.foodX = other.foodX;
-    brain.foodY = other.foodY;
-    brain.x = other.x;
-    brain.y = other.y;
-    return move(stepTowards(brain.foodX, brain.foodY));
+  function goY(dy) { return dy > 0 ? 2 : 4; }
+  function goX(dx) { return dx > 0 ? 1 : 3; }
+
+  function stepTowards() {
+    // Line drawing algorithm
+    // Inclination = dy / dx
+    const dx = brain.toX - brain.fromX;
+    const dy = brain.toY - brain.fromY;
+    if (dx === 0 && dy === 0) return 0;
+    if (dx === 0) return goY(dy);
+    if (dy === 0) return goX(dx);
+    const a = dy / dx;
+    const [fromX, fromY, currentX, currentY, toX, toY] = [brain.fromX, brain.fromY, brain.x, brain.y, brain.toX, brain.toY];
+    const possibleNextX = currentX + (dx > 0 ? 1 : -1);
+    const nextY = fromY + a * (possibleNextX - fromX);
+    const stepY = nextY - currentY;
+
+    log('stepTowards', fromX, fromY, ' (', currentX, currentY, ')', ' -> ', toX, toY, 'a', a, possibleNextX, stepY, brain.random);
+    if (abs(stepY) > 1) return goY(dy);
+    return goX(dx);
   }
 
-  // function formRank() {
-  //   // Step 90 degrees relative to base direction
-  //   if (abs(brain.x) > abs(brain.y)) return brain.y > 0 ? 2 : 4;
-  //   else if (abs(brain.x) < abs(brain.y)) return brain.x > 0 ? 3 : 1;
-  // }
+  function getFoodPos(b) {
+    const headedHome = b.toX === 0 && b.toY === 0;
+    const foodX = headedHome ? b.fromX : b.toX;
+    const foodY = headedHome ? b.fromY : b.toY;
+    return [foodX, foodY];
+  }
 
-  // const othersGuarding = otherBrains.filter((b) => b.guardTurns > 0);
-  // if (othersGuarding.length > 0) {
-  //   brain.guardTurns = 300;
-  //   return move(formRank());
-  // }
+  for (let i = 1; i < antInfo.brains.length; i++) {
+    const other = antInfo.brains[i];
+    if (other.foundFood) {
+      const [foodX, foodY] = getFoodPos(other);
+      return move(startTowards(foodX, foodY));
+    }
+  }
+
+  // const startPositions = [
+  //   [0, 3], [-3, 0], [0, -3], [3, 0],
+  //   [0, 6], [-6, 0], [0, -6], [6, 0],
+  //   [0, 9], [-9, 0], [0, -9], [9, 0],
+  //   [0, 12], [-12, 0], [0, -12], [12, 0],
+  //   [0, 15], [-15, 0], [0, -15], [15, 0],
+  //   [0, 18], [-18, 0], [0, -18], [18, 0],
+  //   [0, 21], [-21, 0], [0, -21], [21, 0],
+  //   [0, 24], [-24, 0], [0, -24], [24, 0],
+  //   [0, 27], [-27, 0], [0, -27], [27, 0],
+  //   [0, 30], [-30, 0], [0, -30], [30, 0],
+  //   [0, 33], [-33, 0], [0, -33], [33, 0],
+  //   [0, 36], [-36, 0], [0, -36], [36, 0],
+  //   [0, 39], [-39, 0], [0, -39], [39, 0],
+  //   [0, 42], [-42, 0], [0, -42], [42, 0],
+  //   [0, 45], [-45, 0], [0, -45], [45, 0],
+  //   [0, 48], [-48, 0], [0, -48], [48, 0],
+  //   [0, 51], [-51, 0], [0, -51], [51, 0],
+  // ]
 
   function explore() {
     brain.foundFood = false;
@@ -239,15 +263,14 @@ function adamAnt(squares, antInfo) {
     const southPoint = [0, -baseDist];
     const initialPoint = [eastPoint, westPoint, northPoint, southPoint][brain.random % 4];
     let destX, destY;
-    if (brain.foodX === 0 && brain.foodY === 0) [destX, destY] = initialPoint;
+    if (brain.toX === 0 && brain.toY === 0) [destX, destY] = initialPoint;
     else if (brain.x >= 0 && brain.y < 0) [destX, destY] = eastPoint;
     else if (brain.x > 0 && brain.y >= 0) [destX, destY] = northPoint;
     else if (brain.x <= 0 && brain.y > 0) [destX, destY] = westPoint;
     else if (brain.x < 0 && brain.y >= 0) [destX, destY] = southPoint;
-    brain.foodX = floor(destX);
-    brain.foodY = floor(destY);
 
-    return stepTowards(destX, destY);
+    log('startExploring', brain.x, brain.y, ' -> ', destX, destY, squares[0].numFood, squares[0].numAnts, brain.random);
+    return startTowards(floor(destX), floor(destY));
   }
 
   // Follow the pattern!?
