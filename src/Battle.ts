@@ -213,6 +213,12 @@ export class Battle {
       ant.alive = false;
       this.deadAntIndices.push(ant.index);
 
+      // Accumulate the ant's age for average death age calculation
+      const team = this.teams[ant.team - 1];
+      if (team) {
+        team.dieAge += ant.age;
+      }
+
       // Decrement the square's ant counter before removing from list
       const square = this.mapData(ant.xPos, ant.yPos);
       square.numAnts--;
@@ -427,7 +433,7 @@ export class Battle {
       basesBuilt: team.basesBuilt,
       kill: team.kill,
       killed: team.killed,
-      dieAge: team.dieAge,
+      dieAge: team.killed > 0 ? Math.round(team.dieAge / team.killed) : 0,
     };
   }
 
@@ -780,9 +786,11 @@ export class Battle {
       this.teams[enemyTeam - 1].numAnts -= killedAnts;
 
       // Take over enemy base if present
-      if (newSquare.base) {
-        this.teams[enemyTeam - 1].numBases--;
-        this.teams[ant.team - 1].numBases++;
+      if (newSquare.base && enemyTeam > 0 && enemyTeam <= this.teams.length) {
+        if (this.teams[enemyTeam - 1].numBases > 0) {
+          this.teams[enemyTeam - 1].numBases--;
+          this.teams[ant.team - 1].numBases++;
+        }
       }
 
       this.teams[enemyTeam - 1].squareOwn--;

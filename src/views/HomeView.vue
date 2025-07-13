@@ -28,7 +28,7 @@ gameSummarySubject.pipe(tap(() => (gameRunning.value = false))).subscribe(toObse
 
 const lastError = ref<string[]>([]);
 
-const seed = ref(42);
+const seed = ref((Math.random() * 4294967295) >>> 0);
 const statusInterval = ref(20);
 
 const gameSpec: Partial<GameSpec> = {

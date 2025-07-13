@@ -4,7 +4,7 @@ import { RouterView } from 'vue-router';
 
 <template>
   <div id="root" class="article">
-    <section class="hero">
+    <section class="hero is-warning">
       <div class="hero-body">
         <p class="title">Ant Wars!</p>
       </div>
@@ -16,7 +16,7 @@ import { RouterView } from 'vue-router';
     <!--        </nav>-->
     <!--      </div>-->
 
-    <div class="ui main container">
+    <div class="box">
       <RouterView />
     </div>
   </div>

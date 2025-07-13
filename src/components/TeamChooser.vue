@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { type Team, useTeamStore } from '@/stores/teams.ts';
+import Color from 'color';
 
 const teamStore = useTeamStore();
 
@@ -21,6 +22,11 @@ function selectTeam(team: Team) {
 function unselectTeam(team: Team) {
   teamStore.unselectForBattle(team);
 }
+
+function contrastingColor(color: string) {
+  const c = new Color(color);
+  return c.contrast(Color('white')) > c.contrast(Color('black')) ? 'white' : 'black';
+}
 </script>
 
 <template>
@@ -30,7 +36,7 @@ function unselectTeam(team: Team) {
       <div class="box control">
         <div class="all-teams grid">
           <button
-            v-for="team in teamStore.allTeams"
+            v-for="team in teamStore.allTeams.sort((a, b) => a.name.localeCompare(b.name))"
             :key="team.name"
             class="cell button is-outlined"
             :class="{
@@ -41,7 +47,7 @@ function unselectTeam(team: Team) {
             @click.ctrl="teamStore.battleTeams = [team]"
             @click.meta="teamStore.battleTeams = [team]"
             type="button"
-            :style="{ backgroundColor: team.color }"
+            :style="{ backgroundColor: team.color, color: contrastingColor(team.color ?? '#000') }"
           >
             {{ team.name }}
           </button>
@@ -59,7 +65,10 @@ function unselectTeam(team: Team) {
                 @click.ctrl="teamStore.battleTeams = [team]"
                 @click.meta="teamStore.battleTeams = [team]"
                 type="button"
-                :style="{ backgroundColor: team.color }"
+                :style="{
+                  backgroundColor: team.color,
+                  color: contrastingColor(team.color ?? '#000'),
+                }"
               >
                 {{ team.name }}
               </button>

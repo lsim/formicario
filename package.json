@@ -21,7 +21,7 @@
     "@vueuse/core": "^13.5.0",
     "@vueuse/rxjs": "^13.5.0",
     "codemirror": "^6.0.2",
-    "color-blend": "^4.0.0",
+    "color": "^5.0.0",
     "eslint4b-prebuilt": "^6.7.2",
     "espree": "^10.4.0",
     "estree-walker": "^3.0.3",
