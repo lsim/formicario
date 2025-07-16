@@ -6,7 +6,7 @@ Words in `monospace` are constants that are readable by the ants.
 
 Subsequent number intervals in parentheses indicate the interval within which the size falls unless otherwise specified. Important concepts are written in **bold** the first time they are mentioned.
 
-A **game** of AntWar consists of a number of **battles**. For each battle, random values are chosen for the variable sizes within user-specified intervals.
+A **game** of Formicario consists of a number of **battles**. For each battle, random values are chosen for the variable sizes within user-specified intervals.
 
 Each ant program defines a **race** of ants. In each battle, a number of **teams** of ants fight against each other. Each team is of a specific race, but there can be multiple teams of the same race in a battle. These will then be opponents on equal footing with others. The race only indicates the control algorithm used.
 

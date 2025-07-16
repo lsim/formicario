@@ -1,4 +1,4 @@
-# MyreKrig (Ant War) - Implementation Analysis
+# MyreKrig (Formicario) - Implementation Analysis
 
 ## Project Overview
 
