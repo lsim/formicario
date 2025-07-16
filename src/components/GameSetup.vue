@@ -10,6 +10,7 @@ const props = defineProps<{
   statusInterval: number;
   seed: number;
   numBattles: number;
+  liveFeed: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -22,6 +23,7 @@ const emit = defineEmits<{
   (event: 'update:status-interval', statusInterval: number): void;
   (event: 'update:seed', seed: number): void;
   (event: 'update:numBattles', numBattles: number): void;
+  (event: 'update:liveFeed', liveFeed: boolean): void;
 }>();
 
 const teamStore = useTeamStore();
@@ -125,34 +127,28 @@ const noTeamsSelected = computed(() => teamStore.battleTeams.length === 0);
     <team-chooser @update:teams="teamStore.battleTeams = $event" />
     <div class="field">
       <div class="control">
-        <label class="label"
-          >Status interval
+        <label class="checkbox label"
+          >Live feed
           <input
-            class="input"
-            type="number"
-            :value="statusInterval"
-            @input="
-              emit(
-                'update:status-interval',
-                ($event.target as HTMLInputElement).value
-                  ? parseInt(($event.target as HTMLInputElement).value, 10)
-                  : 0,
-              )
-            "
-        /></label>
+            type="checkbox"
+            :checked="liveFeed"
+            @input="emit('update:liveFeed', ($event.target as HTMLInputElement).checked)"
+          />
+        </label>
       </div>
     </div>
     <div class="field">
       <div class="control">
         <label class="label"
-          >Seed
+          >Feed update interval
           <input
             class="input"
             type="number"
-            :value="seed"
+            :value="statusInterval"
+            :disabled="!liveFeed"
             @input="
               emit(
-                'update:seed',
+                'update:status-interval',
                 ($event.target as HTMLInputElement).value
                   ? parseInt(($event.target as HTMLInputElement).value, 10)
                   : 0,
@@ -172,6 +168,25 @@ const noTeamsSelected = computed(() => teamStore.battleTeams.length === 0);
             @input="
               emit(
                 'update:numBattles',
+                ($event.target as HTMLInputElement).value
+                  ? parseInt(($event.target as HTMLInputElement).value, 10)
+                  : 0,
+              )
+            "
+        /></label>
+      </div>
+    </div>
+    <div class="field">
+      <div class="control">
+        <label class="label"
+          >Seed
+          <input
+            class="input"
+            type="number"
+            :value="seed"
+            @input="
+              emit(
+                'update:seed',
                 ($event.target as HTMLInputElement).value
                   ? parseInt(($event.target as HTMLInputElement).value, 10)
                   : 0,

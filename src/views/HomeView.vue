@@ -33,6 +33,7 @@ const lastError = ref<string[]>([]);
 const seed = ref((Math.random() * 4294967295) >>> 0);
 const statusInterval = ref(20);
 const numBattles = ref(3);
+const liveFeed = ref(true);
 
 const gameSpec: Partial<GameSpec> = {
   mapWidth: [256, 256],
@@ -47,7 +48,6 @@ const gameSpec: Partial<GameSpec> = {
   winPercent: 75,
 };
 
-// TODO: BattleSummary could be sent after each battle. And if battlefeed is disengaged, it could include all pixels, so an end picture could be shown
 // TODO: Figure out a way to parallelize battles to multiple workers (perhaps a master worker managing the big picture with a couple of slaves?). Difficulty: battle state cannot be easily split up without bending the original rules
 // TODO: Collect samples of kills/losses/born, so we can graph them after the battle to help explain the result. Maybe they can even be live?
 
@@ -64,7 +64,7 @@ async function startGame() {
       ...gameSpec,
       teams: [...teamStore.battleTeams.map((t) => ({ name: t.name, code: t.code }))],
       seed: seed.value,
-      statusInterval: statusInterval.value,
+      statusInterval: !liveFeed.value ? -1 : statusInterval.value,
       numBattles: numBattles.value,
     },
     pause: gamePaused.value,
@@ -119,6 +119,7 @@ async function stepGame(stepSize: number) {
         v-model:status-interval="statusInterval"
         v-model:seed="seed"
         v-model:num-battles="numBattles"
+        v-model:live-feed="liveFeed"
       />
       <div class="box" v-if="lastError.length">
         <h3>Last error</h3>
@@ -129,12 +130,12 @@ async function stepGame(stepSize: number) {
     </div>
     <div class="column">
       <Transition name="battle-feed">
-        <div class="box" v-if="gameRunning">
+        <div class="box" v-if="gameRunning && liveFeed">
           <battle-feed class="control battle-feed" />
           <ant-debugger class="control ant-debugger" v-if="gameRunning && gamePaused" />
         </div>
       </Transition>
-      <team-battle-stats class="team-stats" v-if="gameRunning" />
+      <team-battle-stats class="team-stats" v-if="gameRunning && liveFeed" />
       <battle-args class="battle-args" v-if="gameRunning" />
       <div class="game-summary" v-if="gameSummary">
         <h2>Previous game</h2>

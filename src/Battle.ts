@@ -504,13 +504,12 @@ export class Battle {
       if (
         stepsToTake === 0 ||
         this.currentTurn === 1 ||
-        this.currentTurn % this.args.statusInterval === 0
+        (this.args.statusInterval >= 0 && this.currentTurn % this.args.statusInterval === 0)
       ) {
         this.emitStatus();
       }
 
       if ((this.paused && stepsToTake === -1) || stepsToTake === 0) {
-        console.log('Battle paused');
         const continuation: BattleContinuation = await new Promise((resolve) => {
           this.continueResolver = resolve;
         });
