@@ -48,8 +48,12 @@ export class Game {
 
     const battleSummaries: BattleSummary[] = [];
     for (let i = 0; i < this.spec.numBattles && !this.stopRequested; i++) {
-      const battleSeed = this.rng() || this.rng() || this.rng();
-      if (battleSeed === 0) throw new Error('Battle seed is 0');
+      const battleSeed = this.rng();
+      if (battleSeed === 0) {
+        console.warn('Battle seed is 0, trying again');
+        i--;
+        continue;
+      }
       this.activeBattle = new Battle(this.spec, this.teamFunctions, battleSeed, pause);
 
       const battleSummary = await this.activeBattle.run();

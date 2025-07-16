@@ -36,7 +36,7 @@ export type BattleSummary = BattleInfo & {
   winner: string;
   turns: number;
   duration: number;
-  squares: SquareData[];
+  squares: SquareStatus[];
   seed: number;
 };
 

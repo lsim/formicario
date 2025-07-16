@@ -23,5 +23,7 @@ export type RNGFunction = (limit?: number) => number;
 
 export function getRNG(seed: number): RNGFunction {
   const rng = Xoshiro128_twostar(seed);
+  // Warm up the RNG. First couple values appear to be a bit too predictable
+  for (let i = 0; i < 10; i++) rng();
   return (limit: number = 0) => Math.floor(rng() * (limit > 0 ? limit : 4294967296));
 }

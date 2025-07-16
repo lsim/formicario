@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import type { SquareStatus, TeamStatus } from '@/GameSummary.ts';
 import { computed, ref, useTemplateRef, watch } from 'vue';
 import AntMagnifier from '@/components/AntMagnifier.vue';
 import { useMagicKeys, useMouseInElement } from '@vueuse/core';
 import { battleStatusSubject, getDebugAnts } from '@/workers/WorkerDispatcher.ts';
 import { filter, tap } from 'rxjs';
-import type { BattleArgs } from '@/Battle.ts';
-import Color from 'color';
+import useBattleRenderer from '@/renderer.ts';
 
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
 const canvasDefaultZoom = ref(2);
 
 const backBuffer = document.createElement('canvas');
 const backBufferCtx = backBuffer.getContext('2d') as CanvasRenderingContext2D;
+
+const battleRenderer = useBattleRenderer();
 
 // Magnifier stuff
 const { ctrl, meta } = useMagicKeys();
@@ -48,46 +48,10 @@ watch(
   },
 );
 
-let teamColors: string[] | undefined;
 const mapWidth = ref(0);
 const mapHeight = ref(0);
 
-function parseTeamColors(teams: TeamStatus[]) {
-  teamColors = teams.map((t) => t.color);
-}
-
 const context = computed(() => canvas.value?.getContext('2d') || undefined);
-
-function getEmptySquareColor(s: SquareStatus, teamCol: string) {
-  if (s.numAnts === 0 && s.numFood === 0 && !s.base && s.team) {
-    return Color(teamCol).darken(0.7).hex();
-  }
-}
-
-function getAntSquareColor(s: SquareStatus, teamCol: string) {
-  if (s.numAnts > 0) {
-    // Full brightness when there is food as well as ants else slightly dimmed
-    return s.numFood > 0 ? Color(teamCol).lighten(0.6).hex() : teamCol;
-  }
-}
-
-function getEmptyFoodSquareColor(s: SquareStatus, battleArgs: BattleArgs) {
-  if (!s.numAnts && s.numFood) {
-    // 50% white when there is [;minFood] food, [50%-80%] white when there is [minFood;maxFood] food
-    const minFood = battleArgs.newFoodMin;
-    const maxFood = battleArgs.newFoodMin + battleArgs.newFoodDiff;
-    const food = Math.min(s.numFood, maxFood);
-    const whiteRatio = (food - minFood) / (maxFood - minFood || 1);
-    return Color('#555').lighten(whiteRatio).hex();
-  }
-}
-
-function getBaseSquareColor(s: SquareStatus, teamCol: string) {
-  // Base squares are mostly white, but tinted with team color
-  if (s.base) {
-    return Color(teamCol).lighten(0.9).hex();
-  }
-}
 
 let lastRenderedTurn = -1;
 let lastReceivedTurn = -1;
@@ -95,7 +59,7 @@ function updateCanvas(ctx?: CanvasRenderingContext2D) {
   // squares is a list of squares that have changed since the last status update
   if (!ctx || lastReceivedTurn <= lastRenderedTurn) {
     // All caught up
-    console.log('All caught up at turn', lastReceivedTurn);
+    console.debug('All caught up at turn', lastReceivedTurn);
     rendering = false;
     return;
   }
@@ -121,7 +85,7 @@ battleStatusSubject
         backBuffer.height = battle.args.mapHeight;
         backBufferCtx.clearRect(0, 0, battle.args.mapWidth, battle.args.mapHeight);
         context.value?.clearRect(0, 0, battle.args.mapWidth, battle.args.mapHeight);
-        parseTeamColors(battle.teams);
+        battleRenderer.setTeamColors(battle.teams.map((t) => t.color));
         mapWidth.value = battle.args.mapWidth;
         mapHeight.value = battle.args.mapHeight;
       }
@@ -129,33 +93,10 @@ battleStatusSubject
     }),
   )
   .subscribe((battle) => {
-    renderDeltasToBackBuffer(battle.deltaSquares, battle.args);
+    battleRenderer.renderDeltasToBackBuffer(battle.deltaSquares, battle.args, backBufferCtx);
     ensureRendering();
   });
 
-function renderDeltasToBackBuffer(deltas: SquareStatus[], battleArgs: BattleArgs) {
-  // console.log('Rendering deltas', deltas.length, lastReceivedTurn, lastRenderedTurn);
-  for (let i = 0; i < deltas.length; i++) {
-    const square = deltas[i];
-    const x = square.index % battleArgs.mapWidth;
-    const y = Math.floor(square.index / battleArgs.mapWidth);
-    const teamCol: string =
-      square.team === 0 ? 'magenta' : teamColors?.[square.team - 1] || 'magenta';
-
-    const pixelColor =
-      getBaseSquareColor(square, teamCol) ||
-      getEmptyFoodSquareColor(square, battleArgs) ||
-      getAntSquareColor(square, teamCol) ||
-      getEmptySquareColor(square, teamCol);
-
-    if (pixelColor) {
-      backBufferCtx.fillStyle = pixelColor;
-      backBufferCtx.fillRect(x, y, 1, 1);
-    } else {
-      backBufferCtx.clearRect(x, y, 1, 1);
-    }
-  }
-}
 let rendering = false;
 function ensureRendering() {
   if (rendering) return;

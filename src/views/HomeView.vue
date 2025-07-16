@@ -20,6 +20,7 @@ import type { GameSummary } from '@/GameSummary.ts';
 import { toObserver } from '@vueuse/rxjs';
 import { tap } from 'rxjs';
 import { useTeamStore } from '@/stores/teams.ts';
+import BattleSummary from '@/components/BattleSummary.vue';
 
 const gameSummary = ref<GameSummary>();
 
@@ -101,22 +102,6 @@ async function stepGame(stepSize: number) {
     await stepGameWorker(stepSize);
   }
 }
-
-// Format duration as in HH:MM:SS
-function formatTimespan(milliseconds: number) {
-  // Convert milliseconds to seconds
-  const totalSeconds = Math.floor(milliseconds / 1000);
-
-  // Calculate hours, minutes, and seconds
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  // Format with leading zeros
-  const pad = (num: number) => num.toString().padStart(2, '0');
-
-  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-}
 </script>
 
 <template>
@@ -156,16 +141,7 @@ function formatTimespan(milliseconds: number) {
         <div class="stat">Seed: {{ gameSummary.seed }}</div>
         <template v-for="(battle, index) in gameSummary.battles" :key="index">
           <h3>Battle {{ index + 1 }}</h3>
-          <div class="stat">Turns: {{ battle.turns }}</div>
-          <div class="stat">Winner: {{ battle.winner }}</div>
-          <div class="stat">Duration: {{ formatTimespan(battle.duration) }}</div>
-          <team-battle-stats class="team-stats" :final-teams="battle.teams" />
-          <battle-args
-            class="battle-args"
-            :args="battle.args"
-            :teams="battle.teams"
-            :seed="battle.seed"
-          />
+          <battle-summary :battle="battle" />
           <hr />
         </template>
       </div>

@@ -1,6 +1,6 @@
 import type { GameSpec } from '@/GameSpec.ts';
 import { getRNG, type RNGFunction } from '@/prng.ts';
-import type { BattleStatus, BattleSummary } from '@/GameSummary.ts';
+import type { BattleStatus, BattleSummary, SquareStatus } from '@/GameSummary.ts';
 
 // Constants from MyreKrig.h
 const NEW_BASE_ANTS = 25;
@@ -445,6 +445,16 @@ export class Battle {
     };
   }
 
+  squareDataToStatus(square: SquareData, index: number): SquareStatus {
+    return {
+      index: index,
+      numAnts: square.numAnts,
+      base: square.base,
+      team: square.team,
+      numFood: square.numFood,
+    };
+  }
+
   emitStatus() {
     if (this.touchedSquares.size === 0) return;
 
@@ -465,13 +475,7 @@ export class Battle {
       teams: this.teams.map((team) => this.getTeamSummary(team)),
       deltaSquares: Array.from(this.touchedSquares).map((i) => {
         const square = this.map[i];
-        return {
-          index: i,
-          numAnts: square.numAnts,
-          base: square.base,
-          team: square.team,
-          numFood: square.numFood,
-        };
+        return this.squareDataToStatus(square, i);
       }),
       turns: this.currentTurn,
       turnsPerSecond: Math.round(this.turnsPerSecond * 100) / 100, // Round to 2 decimal places
@@ -565,7 +569,7 @@ export class Battle {
       turns: this.currentTurn,
       args: this.args,
       duration: Date.now() - this.startTime,
-      squares: this.map.map((s) => ({ ...s })),
+      squares: this.map.map((s, index) => this.squareDataToStatus(s, index)),
       seed: this.seed,
     };
   }
