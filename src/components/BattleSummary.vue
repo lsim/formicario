@@ -2,7 +2,7 @@
 import type { BattleSummary } from '@/GameSummary.ts';
 import TeamBattleStats from '@/components/TeamBattleStats.vue';
 import BattleArgs from '@/components/BattleArgs.vue';
-import { nextTick, useTemplateRef } from 'vue';
+import { nextTick, useTemplateRef, watch } from 'vue';
 import useBattleRenderer from '@/renderer.ts';
 
 const props = defineProps<{
@@ -13,22 +13,30 @@ const battleRenderer = useBattleRenderer();
 
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
 
-nextTick(() => {
-  if (!canvas.value) {
-    console.warn('No canvas found');
-    return;
-  }
+watch(
+  () => props.battle,
+  (newBattle) => {
+    nextTick(() => {
+      if (!newBattle) return;
+      if (!canvas.value) {
+        console.warn('No canvas found');
+        return;
+      }
 
-  canvas.value.width = props.battle.args.mapWidth;
-  canvas.value.height = props.battle.args.mapHeight;
-  const ctx = canvas.value.getContext('2d');
-  if (!ctx) {
-    console.warn('No canvas context received');
-    return;
-  }
-  battleRenderer.setTeamColors(props.battle.teams.map((t) => t.color));
-  battleRenderer.renderDeltasToBackBuffer(props.battle.squares, props.battle.args, ctx);
-});
+      canvas.value.width = newBattle.args.mapWidth;
+      canvas.value.height = newBattle.args.mapHeight;
+      const ctx = canvas.value.getContext('2d');
+      if (!ctx) {
+        console.warn('No canvas context received');
+        return;
+      }
+      ctx.clearRect(0, 0, canvas.value.width, canvas.value.height);
+      battleRenderer.setTeamColors(newBattle.teams.map((t) => t.color));
+      battleRenderer.renderDeltasToBackBuffer(newBattle.squares, newBattle.args, ctx);
+    });
+  },
+  { immediate: true },
+);
 
 // Format duration as in HH:MM:SS
 function formatTimespan(milliseconds: number) {

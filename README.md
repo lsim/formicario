@@ -1,6 +1,8 @@
+<img src="/images/ants-magnifier.png" alt="Three old ant factions duking it out" style="" />
+
 # Formicario
 
-This ancient programming game was popularized by the [Myrekrig](https://en.wikipedia.org/wiki/Myrekrig) community in Aarhus, Denmark in the late 20th century. 
+This ancient programming game was popularized by the myrekrig.dk community in Aarhus, Denmark in the late 20th century. 
 
 This project aims to recreate the game using modern web technologies. 
 
