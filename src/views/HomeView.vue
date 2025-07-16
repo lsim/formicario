@@ -101,6 +101,22 @@ async function stepGame(stepSize: number) {
     await stepGameWorker(stepSize);
   }
 }
+
+// Format duration as in HH:MM:SS
+function formatTimespan(milliseconds: number) {
+  // Convert milliseconds to seconds
+  const totalSeconds = Math.floor(milliseconds / 1000);
+
+  // Calculate hours, minutes, and seconds
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  // Format with leading zeros
+  const pad = (num: number) => num.toString().padStart(2, '0');
+
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+}
 </script>
 
 <template>
@@ -142,7 +158,7 @@ async function stepGame(stepSize: number) {
           <h3>Battle {{ index + 1 }}</h3>
           <div class="stat">Turns: {{ battle.turns }}</div>
           <div class="stat">Winner: {{ battle.winner }}</div>
-          <div class="stat">Start time: {{ new Date(battle.startTime).toLocaleString() }}</div>
+          <div class="stat">Duration: {{ formatTimespan(battle.duration) }}</div>
           <team-battle-stats class="team-stats" :final-teams="battle.teams" />
           <battle-args
             class="battle-args"

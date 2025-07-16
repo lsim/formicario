@@ -10,7 +10,7 @@ import type { BattleArgs } from '@/Battle.ts';
 const props = defineProps<{
   args?: BattleArgs;
   teams?: TeamStatus[];
-  seed?: string;
+  seed?: number;
 }>();
 
 const battleArgs = ref<BattleArgs | undefined>(props.args);
