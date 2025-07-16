@@ -1,4 +1,4 @@
-import type { BattleArgs } from '@/Battle.ts';
+import type { BattleArgs, SquareData } from '@/Battle.ts';
 
 export type SquareStatus = {
   index: number;
@@ -35,6 +35,9 @@ export type BattleSummary = BattleInfo & {
   startTime: number;
   winner: string;
   turns: number;
+  duration: number;
+  squares: SquareData[];
+  seed: number;
 };
 
 export type GameSummary = {

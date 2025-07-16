@@ -12,6 +12,7 @@ import {
   pauseGame as pauseGameWorker,
   resumeGame as resumeGameWorker,
   stepGame as stepGameWorker,
+  skipBattle as skipBattleWorker,
   gameSummarySubject,
 } from '@/workers/WorkerDispatcher.ts';
 import type { RunGameCommand } from '@/workers/WorkerMessage.ts';
@@ -30,6 +31,7 @@ const lastError = ref<string[]>([]);
 
 const seed = ref((Math.random() * 4294967295) >>> 0);
 const statusInterval = ref(20);
+const numBattles = ref(3);
 
 const gameSpec: Partial<GameSpec> = {
   mapWidth: [256, 256],
@@ -62,6 +64,7 @@ async function startGame() {
       teams: [...teamStore.battleTeams.map((t) => ({ name: t.name, code: t.code }))],
       seed: seed.value,
       statusInterval: statusInterval.value,
+      numBattles: numBattles.value,
     },
     pause: gamePaused.value,
   };
@@ -74,6 +77,10 @@ async function stopGame() {
   gameRunning.value = false;
   gamePaused.value = false;
   await stopGameWorker();
+}
+
+async function skipBattle() {
+  await skipBattleWorker();
 }
 
 async function pauseGame() {
@@ -107,8 +114,10 @@ async function stepGame(stepSize: number) {
         @pause-game="pauseGame"
         @resume-game="resumeGame"
         @step-game="stepGame"
+        @skip-battle="skipBattle"
         v-model:status-interval="statusInterval"
         v-model:seed="seed"
+        v-model:num-battles="numBattles"
       />
       <div class="box" v-if="lastError.length">
         <h3>Last error</h3>
@@ -134,8 +143,8 @@ async function stepGame(stepSize: number) {
           <div class="stat">Turns: {{ battle.turns }}</div>
           <div class="stat">Winner: {{ battle.winner }}</div>
           <div class="stat">Start time: {{ new Date(battle.startTime).toLocaleString() }}</div>
-          <team-battle-stats class="team-stats" :teams="battle.teams" />
-          <battle-args class="battle-args" :battle-status="battle" />
+          <team-battle-stats class="team-stats" :final-teams="battle.teams" />
+          <battle-args class="battle-args" :args="battle.args" :teams="battle.teams" />
           <hr />
         </template>
       </div>

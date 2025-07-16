@@ -58,6 +58,10 @@ export async function stopGame() {
   await queueMessage({ type: 'stop-game' });
 }
 
+export async function skipBattle() {
+  await queueMessage({ type: 'skip-battle' });
+}
+
 export async function pauseGame() {
   await queueMessage({ type: 'pause-game' });
 }

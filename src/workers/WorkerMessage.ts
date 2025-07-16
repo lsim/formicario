@@ -1,11 +1,12 @@
 import type { GameSpec } from '@/GameSpec.ts';
-import type { BattleStatus, GameSummary } from '@/GameSummary.ts';
+import type { BattleStatus, BattleSummary, GameSummary } from '@/GameSummary.ts';
 import type { AntData, AntDescriptor } from '@/Battle.ts';
 
 export type WorkerMessageType =
   | 'run-game'
   | 'game-summary'
   | 'battle-status'
+  | 'battle-summary'
   | 'stop-game'
   | 'pause-game'
   | 'resume-game'
@@ -14,6 +15,7 @@ export type WorkerMessageType =
   | 'debug-reply'
   | 'ant-info-request'
   | 'ant-info-reply'
+  | 'skip-battle'
   | 'error'
   | 'ok';
 
@@ -50,6 +52,11 @@ export interface GameSummaryMessage extends TypedMessage {
   results: GameSummary;
 }
 
+export interface BattleSummaryMessage extends TypedMessage {
+  type: 'battle-summary';
+  summary: BattleSummary;
+}
+
 export interface BattleStatusMessage extends TypedMessage {
   type: 'battle-status';
   status: BattleStatus;
@@ -77,6 +84,10 @@ export interface AntInfoReplyMessage extends TypedMessage {
   info: AntDescriptor;
 }
 
+export interface SkipBattleMessage extends TypedMessage {
+  type: 'skip-battle';
+}
+
 export interface OkReply extends TypedMessage {
   type: 'ok';
 }
@@ -98,6 +109,7 @@ declare type CommandMap = {
   DebugReplyMessage: DebugReplyMessage;
   AntInfoRequestMessage: AntInfoRequestMessage;
   AntInfoReplyMessage: AntInfoReplyMessage;
+  SkipBattleMessage: SkipBattleMessage;
   OkReply: OkReply;
   ErrorReply: ErrorReply;
 };

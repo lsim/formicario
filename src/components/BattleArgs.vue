@@ -1,40 +1,55 @@
 <script setup lang="ts">
 // This component shows the randomized parameters of an ongoing or finished battle
 
-import { ref } from 'vue';
-import { first } from 'rxjs';
+import { onBeforeUnmount, ref } from 'vue';
+import { first, type Subscription } from 'rxjs';
 import { battleStatusSubject } from '@/workers/WorkerDispatcher.ts';
-import type { BattleStatus } from '@/GameSummary.ts';
+import type { TeamStatus } from '@/GameSummary.ts';
+import type { BattleArgs } from '@/Battle.ts';
 
-const battleStatus = ref<BattleStatus | undefined>();
+const props = defineProps<{
+  args?: BattleArgs;
+  teams?: TeamStatus[];
+}>();
 
-battleStatusSubject.pipe(first()).subscribe((status) => {
-  battleStatus.value = status;
+const battleArgs = ref<BattleArgs | undefined>(props.args);
+const battleTeams = ref<TeamStatus[] | undefined>(props.teams);
+
+let subscription: Subscription | undefined;
+if (!battleArgs.value) {
+  subscription = battleStatusSubject.pipe(first()).subscribe((status) => {
+    battleArgs.value = status.args;
+    battleTeams.value = status.teams;
+  });
+}
+
+onBeforeUnmount(() => {
+  subscription?.unsubscribe();
 });
 </script>
 
 <template>
-  <div class="args-table" v-if="battleStatus">
+  <div class="args-table" v-if="battleArgs && battleTeams">
     <div class="lbl">Teams:</div>
-    <div class="val">{{ battleStatus.teams.map((t) => t.name).join(', ') }}</div>
+    <div class="val">{{ battleTeams.map((t) => t.name).join(', ') }}</div>
     <div class="lbl">Map width:</div>
-    <div class="val">{{ battleStatus.args.mapWidth }}</div>
+    <div class="val">{{ battleArgs.mapWidth }}</div>
     <div class="lbl">Map height:</div>
-    <div class="val">{{ battleStatus.args.mapHeight }}</div>
+    <div class="val">{{ battleArgs.mapHeight }}</div>
     <div class="lbl">Start ants:</div>
-    <div class="val">{{ battleStatus.args.startAnts }}</div>
+    <div class="val">{{ battleArgs.startAnts }}</div>
     <div class="lbl">New food space:</div>
-    <div class="val">{{ battleStatus.args.newFoodSpace }}</div>
+    <div class="val">{{ battleArgs.newFoodSpace }}</div>
     <div class="lbl">New food min:</div>
-    <div class="val">{{ battleStatus.args.newFoodMin }}</div>
+    <div class="val">{{ battleArgs.newFoodMin }}</div>
     <div class="lbl">New food diff:</div>
-    <div class="val">{{ battleStatus.args.newFoodDiff }}</div>
+    <div class="val">{{ battleArgs.newFoodDiff }}</div>
     <div class="lbl">Half time turn:</div>
-    <div class="val">{{ battleStatus.args.halfTimeTurn }}</div>
+    <div class="val">{{ battleArgs.halfTimeTurn }}</div>
     <div class="lbl">Time out turn:</div>
-    <div class="val">{{ battleStatus.args.timeOutTurn }}</div>
+    <div class="val">{{ battleArgs.timeOutTurn }}</div>
     <div class="lbl">Win percent:</div>
-    <div class="val">{{ battleStatus.args.winPercent }}</div>
+    <div class="val">{{ battleArgs.winPercent }}</div>
   </div>
 </template>
 

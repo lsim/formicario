@@ -1,5 +1,5 @@
 import type { GameSpec } from '@/GameSpec.ts';
-import type { RNGFunction } from '@/prng.ts';
+import { getRNG, type RNGFunction } from '@/prng.ts';
 import type { BattleStatus, BattleSummary } from '@/GameSummary.ts';
 
 // Constants from MyreKrig.h
@@ -28,7 +28,7 @@ export class BattleArgs {
   winPercent: number;
   statusInterval: number;
 
-  constructor(spec: GameSpec) {
+  constructor(spec: GameSpec, rng: RNGFunction) {
     // Choose specific parameters for the battle from the game spec values/ranges
 
     // Map width and height must be divisible by 64 and be randomly chosen between the min and max from the game spec
@@ -36,17 +36,13 @@ export class BattleArgs {
     const mapWidthMax = Math.max(Math.round(spec.mapWidth[1] / MAP_TILE_SIZE), 1);
     const mapHeightMin = Math.max(Math.round(spec.mapHeight[0] / MAP_TILE_SIZE), 1);
     const mapHeightMax = Math.max(Math.round(spec.mapHeight[1] / MAP_TILE_SIZE), 1);
-    this.mapWidth = this.determineParameter(mapWidthMin, mapWidthMax, spec.rng) * MAP_TILE_SIZE;
-    this.mapHeight = this.determineParameter(mapHeightMin, mapHeightMax, spec.rng) * MAP_TILE_SIZE;
+    this.mapWidth = this.determineParameter(mapWidthMin, mapWidthMax, rng) * MAP_TILE_SIZE;
+    this.mapHeight = this.determineParameter(mapHeightMin, mapHeightMax, rng) * MAP_TILE_SIZE;
     // Random values for food space, minimum and difference
-    this.newFoodSpace = this.determineParameter(
-      spec.newFoodSpace[0],
-      spec.newFoodSpace[1],
-      spec.rng,
-    );
-    this.newFoodMin = this.determineParameter(spec.newFoodMin[0], spec.newFoodMin[1], spec.rng);
-    this.newFoodDiff = this.determineParameter(spec.newFoodDiff[0], spec.newFoodDiff[1], spec.rng);
-    this.startAnts = this.determineParameter(spec.startAnts[0], spec.startAnts[1], spec.rng);
+    this.newFoodSpace = this.determineParameter(spec.newFoodSpace[0], spec.newFoodSpace[1], rng);
+    this.newFoodMin = this.determineParameter(spec.newFoodMin[0], spec.newFoodMin[1], rng);
+    this.newFoodDiff = this.determineParameter(spec.newFoodDiff[0], spec.newFoodDiff[1], rng);
+    this.startAnts = this.determineParameter(spec.startAnts[0], spec.startAnts[1], rng);
     this.halfTimeTurn = spec.halfTimeTurn;
     this.halfTimePercent = spec.halfTimePercent;
     this.timeOutTurn = spec.timeOutTurn;
@@ -58,8 +54,8 @@ export class BattleArgs {
     return min + rng(max - min + 1);
   }
 
-  public static fromGameSpec(spec: GameSpec): BattleArgs {
-    return new BattleArgs(spec);
+  public static fromGameSpec(spec: GameSpec, rng: RNGFunction): BattleArgs {
+    return new BattleArgs(spec, rng);
   }
 }
 
@@ -129,6 +125,11 @@ export type AntDescriptor = {
 
 export type AntFunction = (() => AntDescriptor) & ((map: SquareData[], antInfo: AntInfo) => number);
 
+export type BattleContinuation = {
+  type: 'resume' | 'stop' | 'takeSteps';
+  steps?: number;
+};
+
 export class Battle {
   args: BattleArgs;
   teams: TeamData[];
@@ -137,6 +138,7 @@ export class Battle {
   ants: AntData[] = [];
   // Pool of dead ant indices ready for reuse (AntFreeList optimization)
   deadAntIndices: number[] = [];
+  private continueResolver?: (continuation: BattleContinuation) => void;
 
   // Team shuffle tables for obfuscating team numbers
   teamShuffleTables: number[][] = [];
@@ -152,7 +154,6 @@ export class Battle {
   currentTurn: number;
   rng: RNGFunction;
   private stopRequested = false;
-  paused = false;
   startTime = Date.now(); // Battle start timestamp for identification
 
   // Performance tracking
@@ -160,9 +161,15 @@ export class Battle {
   private turnsAtLastUpdate = 0;
   turnsPerSecond = 0;
 
-  constructor(spec: GameSpec, antFunctions: AntFunction[]) {
-    this.args = BattleArgs.fromGameSpec(spec);
-    this.rng = spec.rng;
+  constructor(
+    spec: GameSpec,
+    antFunctions: AntFunction[],
+    private seed: number,
+    private paused = false,
+  ) {
+    console.log('Battle seed', seed);
+    this.rng = getRNG(seed);
+    this.args = BattleArgs.fromGameSpec(spec, this.rng);
     this.teams = antFunctions.map((func) => {
       const descriptor = func();
       const team = { func, ...descriptor };
@@ -473,26 +480,47 @@ export class Battle {
     postMessage({ type: 'battle-status', status });
   }
 
-  async run(steps = 0): Promise<BattleSummary | undefined> {
+  proceed(continuation: BattleContinuation) {
+    if (this.continueResolver) {
+      this.continueResolver(continuation);
+    }
+  }
+
+  async run(): Promise<BattleSummary> {
     let terminated = false;
-    let stepCount = 0;
+    let stepsToTake = -1;
 
     // Main battle loop - equivalent to the C do-while structure
     do {
       // Execute one turn (equivalent to DoTurn() in C)
       this.doTurn();
-      stepCount++;
+      if (stepsToTake > 0) stepsToTake--;
 
       // Emit status for UI updates (equivalent to SysDrawMap() in C)
       if (
-        stepCount === steps ||
+        stepsToTake === 0 ||
         this.currentTurn === 1 ||
         this.currentTurn % this.args.statusInterval === 0
       ) {
         this.emitStatus();
       }
 
-      if (this.paused && stepCount >= steps) break;
+      if ((this.paused && stepsToTake === -1) || stepsToTake === 0) {
+        console.log('Battle paused');
+        const continuation: BattleContinuation = await new Promise((resolve) => {
+          this.continueResolver = resolve;
+        });
+        this.continueResolver = undefined;
+        if (continuation.type === 'stop') {
+          terminated = true;
+          break;
+        } else if (continuation.type === 'resume') {
+          stepsToTake = -1;
+          this.paused = false;
+        } else if (continuation.type === 'takeSteps') {
+          stepsToTake = continuation.steps ?? 1;
+        }
+      }
 
       // Check for termination conditions (equivalent to TermCheck() in C)
       terminated = this.checkTermination();
@@ -504,11 +532,16 @@ export class Battle {
       }
     } while (!terminated);
 
-    return terminated ? this.generateBattleSummary() : undefined;
+    return this.generateBattleSummary();
   }
 
   public stop() {
     this.stopRequested = true;
+    this.proceed({ type: 'stop' });
+  }
+
+  public pause() {
+    this.paused = true;
   }
 
   public generateBattleSummary(): BattleSummary {
@@ -531,6 +564,9 @@ export class Battle {
       teams: this.teams.map((t) => this.getTeamSummary(t)),
       turns: this.currentTurn,
       args: this.args,
+      duration: Date.now() - this.startTime,
+      squares: this.map.map((s) => ({ ...s })),
+      seed: this.seed,
     };
   }
 

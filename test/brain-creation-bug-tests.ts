@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { Battle, type AntFunction, type SquareData, type AntInfo } from '../src/Battle';
-import type { GameSpec } from '../src/GameSpec';
-import { getRNG } from '../src/prng';
+import { Battle, type AntFunction, type SquareData, type AntInfo } from '@/Battle';
+import type { GameSpec } from '@/GameSpec';
 
 describe('Brain Data Consistency During Ant Creation', () => {
   it('should provide all defined brains when new ants are created at bases', () => {
@@ -9,15 +8,15 @@ describe('Brain Data Consistency During Ant Creation', () => {
     let undefinedBrainDetected = false;
     let brainTestCount = 0;
     let maxBrainsObserved = 0;
-    
+
     const foodBringingAnt: AntFunction = ((squareData?: SquareData[], antInfo?: AntInfo) => {
       // Return ant descriptor when called without arguments
       if (!squareData || !antInfo) {
         return {
-          brainTemplate: { 
+          brainTemplate: {
             initialized: true,
             position: { x: 0, y: 0 },
-            task: 'explore'
+            task: 'explore',
           },
           name: 'BrainTester',
           color: '#00FF00',
@@ -33,15 +32,20 @@ describe('Brain Data Consistency During Ant Creation', () => {
       for (let i = 0; i < antInfo.brains.length; i++) {
         if (!antInfo.brains[i]) {
           undefinedBrainDetected = true;
-          console.error(`CRITICAL BUG: Brain at index ${i} is undefined! (out of ${antInfo.brains.length} total brains)`);
+          console.error(
+            `CRITICAL BUG: Brain at index ${i} is undefined! (out of ${antInfo.brains.length} total brains)`,
+          );
           // In the original bug, this would have failed because newly created ants
           // were included in getAntsOnSquare() but not yet ready to have their brains accessed
           break;
         }
-        
+
         if (typeof antInfo.brains[i] !== 'object') {
           undefinedBrainDetected = true;
-          console.error(`CRITICAL BUG: Brain at index ${i} is not an object:`, typeof antInfo.brains[i]);
+          console.error(
+            `CRITICAL BUG: Brain at index ${i} is not an object:`,
+            typeof antInfo.brains[i],
+          );
           break;
         }
 
@@ -54,12 +58,12 @@ describe('Brain Data Consistency During Ant Creation', () => {
       }
 
       const myBrain = antInfo.brains[0];
-      
+
       // Simple but effective strategy to trigger ant creation:
       // 1. Explore randomly until food is found
       // 2. Bring food back to base (creating new ants)
       // 3. Repeat
-      
+
       if (squareData[0].numFood > 0) {
         // Found food - bring it home (always move up)
         myBrain.task = 'returning';
@@ -81,35 +85,36 @@ describe('Brain Data Consistency During Ant Creation', () => {
       newFoodMin: [3, 6],
       newFoodSpace: [4, 8], // More frequent food placement
       seed: 42,
-      rng: getRNG(42),
       startAnts: [4, 4],
       teams: [],
       timeOutTurn: 1000,
       winPercent: 70,
+      numBattles: 1,
     };
 
-    const battle = new Battle(gameSpec, [foodBringingAnt]);
+    const battle = new Battle(gameSpec, [foodBringingAnt], 123);
 
     // Place food one square down from the base for deterministic testing
     const baseX = Math.floor(battle.args.mapWidth / 2);
     const baseY = Math.floor(battle.args.mapHeight / 2);
     const foodX = baseX;
     const foodY = (baseY + 1) % battle.args.mapHeight; // One square down from base
-    
+
     const foodSquare = battle['mapData'](foodX, foodY);
     foodSquare.numFood = 10; // Plenty of food for multiple ant creation cycles
     battle.numFood += 10;
 
     // Run the battle long enough for ants to find food and bring it back
     // This should trigger the creation of new ants at the base
-    for (let turn = 0; turn < 50; turn++) { // Increased turns
+    for (let turn = 0; turn < 50; turn++) {
+      // Increased turns
       battle.doTurn();
     }
 
     // Verify the test actually ran meaningful scenarios
     expect(brainTestCount).toBeGreaterThan(20); // Should have tested many ant actions
     expect(maxBrainsObserved).toBeGreaterThan(4); // Should have observed more ants than we started with (indicating ant creation)
-    
+
     // The critical assertion that would have caught the original bug:
     expect(undefinedBrainDetected).toBe(false);
   });
@@ -117,17 +122,17 @@ describe('Brain Data Consistency During Ant Creation', () => {
   it('should maintain brain array consistency when multiple ants occupy the same base square', () => {
     // This test specifically targets the scenario where the bug occurred:
     // Multiple ants on a base square, some newly created
-    
+
     let baseSquareWithMultipleAntsObserved = false;
     let brainArrayInconsistencyDetected = false;
-    
+
     const coordinnatingAnt: AntFunction = ((squareData?: SquareData[], antInfo?: AntInfo) => {
       if (!squareData || !antInfo) {
         return {
-          brainTemplate: { 
+          brainTemplate: {
             id: Math.random(),
             creationTime: Date.now(),
-            actionsPerformed: 0
+            actionsPerformed: 0,
           },
           name: 'CoordinatingAnt',
           color: '#FF0000',
@@ -136,22 +141,22 @@ describe('Brain Data Consistency During Ant Creation', () => {
 
       const myBrain = antInfo.brains[0];
       myBrain.actionsPerformed = (myBrain.actionsPerformed || 0) + 1;
-      
+
       // If we're on a base square with multiple ants, this is our target scenario
       if (squareData[0].base && antInfo.brains.length > 1) {
         baseSquareWithMultipleAntsObserved = true;
-        
+
         // Verify brain array consistency
         const brainCount = antInfo.brains.length;
         const antCount = squareData[0].numAnts;
-        
+
         console.log(`Base square: ${brainCount} brains, ${antCount} ants reported`);
-        
+
         // In the original bug, this could fail because:
         // - getAntsOnSquare() would return ALL ants (including newly created ones)
         // - But some of those ants shouldn't have been acting yet
         // - Leading to brain array length mismatch or undefined brains
-        
+
         for (let i = 0; i < brainCount; i++) {
           if (!antInfo.brains[i] || typeof antInfo.brains[i] !== 'object') {
             brainArrayInconsistencyDetected = true;
@@ -201,14 +206,14 @@ describe('Brain Data Consistency During Ant Creation', () => {
       newFoodMin: [5, 10],
       newFoodSpace: [6, 12],
       seed: 123,
-      rng: getRNG(123),
       startAnts: [3, 3],
       teams: [],
       timeOutTurn: 1000,
       winPercent: 70,
+      numBattles: 1,
     };
 
-    const battle = new Battle(gameSpec, [coordinnatingAnt]);
+    const battle = new Battle(gameSpec, [coordinnatingAnt], 123);
 
     // Run battle to trigger the target scenario
     for (let turn = 0; turn < 25; turn++) {
@@ -217,7 +222,7 @@ describe('Brain Data Consistency During Ant Creation', () => {
 
     // Verify we successfully created the test scenario
     expect(baseSquareWithMultipleAntsObserved).toBe(true);
-    
+
     // The key assertion - brain arrays should always be consistent
     expect(brainArrayInconsistencyDetected).toBe(false);
   });

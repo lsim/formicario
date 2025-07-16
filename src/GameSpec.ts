@@ -1,5 +1,3 @@
-import type { RNGFunction } from '@/prng.ts';
-
 export type GameSpec = {
   statusInterval: number;
   mapWidth: [number, number];
@@ -12,9 +10,9 @@ export type GameSpec = {
   timeOutTurn: number;
   winPercent: number;
   teams: { name: string; code: string }[];
+  numBattles: number;
 
   startAnts: [number, number];
 
   seed: number;
-  rng: RNGFunction;
 };

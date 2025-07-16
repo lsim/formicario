@@ -9,6 +9,7 @@ const props = defineProps<{
   isPaused: boolean;
   statusInterval: number;
   seed: number;
+  numBattles: number;
 }>();
 
 const emit = defineEmits<{
@@ -16,9 +17,11 @@ const emit = defineEmits<{
   (event: 'stop-game'): void;
   (event: 'pause-game'): void;
   (event: 'resume-game'): void;
+  (event: 'skip-battle'): void;
   (event: 'step-game', stepSize: number): void;
   (event: 'update:status-interval', statusInterval: number): void;
   (event: 'update:seed', seed: number): void;
+  (event: 'update:numBattles', numBattles: number): void;
 }>();
 
 const teamStore = useTeamStore();
@@ -45,6 +48,11 @@ function start() {
 function stop() {
   if (!props.isRunning) return;
   emit('stop-game');
+}
+
+function skip() {
+  if (!props.isRunning) return;
+  emit('skip-battle');
 }
 
 function pause() {
@@ -80,6 +88,9 @@ const noTeamsSelected = computed(() => teamStore.battleTeams.length === 0);
       </div>
       <div class="control" v-show="props.isRunning">
         <button class="button is-danger" type="button" @click="stop" title="[Escape]">Stop</button>
+      </div>
+      <div class="control" v-show="props.isRunning">
+        <button class="button" type="button" @click="skip">Skip</button>
       </div>
       <div class="control" v-show="!props.isPaused && props.isRunning">
         <button class="button is-info" type="button" @click="pause" :disabled="noTeamsSelected">
@@ -142,6 +153,25 @@ const noTeamsSelected = computed(() => teamStore.battleTeams.length === 0);
             @input="
               emit(
                 'update:seed',
+                ($event.target as HTMLInputElement).value
+                  ? parseInt(($event.target as HTMLInputElement).value, 10)
+                  : 0,
+              )
+            "
+        /></label>
+      </div>
+    </div>
+    <div class="field">
+      <div class="control">
+        <label class="label"
+          >Number of battles
+          <input
+            class="input"
+            type="number"
+            :value="numBattles"
+            @input="
+              emit(
+                'update:numBattles',
                 ($event.target as HTMLInputElement).value
                   ? parseInt(($event.target as HTMLInputElement).value, 10)
                   : 0,

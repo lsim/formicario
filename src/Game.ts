@@ -1,7 +1,7 @@
-import { type AntFunction, Battle } from '@/Battle.ts';
+import { type AntFunction, Battle, type BattleContinuation } from '@/Battle.ts';
 import type { GameSpec } from '@/GameSpec.ts';
-import type { GameSummary } from '@/GameSummary.ts';
-import { getRNG } from '@/prng.ts';
+import type { BattleSummary, GameSummary } from '@/GameSummary.ts';
+import { getRNG, type RNGFunction } from '@/prng.ts';
 import { parse } from 'espree';
 import type { Program } from 'estree';
 import { walk } from 'estree-walker';
@@ -32,61 +32,54 @@ export function instantiateParticipant(teamCode: string, teamName: string) {
 export class Game {
   public id = 0;
   activeBattle: Battle | null = null;
+  rng: RNGFunction;
 
   constructor(
     private spec: GameSpec,
     private readonly teamFunctions: AntFunction[],
   ) {
     this.id = Date.now();
-    this.spec.rng = getRNG(this.spec.seed);
+    this.rng = getRNG(this.spec.seed);
     this.teamFunctions = teamFunctions;
   }
 
   public async run(pause = false): Promise<GameSummary | undefined> {
     console.log('Running game', this.spec, pause);
 
-    this.activeBattle = new Battle(this.spec, this.teamFunctions);
+    const battleSummaries: BattleSummary[] = [];
+    for (let i = 0; i < this.spec.numBattles && !this.stopRequested; i++) {
+      const battleSeed = this.rng() || this.rng() || this.rng();
+      if (battleSeed === 0) throw new Error('Battle seed is 0');
+      this.activeBattle = new Battle(this.spec, this.teamFunctions, battleSeed, pause);
 
-    // Run the complete battle using the do-while loop structure
-    this.activeBattle.paused = pause;
-    const battleSummary = await this.activeBattle.run(pause ? 1 : 0);
-    if (battleSummary) {
-      this.activeBattle = null;
-
-      console.log('Battle summary', battleSummary);
-
-      return {
-        seed: this.spec.seed,
-        battles: [battleSummary],
-      };
+      const battleSummary = await this.activeBattle.run();
+      battleSummaries.push(battleSummary);
     }
-    return undefined;
+
+    return {
+      seed: this.spec.seed,
+      battles: battleSummaries,
+    };
   }
 
-  public stop() {
+  private stopRequested = false;
+  public skipBattle() {
+    this.activeBattle?.stop();
+  }
+
+  public stopGame() {
+    this.stopRequested = true;
     this.activeBattle?.stop();
   }
 
   public pause() {
-    if (!this.activeBattle) return;
-    this.activeBattle.paused = true;
+    this.activeBattle?.pause();
   }
 
-  public async resume() {
-    if (!this.activeBattle) return;
-    this.activeBattle.paused = false;
-    const battleSummary = await this.activeBattle.run();
-    if (battleSummary) {
-      this.activeBattle = null;
-      return {
-        seed: this.spec.seed,
-        battles: [battleSummary],
-      };
+  public proceed(continuation: BattleContinuation) {
+    this.activeBattle?.proceed(continuation);
+    if (continuation.type === 'stop') {
+      this.stopGame();
     }
-    return undefined;
-  }
-
-  public step(stepSize = 1) {
-    this.activeBattle?.run(stepSize);
   }
 }

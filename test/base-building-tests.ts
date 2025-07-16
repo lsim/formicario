@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { Battle, type AntFunction, type SquareData, type AntInfo } from '../src/Battle';
-import type { GameSpec } from '../src/GameSpec';
-import { getRNG } from '../src/prng';
+import { Battle, type AntFunction, type SquareData, type AntInfo } from '@/Battle';
+import type { GameSpec } from '@/GameSpec';
 
 describe('Base Building Brain Management', () => {
   it('should maintain consistent brain arrays during base building', () => {
@@ -59,14 +58,14 @@ describe('Base Building Brain Management', () => {
       newFoodMin: [5, 10],
       newFoodSpace: [5, 10],
       seed: 42,
-      rng: getRNG(42),
       startAnts: [25, 25], // Start with enough ants for base building
       teams: [],
       timeOutTurn: 200,
       winPercent: 70,
+      numBattles: 1,
     };
 
-    const battle = new Battle(gameSpec, [baseBuildingAnt]);
+    const battle = new Battle(gameSpec, [baseBuildingAnt], 123);
 
     // Add food to enable base building
     const baseX = Math.floor(battle.args.mapWidth / 2);
@@ -136,14 +135,14 @@ describe('Base Building Brain Management', () => {
       newFoodMin: [3, 6],
       newFoodSpace: [4, 8],
       seed: 123,
-      rng: getRNG(123),
       startAnts: [20, 20],
       teams: [],
       timeOutTurn: 100,
       winPercent: 70,
+      numBattles: 1,
     };
 
-    const battle = new Battle(gameSpec, [newBaseTestAnt]);
+    const battle = new Battle(gameSpec, [newBaseTestAnt], 123);
 
     // Set up conditions for base building and ant creation
     const baseX = Math.floor(battle.args.mapWidth / 2);

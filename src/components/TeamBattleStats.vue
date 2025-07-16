@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { TeamStatus } from '@/GameSummary.ts';
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, ref } from 'vue';
 import { battleStatusSubject } from '@/workers/WorkerDispatcher.ts';
+import { Subscription } from 'rxjs';
 
 declare type StatusProperty = keyof TeamStatus;
 
@@ -28,20 +29,31 @@ const propertyLabels: Record<StatusProperty, string> = {
   dieAge: 'Die age',
 };
 
+const props = defineProps<{
+  finalTeams?: TeamStatus[];
+}>();
+
 const selectedStatusProperty = ref<StatusProperty>('numAnts');
 
-const teams = ref<TeamStatus[]>([]);
+const teams = ref<TeamStatus[]>(props.finalTeams || []);
 const turn = ref<number>();
 const tps = ref<number>();
 
-battleStatusSubject.subscribe((battleStatus) => {
-  teams.value = battleStatus.teams;
-  turn.value = battleStatus.turns;
-  tps.value = battleStatus.turnsPerSecond;
-});
-
+// If we aren't given the final scores, subscribe to get live updates
+let subscription: Subscription | undefined;
+if (!props.finalTeams) {
+  subscription = battleStatusSubject.subscribe((battleStatus) => {
+    teams.value = battleStatus.teams;
+    turn.value = battleStatus.turns;
+    tps.value = battleStatus.turnsPerSecond;
+  });
+}
 const maxForSelectedProperty = computed(() => {
   return Math.max(...teams.value.map((t) => t[selectedStatusProperty.value] as number));
+});
+
+onBeforeUnmount(() => {
+  subscription?.unsubscribe();
 });
 </script>
 

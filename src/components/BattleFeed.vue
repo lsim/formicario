@@ -48,7 +48,6 @@ watch(
   },
 );
 
-// const battleTeams = computed(() => props.battle.teams);
 let teamColors: string[] | undefined;
 const mapWidth = ref(0);
 const mapHeight = ref(0);
@@ -112,17 +111,20 @@ function updateCanvas(ctx?: CanvasRenderingContext2D) {
 
 battleStatusSubject
   .pipe(
-    filter(() => !!canvas.value && !!context.value),
+    filter(() => !!canvas.value && !!context.value && !!backBufferCtx),
     tap((battle) => {
-      if (!teamColors) {
+      if (lastRenderedTurn === -1 || battle.turns < lastReceivedTurn) {
         // First status from new battle
+
+        lastRenderedTurn = 0;
         backBuffer.width = battle.args.mapWidth;
         backBuffer.height = battle.args.mapHeight;
-        backBuffer.getContext('2d')?.clearRect(0, 0, battle.args.mapWidth, battle.args.mapHeight);
+        backBufferCtx.clearRect(0, 0, battle.args.mapWidth, battle.args.mapHeight);
+        context.value?.clearRect(0, 0, battle.args.mapWidth, battle.args.mapHeight);
         parseTeamColors(battle.teams);
+        mapWidth.value = battle.args.mapWidth;
+        mapHeight.value = battle.args.mapHeight;
       }
-      if (!mapWidth.value) mapWidth.value = battle.args.mapWidth;
-      if (!mapHeight.value) mapHeight.value = battle.args.mapHeight;
       lastReceivedTurn = battle.turns;
     }),
   )

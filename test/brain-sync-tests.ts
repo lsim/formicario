@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { Battle, type AntFunction, type SquareData, type AntInfo } from '../src/Battle';
-import type { GameSpec } from '../src/GameSpec';
-import { getRNG } from '../src/prng';
+import { Battle, type AntFunction, type SquareData, type AntInfo } from '@/Battle';
+import type { GameSpec } from '@/GameSpec';
 
 describe('Brain Array Synchronization', () => {
   it('should maintain sync between square.numAnts and brain array length', () => {
@@ -20,7 +19,7 @@ describe('Brain Array Synchronization', () => {
       statusInterval: 10,
       teams: [{ name: 'TestAnt', code: 'function() {}' }],
       seed: 12345,
-      rng: getRNG(12345),
+      numBattles: 1,
     };
 
     const brainCheckResults: { numAnts: number; numBrains: number }[] = [];
@@ -43,7 +42,7 @@ describe('Brain Array Synchronization', () => {
       return 0; // Don't move - just stay put to avoid infinite loops
     }) as AntFunction;
 
-    const battle = new Battle(spec, [testAnt]);
+    const battle = new Battle(spec, [testAnt], 12345);
 
     // Run just one turn to test brain consistency
     battle.doTurn();
@@ -75,7 +74,7 @@ describe('Brain Array Synchronization', () => {
       statusInterval: 10,
       teams: [{ name: 'BaseBuildingAnt', code: 'function() {}' }],
       seed: 54321,
-      rng: getRNG(54321),
+      numBattles: 1,
     };
 
     let brainConsistencyChecked = false;
@@ -102,7 +101,7 @@ describe('Brain Array Synchronization', () => {
       return 0; // Don't actually build base to avoid complexity
     }) as AntFunction;
 
-    const battle = new Battle(spec, [baseBuildingAnt]);
+    const battle = new Battle(spec, [baseBuildingAnt], 54321);
 
     // Artificially add food to the center square to prepare for base building scenario
     const centerSquare = battle.mapData(32, 32);

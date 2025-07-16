@@ -175,7 +175,7 @@ function adamAnt(squares, antInfo) {
     // Reduce the range a bit if we have reached the 'front'
     // if (brain.random % 2 === 0) brain.range += 2;
     // else brain.range -= 2;
-    if (brain.range > 50) brain.range -= 2;
+    if (brain.range > 60) brain.range -= 2;
     return move(explore());
 
     // // Go spelunking
@@ -270,7 +270,7 @@ function adamAnt(squares, antInfo) {
     // When given directions at base, spread evenly around the circle. When exploring from elsewhere, choose a different point on the circle.
     if (brain.x !== 0 || brain.y !== 0) {
       brain.patternSeed += (numSlices / 3) | 0;
-      brain.range += 1; //(brain.x + brain.y + brain.random) % 2 === 0 ? 1 : 0;
+      brain.range += 2; //(brain.x + brain.y + brain.random) % 2 === 0 ? 1 : 0;
     }
     const radian = getRadian(brain.patternSeed);
     const destX = cos(radian) * brain.range;
