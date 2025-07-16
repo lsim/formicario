@@ -86,7 +86,7 @@ function borg(squareData, antInfo) {
     const dir = [0, 0];
     dir[0] = (workmem.xpos < x ? 1 : 0) + (workmem.xpos > x ? 3 : 0);
     dir[1] = (workmem.ypos < y ? 2 : 0) + (workmem.ypos > y ? 4 : 0);
-    
+
     if (workmem.xpos === x) {
       return dir[1];
     } else if (workmem.ypos === y) {
@@ -102,7 +102,7 @@ function borg(squareData, antInfo) {
     const dir = [0, 0];
     dir[0] = (workmem.xpos < x ? 1 : 0) + (workmem.xpos > x ? 3 : 0);
     dir[1] = (workmem.ypos < y ? 2 : 0) + (workmem.ypos > y ? 4 : 0);
-    
+
     if (workmem.xpos === x) {
       return dir[1];
     } else if (workmem.ypos === y) {
@@ -128,7 +128,7 @@ function borg(squareData, antInfo) {
       }
       i++;
     }
-    
+
     if (datas < FOODSIZE && i !== -1) {
       qmem.foodx[datas] = smem.foodx;
       qmem.foody[datas] = smem.foody;
@@ -153,7 +153,7 @@ function borg(squareData, antInfo) {
     queenmem.turn++;
     if (queenmem.turn === 100) {
       for (t = 1; t < NANNYSIZE; t++) {
-        antInfo.brains[t].klasse = NANNY;
+        if (antInfo.brains[t]) antInfo.brains[t].klasse = NANNY;
       }
     }
 
@@ -161,7 +161,7 @@ function borg(squareData, antInfo) {
     for (t = 1; t < squareData[0].numAnts; t++) {
       // Get reports about food
       if (antInfo.brains[t].klasse !== NANNY) {
-        if (antInfo.brains[t].klasse === SCOUT && 
+        if (antInfo.brains[t].klasse === SCOUT &&
             antInfo.brains[t].worker.status === QFOUNDFOOD &&
             antInfo.brains[t].worker.foodnumber) {
           insertFood(mem, antInfo.brains[t]);
@@ -175,7 +175,7 @@ function borg(squareData, antInfo) {
           antInfo.brains[t].worker.xdest = queenmem.foodx[0];
           antInfo.brains[t].worker.ydest = queenmem.foody[0];
           queenmem.foodnumber[0]--;
-          
+
           if (queenmem.foodnumber[0] === 0) {
             for (i = 0; i < queenmem.datas - 1; i++) {
               queenmem.foodx[i] = queenmem.foodx[i + 1];
@@ -187,7 +187,7 @@ function borg(squareData, antInfo) {
         } else if (t < squareData[0].numAnts - (7 * (firstfood ? 0 : 1))) {
           antInfo.brains[t].klasse = SCOUT;
           antInfo.brains[t].worker.status = QSEEKING;
-          
+
           if (queenmem.turn < 500) {
             antInfo.brains[t].worker.workturns = 70;
             antInfo.brains[t].worker.turnchance = 5;
@@ -231,7 +231,7 @@ function borg(squareData, antInfo) {
     switch (workmem.status) {
       case QIDLE:
         return 0;
-      
+
       case QGETFOOD:
         if (workmem.xdest === workmem.xpos && workmem.ydest === workmem.ypos) {
           if (squareData[0].numFood) { // Am I disappointed?
@@ -249,7 +249,7 @@ function borg(squareData, antInfo) {
         workmem.xpos += (retval === 1 ? 1 : 0) - (retval === 3 ? 1 : 0);
         workmem.ypos += (retval === 2 ? 1 : 0) - (retval === 4 ? 1 : 0);
         return retval + 8 * (workmem.status === QGOINGHOME ? 1 : 0);
-      
+
       case QGOINGHOME:
       case QNOFOODFOUND:
         if (!workmem.xpos && !workmem.ypos && squareData[0].base === 0) {
@@ -259,7 +259,7 @@ function borg(squareData, antInfo) {
         workmem.xpos += (retval === 1 ? 1 : 0) - (retval === 3 ? 1 : 0);
         workmem.ypos += (retval === 2 ? 1 : 0) - (retval === 4 ? 1 : 0);
         return retval + 8 * (workmem.status === QGOINGHOME ? 1 : 0);
-      
+
       default:
         workmem.status = QNOFOODFOUND;
         retval = borgGoto(0, 0);
@@ -273,7 +273,7 @@ function borg(squareData, antInfo) {
     let retval = workmem.retning;
     workmem.xpos += (retval === 1 ? 1 : 0) - (retval === 3 ? 1 : 0);
     workmem.ypos += (retval === 2 ? 1 : 0) - (retval === 4 ? 1 : 0);
-    
+
     if (workmem.xpos === 0 && workmem.ypos === 0) {
       mem.active = 424242;
       mem.klasse = SLAVE;
@@ -302,7 +302,7 @@ function borg(squareData, antInfo) {
       }
       if (retval) {
         workmem.status = QFOUNDFOOD;
-        
+
         workmem.xpos += (retval === 1 ? 1 : 0) - (retval === 3 ? 1 : 0);
         workmem.ypos += (retval === 2 ? 1 : 0) - (retval === 4 ? 1 : 0);
 
@@ -313,7 +313,7 @@ function borg(squareData, antInfo) {
         return retval;
       }
     }
-    
+
     if (workmem.foodnumber < 2 && workmem.status === QFOUNDFOOD) {
       workmem.foodx = workmem.foody = workmem.foodnumber = 0;
       workmem.status = QHAVEFOOD;
@@ -342,7 +342,7 @@ function borg(squareData, antInfo) {
       workmem.status = QIDLE;
       return 0;
     }
-    
+
     if (workmem.status !== QSEEKING) {
       workmem.status = QGOINGHOME;
       return 1;
@@ -359,10 +359,10 @@ function borg(squareData, antInfo) {
         workmem.xdest = workmem.ydest = 0;
       }
     }
-    
+
     // Seeking
     workmem.workturns--;
-    
+
     // Walk about
     if (!workmem.retning) workmem.retning = rnd(4) + 1;
     if (!rnd(workmem.turnchance)) {
@@ -407,7 +407,7 @@ function borg(squareData, antInfo) {
         break;
       }
     }
-    
+
     // Assume command
     if (!result) {
       for (t = 1; t < squareData[0].numAnts; t++) {
@@ -482,7 +482,7 @@ function borg(squareData, antInfo) {
     default:
       break;
   }
-  
+
   mem.active = 424242;
   mem.klasse = SLAVE;
   workmem.status = QGOINGHOME;
