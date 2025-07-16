@@ -1,10 +1,18 @@
-# Ant wars
+# Formicario
 
-This ancient programming game was popularized by the [Myrekrig](https://en.wikipedia.org/wiki/Myrekrig) community in Aarhus, Denmark in the late 20th century.
+This ancient programming game was popularized by the [Myrekrig](https://en.wikipedia.org/wiki/Myrekrig) community in Aarhus, Denmark in the late 20th century. 
 
-## Customize configuration
+This project aims to recreate the game using modern web technologies. 
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+### The name
+
+`Formicario` is a web app allows you to run your own formicarium (ant vivarium) in your browser. 
+
+Create your own race of ants and battle those created by others.
+
+## History
+
+Myrekrig had its heyday around 2000. It was developed by Aske Simon Christensen and received updates while he was still at the computer science department at Aarhus University. Lots of nerd cred befell those who managed to top the charts on http://myrekrig.dk in those days.
 
 ## Project Setup
 
@@ -27,7 +35,7 @@ yarn build
 ### Run Unit Tests with [Vitest](https://vitest.dev/)
 
 ```sh
-yarn test:unit
+yarn test
 ```
 
 ### Lint with [ESLint](https://eslint.org/)
