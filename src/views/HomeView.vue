@@ -144,7 +144,12 @@ async function stepGame(stepSize: number) {
           <div class="stat">Winner: {{ battle.winner }}</div>
           <div class="stat">Start time: {{ new Date(battle.startTime).toLocaleString() }}</div>
           <team-battle-stats class="team-stats" :final-teams="battle.teams" />
-          <battle-args class="battle-args" :args="battle.args" :teams="battle.teams" />
+          <battle-args
+            class="battle-args"
+            :args="battle.args"
+            :teams="battle.teams"
+            :seed="battle.seed"
+          />
           <hr />
         </template>
       </div>

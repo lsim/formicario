@@ -10,6 +10,7 @@ import type { BattleArgs } from '@/Battle.ts';
 const props = defineProps<{
   args?: BattleArgs;
   teams?: TeamStatus[];
+  seed?: string;
 }>();
 
 const battleArgs = ref<BattleArgs | undefined>(props.args);
@@ -32,7 +33,11 @@ onBeforeUnmount(() => {
   <div class="args-table" v-if="battleArgs && battleTeams">
     <div class="lbl">Teams:</div>
     <div class="val">{{ battleTeams.map((t) => t.name).join(', ') }}</div>
-    <div class="lbl">Map width:</div>
+    <template v-if="seed">
+      <div class="lbl">Seed:</div>
+      <div class="val">{{ seed }}</div>
+      <div class="lbl">Map width:</div>
+    </template>
     <div class="val">{{ battleArgs.mapWidth }}</div>
     <div class="lbl">Map height:</div>
     <div class="val">{{ battleArgs.mapHeight }}</div>
