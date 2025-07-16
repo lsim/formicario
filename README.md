@@ -6,7 +6,7 @@ This project aims to recreate the game using modern web technologies.
 
 ### The name
 
-`Formicario` is a web app allows you to run your own formicarium (ant vivarium) in your browser. 
+`Formicario` is a web app that allows you to run your own formicarium (ant vivarium) in your browser. 
 
 Create your own race of ants and battle those created by others.
 
