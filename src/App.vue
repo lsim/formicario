@@ -6,7 +6,7 @@ import { RouterView } from 'vue-router';
   <div id="root" class="article">
     <section class="hero is-warning">
       <div class="hero-body">
-        <p class="title">Formiario</p>
+        <p class="title">Formicario</p>
       </div>
     </section>
 
