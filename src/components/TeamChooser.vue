@@ -38,16 +38,19 @@ function contrastingColor(color: string) {
           <button
             v-for="team in teamStore.allTeams.sort((a, b) => a.name.localeCompare(b.name))"
             :key="team.name"
-            class="cell button is-outlined"
+            class="cell button"
             :class="{
-              'is-primary': selectionBools[team.name],
-              'is-link': !selectionBools[team.name],
+              'is-outlined is-link': !selectionBools[team.name],
             }"
-            @click.exact="selectTeam(team)"
+            @click.exact="selectionBools[team.name] ? unselectTeam(team) : selectTeam(team)"
             @click.ctrl="teamStore.battleTeams = [team]"
             @click.meta="teamStore.battleTeams = [team]"
             type="button"
-            :style="{ backgroundColor: team.color, color: contrastingColor(team.color ?? '#000') }"
+            :style="
+              selectionBools[team.name]
+                ? { backgroundColor: team.color, color: contrastingColor(team.color ?? '#000') }
+                : { borderColor: team.color }
+            "
           >
             {{ team.name }}
           </button>

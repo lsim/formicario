@@ -3,77 +3,79 @@ import { createRestrictedEval } from '@/safe-eval.ts';
 import type { AntFunction, AntInfo } from '@/Battle.ts';
 
 describe('safeEval', () => {
-  let safeEval: (code: string) => AntFunction;
+  let safeEval: (code: string, teamName: string) => AntFunction;
   beforeEach(() => {
     safeEval = createRestrictedEval();
   });
   it('should not allow access to window', () => {
-    expect(() => safeEval('() => window.location.href')([], { brains: [] })).toThrow();
+    expect(() => safeEval('() => window.location.href', 'fooTeam')([], { brains: [] })).toThrow();
   });
 
   it('should not allow access to global', () => {
-    expect(() => safeEval('() => global.location.href')([], { brains: [] })).toThrow();
+    expect(() => safeEval('() => global.location.href', 'fooTeam')([], { brains: [] })).toThrow();
   });
 
   it('should not allow access to top', () => {
-    expect(() => safeEval('() => top.location.href')([], { brains: [] })).toThrow();
+    expect(() => safeEval('() => top.location.href', 'fooTeam')([], { brains: [] })).toThrow();
   });
 
   it('should not allow access to parent', () => {
-    expect(() => safeEval('() => parent.location.href')([], { brains: [] })).toThrow();
+    expect(() => safeEval('() => parent.location.href', 'fooTeam')([], { brains: [] })).toThrow();
   });
 
   it('should not allow access to self', () => {
-    expect(() => safeEval('() => self.location.href')([], { brains: [] })).toThrow();
+    expect(() => safeEval('() => self.location.href', 'fooTeam')([], { brains: [] })).toThrow();
   });
 
   it('should not allow access to JSON', () => {
-    expect(() => safeEval('() => JSON.stringify(42)')([], { brains: [] })).toThrow();
+    expect(() => safeEval('() => JSON.stringify(42)', 'fooTeam')([], { brains: [] })).toThrow();
   });
 
   it('should not allow access to Math', () => {
-    expect(() => safeEval('() => Math.floor(0.5)')([], { brains: [] })).toThrow();
+    expect(() => safeEval('() => Math.floor(0.5)', 'fooTeam')([], { brains: [] })).toThrow();
   });
 
   it('should not allow access to Date', () => {
-    expect(() => safeEval('() => Date.now()')([], { brains: [] })).toThrow();
+    expect(() => safeEval('() => Date.now()', 'fooTeam')([], { brains: [] })).toThrow();
   });
 
   it('should not allow access to fetch', () => {
-    expect(() => safeEval('() => fetch()')([], { brains: [] })).toThrow();
+    expect(() => safeEval('() => fetch()', 'fooTeam')([], { brains: [] })).toThrow();
   });
 
   it('should not allow access to XMLHttpRequest', () => {
-    expect(() => safeEval('() => new XMLHttpRequest()')([], { brains: [] })).toThrow();
+    expect(() => safeEval('() => new XMLHttpRequest()', 'fooTeam')([], { brains: [] })).toThrow();
   });
 
   it('should not allow access to setTimeout', () => {
-    expect(() => safeEval('() => setTimeout()')([], { brains: [] })).toThrow();
+    expect(() => safeEval('() => setTimeout()', 'fooTeam')([], { brains: [] })).toThrow();
   });
 
   it('should not allow access to setInterval', () => {
-    expect(() => safeEval('() => setInterval()')([], { brains: [] })).toThrow();
+    expect(() => safeEval('() => setInterval()', 'fooTeam')([], { brains: [] })).toThrow();
   });
 
   it('should not allow access to clearTimeout', () => {
-    expect(() => safeEval('() => clearTimeout()')([], { brains: [] })).toThrow();
+    expect(() => safeEval('() => clearTimeout()', 'fooTeam')([], { brains: [] })).toThrow();
   });
 
   it('should not allow access to clearInterval', () => {
-    expect(() => safeEval('() => clearInterval()')([], { brains: [] })).toThrow();
+    expect(() => safeEval('() => clearInterval()', 'fooTeam')([], { brains: [] })).toThrow();
   });
 
   it('should allow access to Object', () => {
-    expect(() => safeEval('() => Object.keys({ foo: "bar" })')([], { brains: [] })).not.toThrow();
+    expect(() =>
+      safeEval('() => Object.keys({ foo: "bar" })', 'fooTeam')([], { brains: [] }),
+    ).not.toThrow();
   });
 
   it('should allow access to RegExp', () => {
-    expect(() => safeEval('() => new RegExp("foo")')([], { brains: [] })).not.toThrow();
+    expect(() => safeEval('() => new RegExp("foo")', 'fooTeam')([], { brains: [] })).not.toThrow();
   });
 
   it('should produce a viable ant function', async () => {
     const source = (await import('../ants/reluctAnt.js?raw')).default;
-    const antFunc = safeEval(source);
+    const antFunc = safeEval(source, 'fooTeam');
     expect(typeof antFunc).toBe('function');
     const antDescriptor = antFunc(); // Leave empty to get the descriptor
     expect(antDescriptor).toBeTypeOf('object');

@@ -15,7 +15,7 @@ function getAntFunctions(teams: { name: string; code: string }[]): {
     try {
       return {
         name: team.name,
-        func: instantiateParticipant(team.code),
+        func: instantiateParticipant(team.code, team.name),
       };
     } catch (error) {
       return {
@@ -75,7 +75,7 @@ onmessage = async (e) => {
       postMessage({ type: 'ok', id: command.id });
     } else if (command?.type === 'ant-info-request') {
       try {
-        const func = instantiateParticipant(command.team);
+        const func = instantiateParticipant(command.teamCode, command.teamName);
         const descriptor = func();
         postMessage({ type: 'ant-info-reply', info: descriptor, id: command.id });
       } catch (error) {

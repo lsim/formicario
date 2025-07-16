@@ -124,6 +124,7 @@ export type AntDescriptor = {
   color: string;
   name: string;
   brainTemplate: object;
+  description?: string;
 };
 
 export type AntFunction = (() => AntDescriptor) & ((map: SquareData[], antInfo: AntInfo) => number);

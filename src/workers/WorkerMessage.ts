@@ -68,7 +68,8 @@ export interface DebugReplyMessage extends TypedMessage {
 
 export interface AntInfoRequestMessage extends TypedMessage {
   type: 'ant-info-request';
-  team: string;
+  teamCode: string;
+  teamName: string;
 }
 
 export interface AntInfoReplyMessage extends TypedMessage {

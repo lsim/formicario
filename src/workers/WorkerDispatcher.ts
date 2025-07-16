@@ -82,7 +82,8 @@ export async function getDebugAnts(x?: number, y?: number) {
 export async function getTeamInfo(team: Team) {
   const reply = (await queueMessage<AntInfoRequestMessage>({
     type: 'ant-info-request',
-    team: team.code,
+    teamCode: team.code,
+    teamName: team.name,
   })) as AntInfoReplyMessage;
   return reply.info;
 }

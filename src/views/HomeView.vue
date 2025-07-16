@@ -32,8 +32,8 @@ const seed = ref((Math.random() * 4294967295) >>> 0);
 const statusInterval = ref(20);
 
 const gameSpec: Partial<GameSpec> = {
-  mapWidth: [250, 500],
-  mapHeight: [250, 500],
+  mapWidth: [256, 256],
+  mapHeight: [256, 256],
   newFoodSpace: [10, 50],
   newFoodMin: [10, 30],
   newFoodDiff: [5, 20],

@@ -24,9 +24,9 @@ function auditParticipant(teamCode: string) {
 
 const safeEval = createRestrictedEval();
 
-export function instantiateParticipant(team: string) {
-  auditParticipant(team);
-  return safeEval(team) as AntFunction;
+export function instantiateParticipant(teamCode: string, teamName: string) {
+  auditParticipant(teamCode);
+  return safeEval(teamCode, teamName) as AntFunction;
 }
 
 export class Game {

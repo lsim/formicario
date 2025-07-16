@@ -26,10 +26,6 @@ export const shadowedGlobals = Object.keys(self)
   .concat(prohibitedGlobalNames)
   .filter((prop) => !allowedGlobalNames.includes(prop));
 
-function log(...args: unknown[]) {
-  console.log('Ant says', ...args);
-}
-
 function buildScope(allowedGlobals: Record<string, unknown> = {}) {
   const scope: Record<string, unknown> = {};
 
@@ -47,7 +43,6 @@ function buildScope(allowedGlobals: Record<string, unknown> = {}) {
   scope.RegExp = RegExp;
   scope.Error = Error;
   scope.Symbol = Symbol;
-  scope.console = { log };
 
   return { ...scope, ...allowedGlobals };
 }
@@ -55,11 +50,16 @@ function buildScope(allowedGlobals: Record<string, unknown> = {}) {
 // Expects code that declares a function
 export function createRestrictedEval(
   allowedGlobals: Record<string, unknown> = {},
-): (code: string) => AntFunction {
+): (code: string, teamName: string) => AntFunction {
   // We return an eval function where the scope is limited to the allowed globals
-  return function restrictedEval(fnCode: string) {
+  return function restrictedEval(fnCode: string, teamName: string) {
+    function log(...args: unknown[]) {
+      console.log(`${teamName} says`, ...args);
+    }
+
     // Create an isolated scope by shadowing the prohibited globals with function arguments of the same name
     const scope = buildScope(allowedGlobals);
+    scope['console'] = { log };
     const scopeKeys = Object.keys(scope);
     const scopeValues = Object.values(scope);
 
