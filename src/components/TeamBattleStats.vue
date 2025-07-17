@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { TeamStatus } from '@/GameSummary.ts';
 import { computed, onBeforeUnmount, ref } from 'vue';
-import { battleStatusSubject } from '@/workers/WorkerDispatcher.ts';
 import { Subscription } from 'rxjs';
+import { useWorker } from '@/workers/WorkerDispatcher.ts';
 
 declare type StatusProperty = keyof TeamStatus;
 
@@ -29,6 +29,8 @@ const propertyLabels: Record<StatusProperty, string> = {
   dieAge: 'Die age',
 };
 
+const worker = useWorker();
+
 const props = defineProps<{
   finalTeams?: TeamStatus[];
 }>();
@@ -44,7 +46,7 @@ const teams = computed(() => props.finalTeams || liveTeams.value);
 // If we aren't given the final scores, subscribe to get live updates
 let subscription: Subscription | undefined;
 if (!props.finalTeams) {
-  subscription = battleStatusSubject.subscribe((battleStatus) => {
+  subscription = worker.battleStatusSubject.subscribe((battleStatus) => {
     liveTeams.value = battleStatus.teams;
     turn.value = battleStatus.turns;
     tps.value = battleStatus.turnsPerSecond;

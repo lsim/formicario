@@ -3,9 +3,9 @@
 
 import { onBeforeUnmount, ref } from 'vue';
 import { first, type Subscription } from 'rxjs';
-import { battleStatusSubject } from '@/workers/WorkerDispatcher.ts';
 import type { TeamStatus } from '@/GameSummary.ts';
 import type { BattleArgs } from '@/Battle.ts';
+import { useWorker } from '@/workers/WorkerDispatcher.ts';
 
 const props = defineProps<{
   args?: BattleArgs;
@@ -13,12 +13,14 @@ const props = defineProps<{
   seed?: number;
 }>();
 
+const worker = useWorker();
+
 const battleArgs = ref<BattleArgs | undefined>(props.args);
 const battleTeams = ref<TeamStatus[] | undefined>(props.teams);
 
 let subscription: Subscription | undefined;
 if (!battleArgs.value) {
-  subscription = battleStatusSubject.pipe(first()).subscribe((status) => {
+  subscription = worker.battleStatusSubject.pipe(first()).subscribe((status) => {
     battleArgs.value = status.args;
     battleTeams.value = status.teams;
   });

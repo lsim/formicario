@@ -1,4 +1,4 @@
-import type { BattleArgs, SquareData } from '@/Battle.ts';
+import type { BattleArgs } from '@/Battle.ts';
 
 export type SquareStatus = {
   index: number;

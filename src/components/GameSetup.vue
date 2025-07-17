@@ -1,139 +1,20 @@
 <script setup lang="ts">
 import TeamChooser from '@/components/TeamChooser.vue';
-import { computed, ref } from 'vue';
-import { useMagicKeys, whenever } from '@vueuse/core';
 import { useTeamStore } from '@/stores/teams.ts';
-
-const props = defineProps<{
-  isRunning: boolean;
-  isPaused: boolean;
-  statusInterval: number;
-  seed: number;
-  numBattles: number;
-  liveFeed: boolean;
-}>();
-
-const emit = defineEmits<{
-  (event: 'start-game'): void;
-  (event: 'stop-game'): void;
-  (event: 'pause-game'): void;
-  (event: 'resume-game'): void;
-  (event: 'skip-battle'): void;
-  (event: 'step-game', stepSize: number): void;
-  (event: 'update:status-interval', statusInterval: number): void;
-  (event: 'update:seed', seed: number): void;
-  (event: 'update:numBattles', numBattles: number): void;
-  (event: 'update:liveFeed', liveFeed: boolean): void;
-}>();
+import { useGameStore } from '@/stores/game.ts';
 
 const teamStore = useTeamStore();
-
-const stepSize = ref(1);
-
-const { enter, shift_space, escape } = useMagicKeys();
-
-whenever(enter, start);
-
-whenever(shift_space, step);
-
-whenever(escape, stop);
-
-function start() {
-  if (props.isRunning) return;
-  if (props.isPaused) {
-    resume();
-  } else {
-    emit('start-game');
-  }
-}
-
-function stop() {
-  if (!props.isRunning) return;
-  emit('stop-game');
-}
-
-function skip() {
-  if (!props.isRunning) return;
-  emit('skip-battle');
-}
-
-function pause() {
-  emit('pause-game');
-}
-
-function resume() {
-  emit('resume-game');
-}
-
-function step() {
-  if (!props.isRunning || (props.isRunning && props.isPaused)) {
-    emit('step-game', stepSize.value);
-  }
-}
-
-const noTeamsSelected = computed(() => teamStore.battleTeams.length === 0);
+const gameStore = useGameStore();
 </script>
 
 <template>
   <form>
-    <div class="field is-grouped">
-      <div class="control" v-show="!props.isRunning">
-        <button
-          class="button is-primary"
-          type="button"
-          @click="start"
-          :disabled="noTeamsSelected"
-          title="[Enter]"
-        >
-          Start game
-        </button>
-      </div>
-      <div class="control" v-show="props.isRunning">
-        <button class="button is-danger" type="button" @click="stop" title="[Escape]">Stop</button>
-      </div>
-      <div class="control" v-show="props.isRunning">
-        <button class="button" type="button" @click="skip">Skip</button>
-      </div>
-      <div class="control" v-show="!props.isPaused && props.isRunning">
-        <button class="button is-info" type="button" @click="pause" :disabled="noTeamsSelected">
-          Pause
-        </button>
-      </div>
-      <div class="control" v-show="props.isPaused && props.isRunning">
-        <button class="button is-info" type="button" @click="resume" :disabled="noTeamsSelected">
-          Resume
-        </button>
-      </div>
-      <div
-        class="field has-addons"
-        v-show="(props.isPaused && props.isRunning) || !props.isRunning"
-      >
-        <div class="control">
-          <button
-            class="button is-info"
-            type="button"
-            @click="step"
-            :disabled="noTeamsSelected"
-            title="[Shift + Space]"
-          >
-            Step
-          </button>
-        </div>
-        <div class="control">
-          <input class="step-size input" type="number" v-model="stepSize" min="1" step="10" />
-        </div>
-      </div>
-    </div>
     <team-chooser @update:teams="teamStore.battleTeams = $event" />
     <div class="field">
       <div class="control">
         <label class="checkbox label"
           >Live feed
-          <input
-            type="checkbox"
-            :checked="liveFeed"
-            @input="emit('update:liveFeed', ($event.target as HTMLInputElement).checked)"
-          />
+          <input type="checkbox" v-model="gameStore.liveFeed" />
         </label>
       </div>
     </div>
@@ -144,16 +25,8 @@ const noTeamsSelected = computed(() => teamStore.battleTeams.length === 0);
           <input
             class="input"
             type="number"
-            :value="statusInterval"
-            :disabled="!liveFeed"
-            @input="
-              emit(
-                'update:status-interval',
-                ($event.target as HTMLInputElement).value
-                  ? parseInt(($event.target as HTMLInputElement).value, 10)
-                  : 0,
-              )
-            "
+            :disabled="!gameStore.liveFeed"
+            v-model="gameStore.gameSpec.statusInterval"
         /></label>
       </div>
     </div>
@@ -161,37 +34,14 @@ const noTeamsSelected = computed(() => teamStore.battleTeams.length === 0);
       <div class="control">
         <label class="label"
           >Number of battles
-          <input
-            class="input"
-            type="number"
-            :value="numBattles"
-            @input="
-              emit(
-                'update:numBattles',
-                ($event.target as HTMLInputElement).value
-                  ? parseInt(($event.target as HTMLInputElement).value, 10)
-                  : 0,
-              )
-            "
+          <input class="input" type="number" v-model="gameStore.gameSpec.numBattles"
         /></label>
       </div>
     </div>
     <div class="field">
       <div class="control">
         <label class="label"
-          >Seed
-          <input
-            class="input"
-            type="number"
-            :value="seed"
-            @input="
-              emit(
-                'update:seed',
-                ($event.target as HTMLInputElement).value
-                  ? parseInt(($event.target as HTMLInputElement).value, 10)
-                  : 0,
-              )
-            "
+          >Seed <input class="input" type="number" v-model="gameStore.gameSpec.seed"
         /></label>
       </div>
     </div>

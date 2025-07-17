@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { getTeamInfo } from '@/workers/WorkerDispatcher.ts';
 import { blacklist, type Team } from '@/Team.ts';
+import { useWorker } from '@/workers/WorkerDispatcher.ts';
 
 export const useTeamStore = defineStore('team', () => {
+  const worker = useWorker();
   async function loadBuiltinTeams() {
     const teams = [];
     // Built-in teams
@@ -17,7 +18,7 @@ export const useTeamStore = defineStore('team', () => {
       const name = key.replace(/^\/ants\/(.+)\.js$/, '$1');
       const teamInfo: Team = { name, code };
       try {
-        const moreInfo = await getTeamInfo(teamInfo);
+        const moreInfo = await worker.getTeamInfo(teamInfo);
         if (moreInfo.color) teamInfo.color = moreInfo.color;
         if (moreInfo.brainTemplate) teamInfo.brainTemplate = moreInfo.brainTemplate;
         teamInfo.status = 'ok';

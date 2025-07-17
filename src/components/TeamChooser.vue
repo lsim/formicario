@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useTeamStore } from '@/stores/teams.ts';
+import { faSearch } from '@fortawesome/free-solid-svg-icons';
 
 import Color from 'color';
 import type { Team } from '@/Team.ts';
@@ -45,8 +46,11 @@ const filteredTeams = computed(() => {
   <div class="field">
     <div class="control">
       <label class="label">Choose your teams</label>
-      <div class="block control">
+      <div class="block control has-icons-right">
         <input class="input" type="text" v-model="filter" placeholder="Filter" />
+        <span class="icon is-small is-right">
+          <font-awesome-icon :icon="faSearch" />
+        </span>
       </div>
       <div class="box control">
         <div class="all-teams grid">

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { AntData } from '@/Battle.ts';
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, ref } from 'vue';
 import { useMagicKeys, whenever } from '@vueuse/core';
 import { toObserver } from '@vueuse/rxjs';
-import { debugAntsSubject, getDebugAnts } from '@/workers/WorkerDispatcher.ts';
+import { useWorker } from '@/workers/WorkerDispatcher.ts';
 
 const orderByProp = ref<keyof AntData>('team');
 
@@ -15,12 +15,14 @@ const { up, down } = useMagicKeys({
   },
 });
 
+const worker = useWorker();
+
 whenever(up, () => skipAnt(-1));
 whenever(down, () => skipAnt(1));
 
 const ants = ref<AntData[]>([]);
 
-debugAntsSubject.subscribe(toObserver(ants));
+const subscription = worker.debugAntsSubject.subscribe(toObserver(ants));
 
 const sortedAnts = computed(() => {
   return [...ants.value].sort((a, b) => {
@@ -55,13 +57,19 @@ function skipAnt(skip: number) {
   if (index === -1) return;
   selectedAnt.value = ants[(index + skip) % ants.length];
 }
+
+onBeforeUnmount(() => {
+  subscription?.unsubscribe();
+});
 </script>
 
 <template>
   <form class="ant-debugger">
     <div class="field is-grouped is-grouped-right">
       <div class="control">
-        <button class="button is-primary" type="button" @click="() => getDebugAnts()">Debug</button>
+        <button class="button is-primary" type="button" @click="() => worker.getDebugAnts()">
+          Debug
+        </button>
       </div>
       <div class="control">
         <button class="button is-link" type="button" @click="clear">Clear</button>

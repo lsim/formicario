@@ -54,7 +54,8 @@ export class Game {
         i--;
         continue;
       }
-      this.activeBattle = new Battle(this.spec, this.teamFunctions, battleSeed, pause);
+      // Only pause the first battle
+      this.activeBattle = new Battle(this.spec, this.teamFunctions, battleSeed, pause && i === 0);
 
       const battleSummary = await this.activeBattle.run();
       battleSummaries.push(battleSummary);
