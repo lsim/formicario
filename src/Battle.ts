@@ -502,9 +502,10 @@ export class Battle {
 
       // Emit status for UI updates (equivalent to SysDrawMap() in C)
       if (
-        stepsToTake === 0 ||
-        this.currentTurn === 1 ||
-        (this.args.statusInterval >= 0 && this.currentTurn % this.args.statusInterval === 0)
+        this.args.statusInterval >= 0 &&
+        (stepsToTake === 0 ||
+          this.currentTurn === 1 ||
+          this.currentTurn % this.args.statusInterval === 0)
       ) {
         this.emitStatus();
       }
@@ -573,6 +574,8 @@ export class Battle {
     };
   }
 
+  quarantinedTeams: number[] = [];
+
   // Squares that have been touched since the last status update
   touchedSquares: Set<number> = new Set();
 
@@ -593,6 +596,9 @@ export class Battle {
       const randomIndex = Math.floor(this.rng(turnAnts));
       const antIndex = antIndices[randomIndex];
       const ant = livingAnts[antIndex];
+      if (this.quarantinedTeams.includes(ant.team)) {
+        continue;
+      }
 
       // Move ant from unprocessed to processed list
       antIndices[randomIndex] = antIndices[turnAnts - 1];
@@ -605,8 +611,22 @@ export class Battle {
       }
 
       // Execute ant's brain and perform its action
-      const action = this.runAnt(ant);
-      this.doAction(ant, action);
+      try {
+        const action = this.runAnt(ant);
+        this.doAction(ant, action);
+      } catch (error) {
+        // Disable this ant
+        this.quarantinedTeams.push(ant.team);
+        console.error(
+          `Ant function error for team ${ant.team}:`,
+          '\nerror:',
+          error,
+          '\nant:',
+          ant,
+          '\nsquare:',
+          this.mapData(ant.xPos, ant.yPos),
+        );
+      }
     }
 
     // Place new food if needed
@@ -657,37 +677,17 @@ export class Battle {
 
     // Execute team function
     let action: number | AntDescriptor;
-    try {
-      // Random timing measurement (1 in 10 chance like C implementation)
-      const shouldTime = this.rng(10) === 0;
-      //console.log('Calling ant with args', obfuscatedMapData, antInfo, 'in turn', this.currentTurn);
-      if (shouldTime) {
-        const startTime = performance.now();
-        action = team.func(obfuscatedMapData, antInfo);
-        const endTime = performance.now();
-        team.timeUsed += endTime - startTime;
-        team.timesTimed++;
-      } else {
-        action = team.func(obfuscatedMapData, antInfo);
-      }
-    } catch (error) {
-      // If ant function fails, default to no action
-      console.error(
-        `Ant function error for team ${ant.team}:`,
-        '\nerror:',
-        error,
-        '\nant:',
-        ant,
-        '\nantsOnSquare:',
-        antsOnSquare,
-        '\nantInfo:',
-        antInfo,
-        '\nsquare:',
-        this.mapData(ant.xPos, ant.yPos),
-      );
-      // // Temporarily halt on error, to facilitate debugging
-      // this.stop();
-      action = 0;
+    // Random timing measurement (1 in 10 chance like C implementation)
+    const shouldTime = this.rng(10) === 0;
+    //console.log('Calling ant with args', obfuscatedMapData, antInfo, 'in turn', this.currentTurn);
+    if (shouldTime) {
+      const startTime = performance.now();
+      action = team.func(obfuscatedMapData, antInfo);
+      const endTime = performance.now();
+      team.timeUsed += endTime - startTime;
+      team.timesTimed++;
+    } else {
+      action = team.func(obfuscatedMapData, antInfo);
     }
 
     // Return action as number (ignore AntDescriptor case for now)

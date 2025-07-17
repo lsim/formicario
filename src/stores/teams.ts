@@ -1,14 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { getTeamInfo } from '@/workers/WorkerDispatcher.ts';
-
-export type Team = {
-  name: string;
-  code: string;
-  color?: string;
-  brainTemplate?: object;
-  status?: 'ok' | 'error';
-};
+import type { Team } from '@/Team.ts';
 
 export const useTeamStore = defineStore('team', () => {
   async function loadBuiltinTeams() {

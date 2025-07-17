@@ -14,6 +14,9 @@ export default mergeConfig(
         enabled: false,
         exclude: ['ants/*'],
       },
+      poolOptions: {
+        maxWorkers: 3,
+      },
     },
   }),
 );
