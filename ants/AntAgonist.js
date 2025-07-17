@@ -2,7 +2,7 @@ function AntAgonist(squareData, antInfo) {
   // Return ant descriptor when called without arguments
   if (!squareData) {
     return {
-      brainTemplate: 0, // Simple byte state storage like C version
+      brainTemplate: { v: 0 }, // Simple byte state storage like C version
       name: 'AntAgonist',
       color: '#11AAFF', // Blue color from C implementation
     };
@@ -210,7 +210,7 @@ function AntAgonist(squareData, antInfo) {
   // Helper functions
   function getInformer(felt, mem) {
     for (let j = 1; j < felt[0].numAnts; j++) {
-      if (isInformer(mem[j]) || isFoodInformer(mem[j])) {
+      if (isInformer(mem[j].v) || isFoodInformer(mem[j].v)) {
         return j;
       }
     }
@@ -220,7 +220,7 @@ function AntAgonist(squareData, antInfo) {
   function getNumberOfFoodReturners(felt, mem) {
     let number = 0;
     for (let j = 1; j < felt[0].numAnts; j++) {
-      if (isFoodReturner(mem[j])) {
+      if (isFoodReturner(mem[j].v)) {
         number++;
       }
     }
@@ -230,7 +230,7 @@ function AntAgonist(squareData, antInfo) {
   function getHighestFoodInformer(felt, mem) {
     let number = 0;
     for (let j = 1; j < felt[0].numAnts; j++) {
-      if (isFoodInformer(mem[j])) {
+      if (isFoodInformer(mem[j].v)) {
         number = j;
       }
     }
@@ -240,7 +240,7 @@ function AntAgonist(squareData, antInfo) {
   function getBuilderCount(felt, mem) {
     let builders = 0;
     for (let j = 0; j < felt[0].numAnts; j++) {
-      if (isBaseBuilder(mem[j])) {
+      if (isBaseBuilder(mem[j].v)) {
         builders++;
       }
     }
@@ -249,7 +249,7 @@ function AntAgonist(squareData, antInfo) {
 
   function getRandomBuilder(felt, mem) {
     for (let j = 0; j < felt[0].numAnts; j++) {
-      if (isBaseBuilder(mem[j])) {
+      if (isBaseBuilder(mem[j].v)) {
         return j;
       }
     }
@@ -259,7 +259,7 @@ function AntAgonist(squareData, antInfo) {
   function getRandomValue(felt, mem) {
     let random = 0;
     for (let j = 0; j < felt[0].numAnts; j++) {
-      random += mem[j];
+      random += mem[j].v;
     }
     for (let j = 0; j <= 4; j++) {
       random += felt[j].numAnts + felt[j].numFood;
@@ -270,7 +270,7 @@ function AntAgonist(squareData, antInfo) {
   function getZeroAnts(felt, mem) {
     let number = 0;
     for (let j = 1; j < felt[0].numAnts; j++) {
-      if (mem[j] === 0) {
+      if (mem[j].v === 0) {
         number++;
       }
     }
@@ -282,35 +282,35 @@ function AntAgonist(squareData, antInfo) {
     // Check for enemies first
     for (let i = 1; i <= 4; i++) {
       if (felt[i].team) {
-        mem[0] = makeGuard(0);
+        mem[0].v = makeGuard(0);
         return i;
       }
     }
 
     // Base operations
     if (felt[0].base) {
-      const dir = gatherDir(mem[0]);
+      const dir = gatherDir(mem[0].v);
       let count = 0;
       
-      if (mem[0] === 0) {
+      if (mem[0].v === 0) {
         return 0;
       }
       
-      if (timeForBase(mem[0])) {
+      if (timeForBase(mem[0].v)) {
         const zeroants = getZeroAnts(felt, mem);
         if (zeroants < 4) {
-          mem[0] = 0;
+          mem[0].v = 0;
         } else {
           const random = getRandomValue(felt, mem) % 4;
           for (let i = 1; i < felt[0].numAnts; i++) {
-            if (mem[i] === 0) {
-              mem[i] = 160;
+            if (mem[i].v === 0) {
+              mem[i].v = 160;
             }
           }
           if (random === 3 || random === 1) {
-            mem[0] = makeBaseBuilder(0, random, 1);
+            mem[0].v = makeBaseBuilder(0, random, 1);
           } else {
-            mem[0] = makeBaseBuilder(0, random, 0);
+            mem[0].v = makeBaseBuilder(0, random, 0);
           }
           return go(random);
         }
@@ -321,14 +321,14 @@ function AntAgonist(squareData, antInfo) {
       } else {
         count = 0;
       }
-      mem[0] = makeGatherer(dir, count);
+      mem[0].v = makeGatherer(dir, count);
       return go(dir);
     }
 
     // Gatherer logic
-    if (isGatherer(mem[0])) {
-      const myDir = gatherDir(mem[0]);
-      const myCount = gatherCount(mem[0]);
+    if (isGatherer(mem[0].v)) {
+      const myDir = gatherDir(mem[0].v);
+      const myCount = gatherCount(mem[0].v);
       
       if (felt[0].numFood) {
         const newCount = (myCount + 3) % 4;
@@ -337,19 +337,19 @@ function AntAgonist(squareData, antInfo) {
         if (builders > 0) {
           const rndBuilder = getRandomBuilder(felt, mem);
           if (rndBuilder > 0) {
-            const ready = baseBuilderReady(mem[rndBuilder]);
+            const ready = baseBuilderReady(mem[rndBuilder].v);
             if (ready === 0) {
               if (builders < (NewBaseFood + 3) && 
                   felt[0].numFood >= (NewBaseFood + 3) && 
-                  (baseBuilderCount(mem[rndBuilder]) === 0)) {
-                mem[0] = makeBaseBuilder(0, baseBuilderDir(mem[rndBuilder]), baseBuilderCount(mem[rndBuilder]));
+                  (baseBuilderCount(mem[rndBuilder].v) === 0)) {
+                mem[0].v = makeBaseBuilder(0, baseBuilderDir(mem[rndBuilder].v), baseBuilderCount(mem[rndBuilder].v));
                 return 0;
               } else {
-                mem[0] = makeGatherer(myDir, ((myCount + 1) % 4));
+                mem[0].v = makeGatherer(myDir, ((myCount + 1) % 4));
                 return go(myDir);
               }
             } else {
-              mem[0] = makeGatherer(myDir, ((myCount + 1) % 4));
+              mem[0].v = makeGatherer(myDir, ((myCount + 1) % 4));
               return go(myDir);
             }
           } else {
@@ -357,10 +357,10 @@ function AntAgonist(squareData, antInfo) {
           }
         } else {
           if (felt[reverseDir(myDir) + 1].numAnts < MaxSquareAnts) {
-            mem[0] = makeGatherer(myDir, newCount);
+            mem[0].v = makeGatherer(myDir, newCount);
             return goFood(reverseDir(myDir));
           } else {
-            mem[0] = makeGatherer(myDir, ((myCount + 1) % 4));
+            mem[0].v = makeGatherer(myDir, ((myCount + 1) % 4));
             return go(myDir);
           }
         }
@@ -368,63 +368,63 @@ function AntAgonist(squareData, antInfo) {
         const informer = getInformer(felt, mem);
         if (myCount === 3) {
           if (informer) {
-            if (isInformer(mem[informer])) {
-              const informerDirVal = informerDir(mem[informer]);
-              if (informerHasSearchers(mem[informer])) {
-                mem[0] = makeGatherer(myDir, 0);
+            if (isInformer(mem[informer].v)) {
+              const informerDirVal = informerDir(mem[informer].v);
+              if (informerHasSearchers(mem[informer].v)) {
+                mem[0].v = makeGatherer(myDir, 0);
                 return go(myDir);
               } else {
-                if (informerHasRightSearcher(mem[informer])) {
-                  mem[informer] = makeInformer(informerDirVal, 1, 1);
-                  mem[0] = makeNewLeftSearcher(informerDirVal, 0);
+                if (informerHasRightSearcher(mem[informer].v)) {
+                  mem[informer].v = makeInformer(informerDirVal, 1, 1);
+                  mem[0].v = makeNewLeftSearcher(informerDirVal, 0);
                   return go(left(informerDirVal));
                 } else {
-                  mem[informer] = makeInformer(informerDirVal, 1, informerHasLeftSearcher(mem[informer]));
-                  mem[0] = makeNewRightSearcher(informerDirVal, 0);
+                  mem[informer].v = makeInformer(informerDirVal, 1, informerHasLeftSearcher(mem[informer].v));
+                  mem[0].v = makeNewRightSearcher(informerDirVal, 0);
                   return go(right(informerDirVal));
                 }
               }
             } else {
-              const numFood = foodInformerNumFood(mem[informer]);
-              const foodDir = foodInformerFoodDir(mem[informer]);
-              const infDir = foodInformerDir(mem[informer]);
+              const numFood = foodInformerNumFood(mem[informer].v);
+              const foodDir = foodInformerFoodDir(mem[informer].v);
+              const infDir = foodInformerDir(mem[informer].v);
               
               if (numFood > 0) {
                 if (foodDir === 0) {
-                  mem[informer] = makeFoodInformer(foodDir, infDir, numFood - 1);
-                  mem[0] = makeNewRightSearcher(myDir, 1);
+                  mem[informer].v = makeFoodInformer(foodDir, infDir, numFood - 1);
+                  mem[0].v = makeNewRightSearcher(myDir, 1);
                   return go(right(myDir));
                 } else {
-                  mem[informer] = makeFoodInformer(foodDir, infDir, numFood - 1);
-                  mem[0] = makeNewLeftSearcher(myDir, 1);
+                  mem[informer].v = makeFoodInformer(foodDir, infDir, numFood - 1);
+                  mem[0].v = makeNewLeftSearcher(myDir, 1);
                   return go(left(myDir));
                 }
               } else {
                 const highest = getHighestFoodInformer(felt, mem);
                 if (informer < highest) {
-                  mem[informer] = makeGatherer(myDir, 3);
+                  mem[informer].v = makeGatherer(myDir, 3);
                   return 0;
                 } else {
-                  mem[informer] = makeInformer(myDir, 0, 0);
+                  mem[informer].v = makeInformer(myDir, 0, 0);
                   return 0;
                 }
               }
             }
           } else {
-            mem[0] = makeInformer(myDir, 0, 0);
+            mem[0].v = makeInformer(myDir, 0, 0);
             return 0;
           }
         } else {
           if (informer > 0) {
-            mem[0] = makeGatherer(myDir, 0);
+            mem[0].v = makeGatherer(myDir, 0);
             return go(myDir);
           } else {
             const newCount = myCount + 1;
             if (felt[myDir + 1].numAnts < MaxSquareAnts) {
-              mem[0] = makeGatherer(myDir, newCount);
+              mem[0].v = makeGatherer(myDir, newCount);
               return go(myDir);
             } else {
-              mem[0] = makeGatherer(myDir, ((myCount + 3) % 4));
+              mem[0].v = makeGatherer(myDir, ((myCount + 3) % 4));
               return go(reverseDir(myDir));
             }
           }
@@ -433,13 +433,13 @@ function AntAgonist(squareData, antInfo) {
     }
 
     // Searcher logic
-    if (isSearcher(mem[0])) {
-      const myDir = searchDir(mem[0]);
-      const myCount = searchCount(mem[0]);
-      const mySent = searchSent(mem[0]);
-      const myOutside = searchOutside(mem[0]);
-      const myMove = searchNextMove(mem[0]);
-      const ahead = searchAhead(mem[0]);
+    if (isSearcher(mem[0].v)) {
+      const myDir = searchDir(mem[0].v);
+      const myCount = searchCount(mem[0].v);
+      const mySent = searchSent(mem[0].v);
+      const myOutside = searchOutside(mem[0].v);
+      const myMove = searchNextMove(mem[0].v);
+      const ahead = searchAhead(mem[0].v);
       
       if (myOutside === 1) {
         if (felt[0].numFood) {
@@ -454,9 +454,9 @@ function AntAgonist(squareData, antInfo) {
             if (foodCount > 7) foodCount = 7;
             if (foodCount < 0) foodCount = 0;
           }
-          mem[0] = makeFoodReturner(myDir, myCount, foodCount);
+          mem[0].v = makeFoodReturner(myDir, myCount, foodCount);
         } else {
-          mem[0] = makeSearcher(myDir, 0, mySent, myCount);
+          mem[0].v = makeSearcher(myDir, 0, mySent, myCount);
         }
         return goFood(reverseDir(ahead));
       }
@@ -477,70 +477,70 @@ function AntAgonist(squareData, antInfo) {
             if (foodCount > 7) foodCount = 7;
             if (foodCount < 0) foodCount = 0;
           }
-          mem[0] = makeFoodReturner(myDir, myCount, foodCount);
-          const foodReturnerMove = foodReturnerNextMove(mem[0]);
-          mem[0] = makeFoodReturner(myDir, ((myCount + 1) % 2), foodCount);
+          mem[0].v = makeFoodReturner(myDir, myCount, foodCount);
+          const foodReturnerMove = foodReturnerNextMove(mem[0].v);
+          mem[0].v = makeFoodReturner(myDir, ((myCount + 1) % 2), foodCount);
           return goFood(foodReturnerMove);
         }
       }
       
       if (felt[ahead + 1].numFood) {
-        mem[0] = makeSearcher(myDir, 1, mySent, myCount);
+        mem[0].v = makeSearcher(myDir, 1, mySent, myCount);
         return go(ahead);
       } else {
-        mem[0] = makeSearcher(myDir, 0, mySent, ((myCount + 1) % 2));
+        mem[0].v = makeSearcher(myDir, 0, mySent, ((myCount + 1) % 2));
         return go(myMove);
       }
     }
 
     // Food returner logic
-    if (isFoodReturner(mem[0])) {
-      const myDir = foodReturnerDir(mem[0]);
-      const myCount = foodReturnerCount(mem[0]);
-      const myFood = foodReturnerFood(mem[0]);
+    if (isFoodReturner(mem[0].v)) {
+      const myDir = foodReturnerDir(mem[0].v);
+      const myCount = foodReturnerCount(mem[0].v);
+      const myFood = foodReturnerFood(mem[0].v);
       const informer = getInformer(felt, mem);
-      const myMove = foodReturnerNextMove(mem[0]);
+      const myMove = foodReturnerNextMove(mem[0].v);
       
       if (informer === 0) {
-        mem[0] = makeFoodReturner(myDir, ((myCount + 1) % 2), myFood);
+        mem[0].v = makeFoodReturner(myDir, ((myCount + 1) % 2), myFood);
         return goFood(myMove);
       } else {
         let baseDir = 0;
-        if (isInformer(mem[informer])) {
-          baseDir = informerDir(mem[informer]);
+        if (isInformer(mem[informer].v)) {
+          baseDir = informerDir(mem[informer].v);
         } else {
-          baseDir = foodInformerDir(mem[informer]);
+          baseDir = foodInformerDir(mem[informer].v);
         }
         
         if (myFood > 0) {
           let foodCount = myFood * 1;
           if (foodCount > 7) foodCount = 7;
           
-          if (isInformer(mem[informer])) {
-            mem[informer] = makeFoodInformer(myCount, baseDir, foodCount);
+          if (isInformer(mem[informer].v)) {
+            mem[informer].v = makeFoodInformer(myCount, baseDir, foodCount);
           } else {
-            mem[0] = makeFoodInformer(myCount, baseDir, foodCount);
+            mem[0].v = makeFoodInformer(myCount, baseDir, foodCount);
           }
         }
-        mem[0] = makeGatherer(baseDir, (3 - 1));
+        mem[0].v = makeGatherer(baseDir, (3 - 1));
         return goFood(reverseDir(baseDir));
       }
     }
 
     // Food informer and informer logic
-    if (isFoodInformer(mem[0])) {
+    if (isFoodInformer(mem[0].v)) {
       return 0;
     }
     
-    if (isInformer(mem[0])) {
+    if (isInformer(mem[0].v)) {
       return 0;
     }
 
     // Guard logic
-    if (isGuard(mem[0])) {
-      if (mem[0] === 3) {
+    if (isGuard(mem[0].v)) {
+      if (mem[0].v === 3) {
         for (let i = 1; i < felt[0].numAnts; i++) {
-          mem[0] = mem[i];
+          mem[0].v = mem[i].v;
           return 0;
         }
         for (let i = 1; i <= 4; i++) {
@@ -551,7 +551,7 @@ function AntAgonist(squareData, antInfo) {
       } else {
         for (let i = 0; i <= 4; i++) {
           if (felt[i].numAnts) {
-            mem[0]++;
+            mem[0].v++;
           }
         }
       }
@@ -559,26 +559,26 @@ function AntAgonist(squareData, antInfo) {
     }
 
     // Base builder logic
-    if (isBaseBuilder(mem[0])) {
-      const myDir = baseBuilderDir(mem[0]);
-      const myReady = baseBuilderReady(mem[0]);
-      const myCount = baseBuilderCount(mem[0]);
+    if (isBaseBuilder(mem[0].v)) {
+      const myDir = baseBuilderDir(mem[0].v);
+      const myReady = baseBuilderReady(mem[0].v);
+      const myCount = baseBuilderCount(mem[0].v);
       
       if (myReady === 1) {
         if (myCount === 3) {
           const informer = getInformer(felt, mem);
           if (informer > 0) {
-            mem[0] = makeBaseBuilder(1, myDir, 0);
+            mem[0].v = makeBaseBuilder(1, myDir, 0);
             return goFood(myDir);
           }
           return 16; // Build base
         } else {
-          mem[0] = makeBaseBuilder(1, myDir, (myCount + 1));
+          mem[0].v = makeBaseBuilder(1, myDir, (myCount + 1));
           return goFood(myDir);
         }
       } else {
         if (myCount === 1) {
-          mem[0] = makeBaseBuilder(0, myDir, 0);
+          mem[0].v = makeBaseBuilder(0, myDir, 0);
           return go(myDir);
         }
         
@@ -587,9 +587,9 @@ function AntAgonist(squareData, antInfo) {
           if (builders < NewBaseFood + 3) {
             return 0;
           }
-          mem[0] = makeBaseBuilder(1, myDir, myCount);
+          mem[0].v = makeBaseBuilder(1, myDir, myCount);
           for (let i = 1; i < felt[0].numAnts; i++) {
-            mem[i] = makeBaseBuilder(1, myDir, myCount);
+            mem[i].v = makeBaseBuilder(1, myDir, myCount);
           }
           return 0;
         } else {

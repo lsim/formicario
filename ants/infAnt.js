@@ -44,7 +44,7 @@ function infAnt(squareData, antInfo) {
   const SETTLERS_PR_BASE = 250; // Settlers per base
   const ANTS_BEFORE_BASE = 800; // Ants before base expansion
   const PROD_SPEED_FOR_BASE = 1.0; // Production speed threshold
-  const SEARCH_RADIUS = 250; // Initial search radius
+  const SEARCH_RADIUS = 100; // Initial search radius
   const START_QUEEN_SETTLE = 1; // Start queen can settle
   const SETTLE_QUEEN_SETTLE = 1; // Spawned queens can settle
   const BASE_FORMATION = 2; // Base formation pattern
@@ -62,10 +62,10 @@ function infAnt(squareData, antInfo) {
     GUARD = 4,
     SETTLER = 5;
 
-  // Helper function to generate random numbers
+  // Helper function to generate random numbers (fixed to match C version)
   function getRand(brain) {
-    brain.random = ((brain.random * 245 + 123) >>> 0) & 127;
-    return (brain.random * 4213 + 421) & 255;
+    brain.random = (brain.random * 245 + 123) & 0xFFFFFF;
+    return abs((brain.random * 4213 + 421) & 255);
   }
 
   // Helper function to move toward target coordinates
@@ -74,42 +74,44 @@ function infAnt(squareData, antInfo) {
     const deltaY = targetY - brain.locy;
     let action = 0;
 
-    // Carriers and settlers can pick up food while moving
+    // Carriers and settlers can pick up food while moving (C version logic)
     const canCarryFood = brain.job === CARRIER || brain.job === SETTLER;
-    const carryOffset = canCarryFood ? 8 : 0;
 
     if (deltaY === 0) {
-      action = deltaX < 0 ? 3 : 1; // left : right
+      action = deltaX < 0 ? (canCarryFood ? 11 : 3) : (canCarryFood ? 9 : 1);
     } else if (deltaX === 0) {
-      action = deltaY < 0 ? 4 : 2; // up : down
+      action = deltaY < 0 ? (canCarryFood ? 10 : 2) : (canCarryFood ? 12 : 4);
     } else if (brain.lastDir++ % 2) {
-      action = deltaY < 0 ? 4 : 2; // up : down
+      action = deltaY < 0 ? (canCarryFood ? 10 : 2) : (canCarryFood ? 12 : 4);
     } else {
-      action = deltaX < 0 ? 3 : 1; // left : right
+      action = deltaX < 0 ? (canCarryFood ? 11 : 3) : (canCarryFood ? 9 : 1);
     }
 
     // Update position based on movement
     updatePosition(action, brain);
-    return action + carryOffset;
+    return action;
   }
 
   // Helper function to update ant position after movement
   function updatePosition(action, brain) {
-    const direction = action % 8;
-    if (direction !== 0) {
-      switch (direction) {
+    if (action !== 0 && action % 8 !== 0) {
+      switch (action) {
         case 1:
+        case 9:  // CARRY + EAST
           brain.locx += 1;
-          break; // right
+          break;
         case 2:
-          brain.locy += 1;
-          break; // down
-        case 3:
-          brain.locx -= 1;
-          break; // left
-        case 4:
+        case 10: // CARRY + NORTH
           brain.locy -= 1;
-          break; // up
+          break;
+        case 3:
+        case 11: // CARRY + WEST
+          brain.locx -= 1;
+          break;
+        case 4:
+        case 12: // CARRY + SOUTH
+          brain.locy += 1;
+          break;
       }
     }
     return action;
@@ -122,6 +124,10 @@ function infAnt(squareData, antInfo) {
 
   // Initialize uninitialized ants
   if (mem.job === UNINITIALIZED) {
+    mem.lastDir = getRand(mem) % 2;
+    mem.dir = getRand(mem) % 4;
+    mem.side = getRand(mem) % 4;
+    mem.baseDir = getRand(mem) % 4;
     mem.locx = mem.foodx = 0;
     mem.locy = mem.foody = 0;
 

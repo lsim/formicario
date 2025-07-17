@@ -22,19 +22,27 @@ function loadTeams() {
 const blacklist = [
   'CognizAnt', // Not implemented yet
   'Antsy', // Loops indefinitely, it seems
-  'Hex', // Loops indefinitely, it seems
   'Speedy', // Loops indefinitely, it seems
+  'ElephAnt', // Doesn't look like it is worth restoring
+  'reluctAnt', // Is just a template
+  'BlackHole', // Is more of a POC than a real ant
+  'Rambo', // Not worth restoring
+  'Servant', // Not worth restoring
+  'SkyNET', // Failed to fix this single-byte ant
+  'Turbo', // Another POC ant that doesn't translate well
+  'Square', // Another POC ant that doesn't translate well
+  'AntAgonist', // Another single-byte ant I've given up on. Unobfuscated indeed!
+  'Smiley', // Translation attempts have failed so far
 ];
 
-const whiteList: string[] = ['TheDoctor'];
+const whiteList: string[] = [];
 
 describe('Ant test-bench', () => {
   for (const team of loadTeams()) {
     if (whiteList.length > 0 && !whiteList.includes(team.name)) {
       console.log(`Skipping non-whitelisted ${team.name}`);
       continue;
-    }
-    if (blacklist.includes(team.name)) {
+    } else if (blacklist.includes(team.name)) {
       console.log(`Skipping blacklisted ${team.name}`);
       continue;
     }

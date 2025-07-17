@@ -43,20 +43,20 @@ function A5(squareData, antInfo) {
   if (myBrain.type !== 1) {
     // Update random number
     myBrain.rnd = myBrain.rnd * 25 + 123;
-    
+
     if (myBrain.rnd % 5 === 1) {
       myBrain.rnd = myBrain.rnd * 25 + 123;
       bar = myBrain.rnd % 5 + 8;
     } else {
       bar = myBrain.lastbar;
     }
-    
+
     // Check grid position logic
-    if (((abs(x) + (1 === bar || 3 === bar)) % 2) && 
+    if (((abs(x) + (1 === bar || 3 === bar)) % 2) &&
         ((abs(y) + (4 === bar || 2 === bar)) % 2)) {
       bar = myBrain.lastbar;
     }
-    
+
     // Look for food-rich squares
     for (let i = 1; i <= 4; i++) {
       if (squareData[i].numFood > (squareData[i].numAnts + 5)) {
@@ -68,7 +68,7 @@ function A5(squareData, antInfo) {
         ym = myBrain.ymad;
       }
     }
-    
+
     // Reset target if reached and no food
     if (x === xm && y === ym && !squareData[0].numFood) {
       myBrain.xmad = 0;
@@ -77,17 +77,17 @@ function A5(squareData, antInfo) {
       xm = 0;
       ym = 0;
     }
-    
+
     // Move toward target if we have one and no food here
     if (!squareData[0].numFood && (xm || ym)) {
       bar = foo(x, y, xm, ym);
     }
-    
+
     // Return to base with food
     if (squareData[0].numFood) {
       bar = foo(x, y, 0, 0) + 8;
     }
-    
+
     // Share information between ants
     for (let i = 1; i < antInfo.brains.length; i++) {
       if (!xm && !ym) {
@@ -108,13 +108,13 @@ function A5(squareData, antInfo) {
         }
       }
     }
-    
+
     // Reset if too many ants
     if (squareData[0].numAnts > 15) {
       myBrain.antal = 0;
     }
   }
-  
+
   // Check for enemy teams
   for (let i = 1; i <= 4; i++) {
     if (squareData[i].team > 0) {
@@ -122,7 +122,7 @@ function A5(squareData, antInfo) {
       myBrain.type = 1;
     }
   }
-  
+
   // Update position based on movement
   if (bar % 8 === 1) {
     myBrain.xpos++;
@@ -133,7 +133,7 @@ function A5(squareData, antInfo) {
   } else if (bar % 8 === 4) {
     myBrain.ypos++;
   }
-  
+
   myBrain.lastbar = bar;
   return bar;
 }

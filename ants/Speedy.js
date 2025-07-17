@@ -64,7 +64,7 @@ function Speedy(squareData, antInfo) {
     const oldType = brain.type;
     let i;
     brain.type = 0;
-    
+
     if (squares[0].numFood > 1) {
       if ((brain.x < 0) && (squares[1].numFood)) return 1;
       if ((brain.y < 0) && (squares[2].numFood)) return 2;
@@ -72,7 +72,7 @@ function Speedy(squareData, antInfo) {
       if ((brain.y > 0) && (squares[4].numFood)) return 4;
       return gotoTarget(brain);
     }
-    
+
     for (i = 1; i < 5; ++i) {
       if (squares[i].numFood) {
         if ((brain.x >= 0) && (squares[1].numFood)) return 1;
@@ -82,7 +82,7 @@ function Speedy(squareData, antInfo) {
         return i;
       }
     }
-    
+
     if (squares[0].numFood) return gotoTarget(brain);
     brain.type = oldType;
     return 0;
@@ -107,9 +107,9 @@ function Speedy(squareData, antInfo) {
     let i, move;
     move = searchFood(squares, brain);
     if (move) return move;
-    
+
     if ((power > 1) && (power < 7) && (squares[0].numAnts === 1)) return 0;
-    
+
     move = (gotoTarget(brain) % 4) + 1;
     if (speedyRandom([brain.seed], 5) === 0) {
       move = (move % 4) + 1;
@@ -117,14 +117,14 @@ function Speedy(squareData, antInfo) {
       for (i = 1; (i < 5) && (squares[i].numAnts === 0); ++i);
       if (i < 5) move = (move % 4) + 1;
     }
-    
+
     if (squares[move].numAnts) move = speedyRandom([brain.seed], 4) + 1;
     return move;
   }
 
   function clearArea(squares, brain, power, turn) {
     let i, canClear = 1, minAnts = MaxSquareAnts * 2, result = 0;
-    
+
     for (i = 0; i < 5; ++i) {
       if (squares[i].numAnts > MaxSquareAnts / 3) canClear = 0;
       if (squares[i].numAnts < minAnts) {
@@ -132,12 +132,12 @@ function Speedy(squareData, antInfo) {
         result = i;
       }
     }
-    
+
     if (canClear) {
       brain.type = 0;
       return 6;
     }
-    
+
     for (i = 0; i < squares[0].numAnts; ++i) {
       antInfo.brains[i].type = 100;
     }
@@ -175,7 +175,7 @@ function Speedy(squareData, antInfo) {
   // Main ant logic
   function speedyMain(squares, brain) {
     let move, power, distance, i, enemy, numAnts = squares[0].numAnts;
-    
+
     if ((enemy = squares[0].base)) {
       for (i = 0; i < numAnts; ++i) {
         if (antInfo.brains[i].x || antInfo.brains[i].y) {
@@ -185,27 +185,32 @@ function Speedy(squareData, antInfo) {
         }
         antInfo.brains[i].x = antInfo.brains[i].y = 0;
       }
-      
+
       if ((enemy) && (numAnts >= 8)) {
         for (i = 0; i < 8; ++i) {
           antInfo.brains[i].type = 79 + i;
         }
       }
     }
-    
-    for (i = 1; i < 5; ++i) {
-      antInfo.brains[i].seed *= ((squares[i].numAnts << 1) - 1) * ((squares[i].numFood << 2) - 3);
+
+    // Apply environmental influence from adjacent squares to all existing ants
+    // Original C code has a bug: uses same index for brains[i] and squares[i]
+    // This fixes it by applying environmental data from all squares to each ant
+    for (i = 1; i < numAnts; ++i) {
+      for (let squareIdx = 1; squareIdx < 5; ++squareIdx) {
+        antInfo.brains[i].seed *= ((squares[squareIdx].numAnts << 1) - 1) * ((squares[squareIdx].numFood << 2) - 3);
+      }
     }
-    
+
     if (numAnts > 1) {
       for (i = 1; i < numAnts; ++i) {
         antInfo.brains[i].seed ^= speedyRandom([brain.seed], 256);
       }
     }
-    
+
     power = (brain.x * brain.x) + (brain.y * brain.y);
     move = findEnemy(squares);
-    
+
     if (move) {
       brain.type = 42;
     } else {
@@ -213,17 +218,17 @@ function Speedy(squareData, antInfo) {
         move = processType(brain.type, squares, brain, power);
       } while (move === 6);
     }
-    
+
     if (move) {
       if ((squares[move].team === squares[0].team) && (squares[move].numAnts > (MaxSquareAnts / 2) - 3)) {
         brain.type = 100;
         return 0;
       }
-      
+
       brain.x += (move === 1) - (move === 3);
       brain.y += (move === 2) - (move === 4);
       distance = ((brain.x) * (brain.x)) + ((brain.y) * (brain.y));
-      
+
       if (distance < power) return move + 8;
       return move;
     } else {

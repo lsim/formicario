@@ -584,7 +584,10 @@ export class Battle {
     this.currentTurn++;
 
     // Get all living ants that should act this turn
-    const livingAnts = this.ants.filter((ant) => ant.alive && ant.nextTurn <= this.currentTurn);
+    const livingAnts = this.ants.filter(
+      (ant) =>
+        ant.alive && ant.nextTurn <= this.currentTurn && !this.quarantinedTeams.includes(ant.team),
+    );
     let turnAnts = livingAnts.length;
 
     // Create array of living ant indices for random processing
@@ -596,17 +599,13 @@ export class Battle {
       const randomIndex = Math.floor(this.rng(turnAnts));
       const antIndex = antIndices[randomIndex];
       const ant = livingAnts[antIndex];
-      if (this.quarantinedTeams.includes(ant.team)) {
-        continue;
-      }
 
       // Move ant from unprocessed to processed list
       antIndices[randomIndex] = antIndices[turnAnts - 1];
       antIndices[turnAnts - 1] = antIndex;
       turnAnts--;
-
       // Safety check: ant may have died during this turn
-      if (!ant.alive) {
+      if (!ant.alive || this.quarantinedTeams.includes(ant.team)) {
         continue;
       }
 
@@ -626,6 +625,10 @@ export class Battle {
           '\nsquare:',
           this.mapData(ant.xPos, ant.yPos),
         );
+        if (this.quarantinedTeams.length === this.teams.length) {
+          // All teams are quarantined, stop the battle
+          this.stop();
+        }
       }
     }
 

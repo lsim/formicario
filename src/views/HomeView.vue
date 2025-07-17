@@ -38,7 +38,7 @@ const liveFeed = ref(true);
 const gameSpec: Partial<GameSpec> = {
   mapWidth: [256, 256],
   mapHeight: [256, 256],
-  newFoodSpace: [10, 50],
+  newFoodSpace: [10, 20],
   newFoodMin: [10, 30],
   newFoodDiff: [5, 20],
   halfTimeTurn: 10000,
