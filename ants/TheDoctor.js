@@ -3,229 +3,399 @@ function TheDoctor(squareData, antInfo) {
   if (!squareData) {
     return {
       brainTemplate: {
-        role: 0, // 0=ROOKIE, 1=EXPLORER, 2=SOLDIER, 3=COLLECTOR, 4=QUEEN
+        randseed: 1,
+        carryingFood: 0,
+        rang: 0, // ROOKIE
+        turn: 0,
         posX: 0,
         posY: 0,
         destX: 0,
         destY: 0,
-        radius: 20,
-        turn: 0,
+        // Explorer data
+        ignoreFood: 0,
+        // Food Guard data
+        timeToRetire: 0,
+        isReported: 0,
+        // Queen data
+        radius: 0,
+        next: 0,
         antsBorn: 0,
-        enemyReports: 0,
+        enemyReportCount: 0,
+        lastExpanded: 0,
+        // Food Reporter data - simplified to single report
+        reportPosX: 0,
+        reportPosY: 0,
+        reportAmount: 0,
+        reportDist: 0,
+        hasReport: 0
       },
-      name: 'TheDoctor',
-      color: '#00FF00', // Green color from the C implementation
+      name: 'The Doctor',
+      color: '#FF0000'
     };
   }
 
-  const ROOKIE = 0;
-  const EXPLORER = 1;
-  const SOLDIER = 2;
-  const COLLECTOR = 3;
-  const QUEEN = 4;
+  // Constants
+  var INITIAL_RADIUS = 20;
+  var RADIUS_STEP = 10;
+  var BASE_VALUE = 75;
 
-  const myBrain = antInfo.brains[0];
-  myBrain.turn++;
+  // Role constants
+  var ROOKIE = 0;
+  var EXPLORER = 1;
+  var SOLDIER = 2;
+  var COLLECTOR = 3;
+  var WAR_REPORTER = 4;
+  var FOOD_GUARD = 5;
+  var FOOD_REPORTER = 6;
+  var QUEEN = 7;
 
-  // C-style helper functions (equivalent to C macros)
-  function min(x, y) {
-    return x < y ? x : y;
-  }
+  var mem = antInfo.brains[0];
 
-  function max(x, y) {
-    return x > y ? x : y;
-  }
-
+  // Helper functions
   function abs(x) {
     return x < 0 ? -x : x;
   }
 
-  function baseDist(posX, posY) {
-    return abs(posX) + abs(posY);
+  function baseDist(x, y) {
+    return abs(x) + abs(y);
   }
 
-  // Custom random number generator (avoiding Math.floor and Math.random)
-  function docGetRand(brain) {
-    // Equivalent to DocGetRand from C code
-    brain.random = (brain.random * 1103515245 + 12345) >>> 0;
-    return (brain.random >> 16) & 0xFFFF;
+  function gotoDest(mem) {
+    if (mem.posX !== mem.destX) {
+      if (mem.posX < mem.destX) return 1;
+      return 3;
+    } else if (mem.posY !== mem.destY) {
+      if (mem.posY < mem.destY) return 4;
+      return 2;
+    } else return 0;
   }
 
-  function randomInt(brain, range) {
-    // Integer division equivalent to Math.floor(Math.random() * range)
-    return docGetRand(brain) % range;
+  function gotoBase(mem) {
+    mem.destX = 0;
+    mem.destY = 0;
+    return gotoDest(mem);
   }
 
-  // Helper function to find enemies and their priority
-  function findBestEnemy() {
-    let bestValue = 0;
-    let bestDirection = 0;
-    const BaseValue = 75; // From original C code
+  function destReached(mem) {
+    return mem.posX === mem.destX && mem.posY === mem.destY;
+  }
 
-    for (let i = 1; i < 5; i++) {
-      if (squareData[i].team > 0) {
-        let value = squareData[i].numAnts;
-        if (squareData[i].base) value += BaseValue;
-        if (value > bestValue) {
-          bestValue = value;
-          bestDirection = i;
+  function zeroPos(mem) {
+    return !(mem.posX || mem.posY);
+  }
+
+  function nulstilQueen(mem) {
+    mem.lastExpanded = 0;
+    mem.next = 0;
+    mem.antsBorn = 0;
+    mem.enemyReportCount = 0;
+  }
+
+  function DocGetRand(mem) {
+    mem.randseed = (mem.randseed * 1103515245 + 12345) >>> 0;
+    return ((mem.randseed >>> 16) & 65535);
+  }
+
+  function DocEnemyInSight(squareData) {
+    var bestHit = 0;
+    var bestHitPos = 0;
+    
+    for (var i = 1; i < 5; i++) {
+      if (squareData[i].team && squareData[i].team !== squareData[0].team) {
+        var value = squareData[i].numAnts;
+        if (squareData[i].base) value += BASE_VALUE;
+        if (value > bestHit) {
+          bestHit = value;
+          bestHitPos = i;
         }
       }
     }
-    return bestDirection;
+    return bestHitPos;
   }
 
-  // Helper function to find best food source
-  function findBestFood() {
-    let bestFood = 0;
-    let bestDirection = 0;
-    for (let i = 1; i < 5; i++) {
-      if (squareData[i].numFood > bestFood) {
-        bestFood = squareData[i].numFood;
-        bestDirection = i;
+  function DocGetAnt(antInfo, targetRang) {
+    // Find first ant with given role among our team ants
+    for (var i = 0; i < antInfo.brains.length; i++) {
+      if (antInfo.brains[i].rang === targetRang) {
+        return antInfo.brains[i];
       }
     }
-    return bestDirection;
+    return null;
   }
 
-  // Update position tracking (simplified movement tracking)
-  function updatePosition(direction) {
-    switch (direction) {
-      case 1:
-        myBrain.posX++;
-        break; // right
-      case 2:
-        myBrain.posY++;
-        break; // down
-      case 3:
-        myBrain.posX--;
-        break; // left
-      case 4:
-        myBrain.posY--;
-        break; // up
+  function morphToAndReturnRookie(squareData, antInfo, mem) {
+    mem.rang = ROOKIE;
+    mem.carryingFood = 0;
+    return DocRookie(squareData, antInfo, mem);
+  }
+
+  function DocRookie(squareData, antInfo, mem) {
+    var r = DocEnemyInSight(squareData);
+    if (r) return r;
+    
+    if (!zeroPos(mem)) return gotoBase(mem);
+    if (!squareData[0].base) return 0;
+    
+    var queen = DocGetAnt(antInfo, QUEEN);
+    if (!queen) {
+      // No queen! Become queen
+      mem.rang = QUEEN;
+      mem.radius = INITIAL_RADIUS;
+      nulstilQueen(mem);
+      return DocQueen(squareData, antInfo, mem);
     }
-  }
-
-  // Main role-based behavior
-  switch (myBrain.role) {
-    case ROOKIE:
-      // Defend base if enemies present
-      const enemyDir = findBestEnemy();
-      if (enemyDir > 0) return enemyDir;
-
-      // If not on base, try to return
-      if (!squareData[0].base) return 0;
-
-      // Check if there's a queen on base
-      let hasQueen = false;
-      for (let i = 1; i < antInfo.brains.length; i++) {
-        if (antInfo.brains[i].role === QUEEN) {
-          hasQueen = true;
-          break;
+    
+    if (!mem.turn) queen.antsBorn++;
+    
+    // Look for food reporter with reports
+    var minDist = 0x7FFF;
+    var ant = null;
+    for (var i = 0; i < antInfo.brains.length; i++) {
+      if (antInfo.brains[i].rang === FOOD_REPORTER && antInfo.brains[i].hasReport) {
+        if (antInfo.brains[i].reportDist < minDist) {
+          minDist = antInfo.brains[i].reportDist;
+          ant = antInfo.brains[i];
         }
       }
-
-      // Become queen if none exists
-      if (!hasQueen) {
-        myBrain.role = QUEEN;
-        myBrain.radius = 20;
-        myBrain.antsBorn = 0;
-        myBrain.enemyReports = 0;
-        return 16; // Try to build base
+    }
+    
+    if (ant) {
+      // Get food location from reporter
+      mem.rang = COLLECTOR;
+      mem.destX = ant.reportPosX;
+      mem.destY = ant.reportPosY;
+      if (--ant.reportAmount < 1) {
+        ant.hasReport = 0;
+        ant.rang = ROOKIE;
+        ant.carryingFood = 0;
       }
-
-      // Look for food assignments or become explorer
-      const foodDir = findBestFood();
-      if (foodDir > 0) {
-        myBrain.role = COLLECTOR;
-        return foodDir | 8; // Move and carry food
+      return DocCollector(squareData, antInfo, mem);
+    }
+    
+    // Get orders from queen - explorers sent in pairs
+    var tmp = (queen.next >>> 3);
+    switch (queen.next & 6) {
+      case 0: // 1st quadrant
+        mem.destX = tmp;
+        mem.destY = queen.radius - tmp;
+        break;
+      case 2: // Below 1st quadrant
+        mem.destX = tmp;
+        mem.destY = tmp - queen.radius;
+        break;
+      case 4: // 3rd quadrant
+        mem.destX = -(tmp + 1);
+        mem.destY = (tmp + 1) - queen.radius;
+        break;
+      case 6: // Left of 1st quadrant
+        mem.destX = -(tmp + 1);
+        mem.destY = queen.radius - (tmp + 1);
+        break;
+    }
+    
+    mem.destX *= 3;
+    mem.destY *= 3;
+    mem.rang = EXPLORER;
+    mem.ignoreFood = 0;
+    
+    // Update queen's status
+    if (++queen.next === 6 * queen.radius) {
+      if (60 * queen.enemyReportCount > queen.antsBorn) {
+        if (25 * queen.enemyReportCount > queen.antsBorn) {
+          if (queen.radius !== INITIAL_RADIUS) {
+            queen.radius -= RADIUS_STEP;
+          }
+        }
+      } else {
+        queen.radius += RADIUS_STEP;
       }
+      nulstilQueen(queen);
+    }
+    
+    return DocExplorer(squareData, antInfo, mem);
+  }
 
-      // Become explorer
-      myBrain.role = EXPLORER;
-      myBrain.destX = randomInt(myBrain, myBrain.radius) - (myBrain.radius >> 1);
-      myBrain.destY = randomInt(myBrain, myBrain.radius) - (myBrain.radius >> 1);
-      return randomInt(myBrain, 4) + 1;
-
-    case EXPLORER:
-      // Fight if enemies found
-      const exploreEnemyDir = findBestEnemy();
-      if (exploreEnemyDir > 0) {
-        myBrain.role = SOLDIER;
-        myBrain.enemyReports++;
-        return exploreEnemyDir;
+  function DocExplorer(squareData, antInfo, mem) {
+    var r = DocEnemyInSight(squareData);
+    if (r) {
+      if (DocGetRand(mem) & 7) {
+        mem.rang = SOLDIER;
+      } else {
+        mem.rang = WAR_REPORTER;
+        mem.destX = 0;
+        mem.destY = 0;
       }
-
-      // Collect food if found
-      if (squareData[0].numFood > 0) {
-        myBrain.role = COLLECTOR;
-        myBrain.destX = 0; // Return to base
-        myBrain.destY = 0;
-        return 0 | 8; // Stay and carry food
-      }
-
-      // Check adjacent food
-      const exploreFoodDir = findBestFood();
-      if (exploreFoodDir > 0) {
-        myBrain.role = COLLECTOR;
-        return exploreFoodDir | 8;
-      }
-
-      // Continue exploring randomly
-      return randomInt(myBrain, 4) + 1;
-
-    case SOLDIER:
-      // Attack enemies
-      const soldierEnemyDir = findBestEnemy();
-      if (soldierEnemyDir > 0) return soldierEnemyDir;
-
-      // No enemies, return to base and become rookie
-      myBrain.role = ROOKIE;
-      return 0;
-
-    case COLLECTOR:
-      // Fight if necessary
-      const collectorEnemyDir = findBestEnemy();
-      if (collectorEnemyDir > 0) {
-        myBrain.role = SOLDIER;
-        return collectorEnemyDir;
-      }
-
-      // If at food source, collect and return to base
-      if (squareData[0].numFood > 0) {
-        myBrain.destX = 0;
-        myBrain.destY = 0;
-        return 0 | 8; // Stay and carry food
-      }
-
-      // Move toward food or base
-      const collectorFoodDir = findBestFood();
-      if (collectorFoodDir > 0) {
-        return collectorFoodDir | 8;
-      }
-
-      // Return to base
-      myBrain.role = ROOKIE;
-      return 0;
-
-    case QUEEN:
-      // Queen stays on base and tries to build
-      myBrain.antsBorn++;
-
-      // Adjust strategy based on war reports
-      if (myBrain.turn % 100 === 0) {
-        if (myBrain.enemyReports > (myBrain.antsBorn >> 2)) { // Division by 4 using bit shift
-          myBrain.radius = max(10, myBrain.radius - 5); // Contract
+      return r;
+    }
+    
+    // Is there food on this square?
+    if (squareData[0].numFood >= squareData[0].numAnts) {
+      var ant = DocGetAnt(antInfo, FOOD_GUARD);
+      if (!ant) {
+        // Become food guard
+        mem.rang = FOOD_GUARD;
+        mem.isReported = 0;
+        mem.timeToRetire = 3 * baseDist(mem.posX, mem.posY);
+        mem.destX = mem.posX;
+        mem.destY = mem.posY;
+        return DocFoodGuard(squareData, antInfo, mem);
+      } else if (ant.isReported) {
+        // Ignore this food
+        mem.ignoreFood = 2;
+      } else {
+        // Become food reporter
+        if (squareData[0].numFood > 2) {
+          mem.rang = FOOD_REPORTER;
+          mem.reportPosX = mem.posX;
+          mem.reportPosY = mem.posY;
+          mem.reportAmount = squareData[0].numFood - 2;
+          mem.reportDist = baseDist(mem.posX, mem.posY);
+          mem.hasReport = 1;
+          ant.isReported = 1;
         } else {
-          myBrain.radius = min(50, myBrain.radius + 5); // Expand
+          mem.rang = COLLECTOR;
         }
-        myBrain.enemyReports = 0;
+        mem.carryingFood = 8;
+        return gotoBase(mem);
       }
-
-      return 16; // Always try to build base
-
-    default:
-      myBrain.role = ROOKIE;
-      return 0;
+    }
+    
+    // Is there food nearby?
+    if (--mem.ignoreFood < 0) {
+      for (var i = 1; i < 5; i++) {
+        if (squareData[i].numAnts < squareData[i].numFood) return i;
+      }
+    }
+    
+    if (destReached(mem)) {
+      if (zeroPos(mem)) {
+        return morphToAndReturnRookie(squareData, antInfo, mem);
+      } else {
+        return gotoBase(mem);
+      }
+    }
+    
+    return gotoDest(mem);
   }
+
+  function DocSoldier(squareData, antInfo, mem) {
+    var r = DocEnemyInSight(squareData);
+    if (r) return r;
+    return 0;
+  }
+
+  function DocCollector(squareData, antInfo, mem) {
+    var r = DocEnemyInSight(squareData);
+    if (r) {
+      if (DocGetRand(mem) & 7) {
+        mem.rang = SOLDIER;
+      } else {
+        mem.rang = WAR_REPORTER;
+        mem.destX = 0;
+        mem.destY = 0;
+      }
+      return r;
+    }
+    
+    if (destReached(mem)) {
+      if (zeroPos(mem)) {
+        return morphToAndReturnRookie(squareData, antInfo, mem);
+      } else {
+        mem.carryingFood = 8;
+        return gotoBase(mem);
+      }
+    }
+    
+    return gotoDest(mem);
+  }
+
+  function DocWarReporter(squareData, antInfo, mem) {
+    var r = DocEnemyInSight(squareData);
+    if (r) return r;
+    
+    if (zeroPos(mem)) {
+      var queen = DocGetAnt(antInfo, QUEEN);
+      if (queen) {
+        queen.enemyReportCount++;
+      }
+      return morphToAndReturnRookie(squareData, antInfo, mem);
+    }
+    
+    return gotoDest(mem);
+  }
+
+  function DocFoodGuard(squareData, antInfo, mem) {
+    var r = DocEnemyInSight(squareData);
+    if (r) return r;
+    
+    if (!mem.timeToRetire--) {
+      // Allow new food reporters
+      mem.isReported = 0;
+      mem.timeToRetire = 3 * baseDist(mem.posX, mem.posY);
+    }
+    
+    if (destReached(mem) && squareData[0].numFood < 2) {
+      mem.rang = COLLECTOR;
+      return DocCollector(squareData, antInfo, mem);
+    }
+    
+    return gotoDest(mem);
+  }
+
+  function DocFoodReporter(squareData, antInfo, mem) {
+    var r = DocEnemyInSight(squareData);
+    if (r) return r;
+    return gotoDest(mem);
+  }
+
+  function DocQueen(squareData, antInfo, mem) {
+    mem.lastExpanded++;
+    
+    // Consolidate food reporters - simplified version
+    var reporters = [];
+    for (var i = 0; i < antInfo.brains.length; i++) {
+      if (antInfo.brains[i].rang === FOOD_REPORTER && antInfo.brains[i].hasReport) {
+        reporters.push(antInfo.brains[i]);
+      }
+    }
+    
+    // If we have multiple reporters, consolidate them
+    if (reporters.length > 1) {
+      for (var i = 1; i < reporters.length; i++) {
+        reporters[i].rang = ROOKIE;
+        reporters[i].carryingFood = 0;
+        reporters[i].hasReport = 0;
+      }
+    }
+    
+    return 16; // Always try to build new base
+  }
+
+  // Main logic
+  var r;
+  
+  switch (mem.rang) {
+    case ROOKIE:       r = DocRookie(squareData, antInfo, mem);       break;
+    case EXPLORER:     r = DocExplorer(squareData, antInfo, mem);     break;
+    case SOLDIER:      r = DocSoldier(squareData, antInfo, mem);      break;
+    case COLLECTOR:    r = DocCollector(squareData, antInfo, mem);    break;
+    case WAR_REPORTER: r = DocWarReporter(squareData, antInfo, mem);  break;
+    case FOOD_GUARD:   r = DocFoodGuard(squareData, antInfo, mem);    break;
+    case FOOD_REPORTER: r = DocFoodReporter(squareData, antInfo, mem); break;
+    case QUEEN:        r = DocQueen(squareData, antInfo, mem);        break;
+    default:           r = 0;                                         break;
+  }
+  
+  // Update position based on movement (following C code logic)
+  if (squareData[r] && squareData[r].numAnts !== 100) { // MaxSquareAnts check
+    switch (r) {
+      case 4: mem.posY++; break;
+      case 1: mem.posX++; break;
+      case 2: mem.posY--; break;
+      case 3: mem.posX--; break;
+    }
+  }
+  
+  mem.turn++;
+  return r | mem.carryingFood;
 }
