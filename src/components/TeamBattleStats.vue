@@ -35,15 +35,17 @@ const props = defineProps<{
 
 const selectedStatusProperty = ref<StatusProperty>('numAnts');
 
-const teams = ref<TeamStatus[]>(props.finalTeams || []);
+const liveTeams = ref<TeamStatus[]>(props.finalTeams || []);
 const turn = ref<number>();
 const tps = ref<number>();
+
+const teams = computed(() => props.finalTeams || liveTeams.value);
 
 // If we aren't given the final scores, subscribe to get live updates
 let subscription: Subscription | undefined;
 if (!props.finalTeams) {
   subscription = battleStatusSubject.subscribe((battleStatus) => {
-    teams.value = battleStatus.teams;
+    liveTeams.value = battleStatus.teams;
     turn.value = battleStatus.turns;
     tps.value = battleStatus.turnsPerSecond;
   });
@@ -51,6 +53,10 @@ if (!props.finalTeams) {
 const maxForSelectedProperty = computed(() => {
   return Math.max(...teams.value.map((t) => t[selectedStatusProperty.value] as number));
 });
+
+function barWidth(team: TeamStatus) {
+  return (team[selectedStatusProperty.value] as number) / maxForSelectedProperty.value;
+}
 
 onBeforeUnmount(() => {
   subscription?.unsubscribe();
@@ -68,14 +74,14 @@ onBeforeUnmount(() => {
       <span v-show="turn">Simulated turns {{ turn }}</span>
       <span v-show="tps">Simulated turns/second {{ tps }}</span>
     </div>
-    <template v-for="(team, index) in teams" :key="index">
+    <template v-for="team in teams" :key="team.name">
       <div class="team-name">{{ team.name }}</div>
       <!-- A colored bar for the selected property and the current team -->
       <div
         class="team-bar"
         :style="{
           backgroundColor: team.color,
-          width: `${((team[selectedStatusProperty] as number) / maxForSelectedProperty) * 100}%`,
+          width: `${barWidth(team) * 100}%`,
         }"
       >
         {{ team[selectedStatusProperty] }}
