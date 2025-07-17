@@ -41,7 +41,8 @@ function adamAnt(squares, antInfo) {
   }
 
   function log(...args) {
-    if (true) console.log(...args);
+    return;
+    console.log(...args);
   }
 
   const pi = 3.14159265358979323846264338327;
