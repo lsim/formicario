@@ -26,7 +26,7 @@ function adamAnt(squares, antInfo) {
         travelling: false,
       },
       name: 'Antonov',
-      color: '#fafa10',
+      color: '#0c6c01',
       description:
         'Antonov is big and scary',
     };
