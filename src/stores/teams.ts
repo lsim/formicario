@@ -3,6 +3,23 @@ import { ref } from 'vue';
 import { getTeamInfo } from '@/workers/WorkerDispatcher.ts';
 import type { Team } from '@/Team.ts';
 
+const blacklist = [
+  'CognizAnt', // Not implemented yet
+  'Antsy', // Loops indefinitely, it seems
+  'Speedy', // Loops indefinitely, it seems
+  'ElephAnt', // Doesn't look like it is worth restoring
+  'reluctAnt', // Is just a template
+  'BlackHole', // Is more of a POC than a real ant
+  'Rambo', // Not worth restoring
+  'Servant', // Not worth restoring
+  'SkyNET', // Failed to fix this single-byte ant
+  'Turbo', // Another POC ant that doesn't translate well
+  'Square', // Another POC ant that doesn't translate well
+  'AntAgonist', // Another single-byte ant I've given up on. Unobfuscated indeed!
+  'Smiley', // Translation attempts have failed so far
+  'Inkal', // Translation attempts have failed so far to get any movement from this one
+];
+
 export const useTeamStore = defineStore('team', () => {
   async function loadBuiltinTeams() {
     const teams = [];
@@ -31,7 +48,9 @@ export const useTeamStore = defineStore('team', () => {
   }
 
   const allTeams = ref<Team[]>([]);
-  loadBuiltinTeams().then((teams) => (allTeams.value = teams));
+  loadBuiltinTeams().then(
+    (teams) => (allTeams.value = teams.filter((t) => !blacklist.includes(t.name))),
+  );
 
   const battleTeams = ref<Team[]>([]);
 

@@ -70,6 +70,14 @@ function Cirkus(squareData, antInfo) {
 
   const myBrain = antInfo.brains[0];
 
+  // Initialize first two shorts (id, mx) with random data if uninitialized
+  // This matches C engine behavior where first 4 bytes get random values
+  if (myBrain.id === 1 && myBrain.mx === 0 && myBrain.my === 0 && myBrain.state === 0) {
+    const randomBytes = antInfo.random;
+    myBrain.id = (randomBytes & 0xFFFF);           // First short (16 bits)
+    myBrain.mx = ((randomBytes >> 16) & 0xFFFF);   // Second short (16 bits)
+  }
+
   // Helper functions
   function goOut(m) {
     const a = abs(m.px) + abs(m.py) + m.id;
@@ -283,21 +291,26 @@ function Cirkus(squareData, antInfo) {
     let dir = cirkusThink();
 
     // Avoid overcrowded squares
-    if (squareData[(dir & 7) % 5].numAnts > (MaxSquareAnts * 3) / 4) {
+    const initialCheckDir = (dir & 7);
+    if (initialCheckDir > 0 && initialCheckDir <= 4 && squareData[initialCheckDir].numAnts > (MaxSquareAnts * 3) / 4) {
       if (dir & CARRY) {
-        if (squareData[dir & 7].base && squareData[dir & 7].numAnts < MaxSquareAnts) {
+        const checkDir = (dir & 7);
+        if (checkDir > 0 && checkDir <= 4 && squareData[checkDir].base && squareData[checkDir].numAnts < MaxSquareAnts) {
           // Allow movement to base
         } else {
           dir = TURN180[dir];
-          if (squareData[dir & 7].numAnts > (MaxSquareAnts * 3) / 4) {
+          const checkDir2 = (dir & 7);
+          if (checkDir2 > 0 && checkDir2 <= 4 && squareData[checkDir2].numAnts > (MaxSquareAnts * 3) / 4) {
             dir = STOP;
           }
         }
       } else {
         dir = TURN[dir];
-        if (squareData[dir & 7].numAnts > (MaxSquareAnts * 3) / 4) {
+        const checkDir1 = (dir & 7);
+        if (checkDir1 > 0 && checkDir1 <= 4 && squareData[checkDir1].numAnts > (MaxSquareAnts * 3) / 4) {
           dir = TURN180[dir];
-          if (squareData[dir & 7].numAnts > (MaxSquareAnts * 3) / 4) {
+          const checkDir2 = (dir & 7);
+          if (checkDir2 > 0 && checkDir2 <= 4 && squareData[checkDir2].numAnts > (MaxSquareAnts * 3) / 4) {
             dir = STOP;
           }
         }
