@@ -997,9 +997,14 @@ export class Battle {
       if (teamValue > 0) activeTeams++;
     }
 
-    // Single team wins (only applies to multi-team battles)
+    // Last team standing wins (only applies to multi-team battles)
     if (this.teams.length > 1 && activeTeams <= 1) {
       console.debug('Single team wins', this.teams, activeTeams);
+      return true;
+    }
+
+    if (this.teams.length === 1 && this.currentTurn >= this.args.halfTimeTurn) {
+      console.debug('Solo battle ends at halftime', this.teams, activeTeams);
       return true;
     }
 

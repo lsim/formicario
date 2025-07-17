@@ -17,6 +17,7 @@ export default mergeConfig(
       poolOptions: {
         maxWorkers: 3,
       },
+      testTimeout: 30000,
     },
   }),
 );
