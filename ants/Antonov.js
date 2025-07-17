@@ -28,7 +28,7 @@ function adamAnt(squares, antInfo) {
       name: 'Antonov',
       color: '#fafa10',
       description:
-        'Antonov is big an scary',
+        'Antonov is big and scary',
     };
   }
 
@@ -47,7 +47,6 @@ function adamAnt(squares, antInfo) {
 
   const pi = 3.14159265358979323846264338327;
   const numSlices = 100
-  // const radius = 100;
 
   const trigIterations = 4;
   function cos(x) {
@@ -271,7 +270,7 @@ function adamAnt(squares, antInfo) {
     // When given directions at base, spread evenly around the circle. When exploring from elsewhere, choose a different point on the circle.
     if (brain.x !== 0 || brain.y !== 0) {
       brain.patternSeed += (numSlices / 3) | 0;
-      brain.range += 2; //(brain.x + brain.y + brain.random) % 2 === 0 ? 1 : 0;
+      brain.range += 2;
     }
     const radian = getRadian(brain.patternSeed);
     const destX = cos(radian) * brain.range;
