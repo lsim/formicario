@@ -21,8 +21,6 @@ function loadTeams() {
 
 const blacklist = [
   'CognizAnt', // Not implemented yet
-  'Antsy', // Loops indefinitely, it seems
-  'Speedy', // Loops indefinitely, it seems
   'ElephAnt', // Doesn't look like it is worth restoring
   'reluctAnt', // Is just a template
   'BlackHole', // Is more of a POC than a real ant

@@ -29,7 +29,7 @@ function Antsy(squareData, antInfo) {
 
   // Constants
   const CLASS_Antsy = 0, CLASS_GpsAnt = 1, CLASS_Forager = 2, CLASS_Guard = 3, CLASS_Queen = 4;
-  const NONE = 0, Return = 1, Source = 2, Guard = 3, Init = 4, Search = 5, 
+  const NONE = 0, Return = 1, Source = 2, Guard = 3, Init = 4, Search = 5,
         CW = 6, Deploy = 7, CCW = 8, Recruit = 9, Pause = 10;
   const MaxSquareAnts = 200;
   const NewBaseFood = 20;
@@ -44,14 +44,14 @@ function Antsy(squareData, antInfo) {
     const rvals = new Uint16Array(2);
     rvals[0] = mem.random & 0xFFFF;
     rvals[1] = (mem.random >> 16) & 0xFFFF;
-    
+
     let a = rvals[0], b = rvals[1];
     a = (a * 133) % 65521;
     b = b * 135 + 7;
     b = ((b >> 1) + ((b & 1) << 15)) | 0;
     rvals[1] = a;
     rvals[0] = b;
-    
+
     mem.random = ((rvals[1] << 16) | rvals[0]) >>> 0;
     return ((((a ^ b) & 0xffff) * num) >> 16) | 0;
   }
@@ -104,8 +104,8 @@ function Antsy(squareData, antInfo) {
   }
 
   function moveTo(tx, ty) {
-    const dx = tx - mem.x;
-    const dy = ty - mem.y;
+    let dx = tx - mem.x;
+    let dy = ty - mem.y;
     let dir = 0;
     const killDir = kill(0);
     if (killDir) {
@@ -284,7 +284,7 @@ function Antsy(squareData, antInfo) {
       return redispatch();
     }
 
-    const dx = rnd(32);
+    let dx = rnd(32);
     let dy = rnd(32) - dx;
     if (rnd(2)) dx = -dx;
     if (rnd(2)) dy = -dy;
