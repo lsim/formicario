@@ -34,6 +34,7 @@ describe('Battle tests', () => {
       timeOutTurn: 1000,
       winPercent: 70,
       numBattles: 1,
+      numBattleTeams: 2,
     };
     rng = getRNG(42);
 

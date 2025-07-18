@@ -55,7 +55,13 @@ export class Game {
         continue;
       }
       // Only pause the first battle
-      this.activeBattle = new Battle(this.spec, this.teamFunctions, battleSeed, pause && i === 0);
+
+      this.activeBattle = new Battle(
+        this.spec,
+        this.pickRandomTeamsForBattle(),
+        battleSeed,
+        pause && i === 0,
+      );
 
       const battleSummary = await this.activeBattle.run();
       battleSummaries.push(battleSummary);
@@ -65,6 +71,29 @@ export class Game {
       seed: this.spec.seed,
       battles: battleSummaries,
     };
+  }
+
+  // Note: Destructive on input array
+  fisherYates<T extends object>(array: Array<T>) {
+    let count = array.length,
+      randomNumber,
+      temp;
+    while (count) {
+      randomNumber = (((this.rng() % 10000) / 10000) * count--) | 0;
+      temp = array[count];
+      array[count] = array[randomNumber];
+      array[randomNumber] = temp;
+    }
+    return array;
+  }
+
+  pickRandomTeamsForBattle() {
+    const teamFunctions = this.fisherYates([...this.teamFunctions]);
+    if (this.spec.numBattleTeams <= 1 || this.spec.numBattleTeams >= this.teamFunctions.length) {
+      return teamFunctions;
+    }
+    console.log('Picking random teams for battle', this.spec.numBattleTeams, teamFunctions);
+    return teamFunctions.slice(0, this.spec.numBattleTeams);
   }
 
   private stopRequested = false;

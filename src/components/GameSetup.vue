@@ -204,6 +204,16 @@ const activeTab: Ref<'teams' | 'intervals' | 'winning' | 'other' | 'ui'> = ref('
         </div>
       </div>
       <div class="panel-block">
+        <div class="control">
+          <label class="label"
+            >Number of randomly selected teams per battle<input
+              class="input"
+              type="number"
+              v-model="gameStore.gameSpec.numBattleTeams"
+          /></label>
+        </div>
+      </div>
+      <div class="panel-block">
         <interval-input
           label="Number of starting ants"
           title="The number of starting ants for each team"

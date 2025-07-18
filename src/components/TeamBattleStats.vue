@@ -37,7 +37,7 @@ const props = defineProps<{
 
 const selectedStatusProperty = ref<StatusProperty>('numAnts');
 
-const liveTeams = ref<TeamStatus[]>(props.finalTeams || []);
+const liveTeams = ref<TeamStatus[]>([]);
 const turn = ref<number>();
 const tps = ref<number>();
 

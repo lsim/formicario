@@ -20,6 +20,7 @@ describe('Brain Array Synchronization', () => {
       teams: [{ name: 'TestAnt', code: 'function() {}' }],
       seed: 12345,
       numBattles: 1,
+      numBattleTeams: 1,
     };
 
     const brainCheckResults: { numAnts: number; numBrains: number }[] = [];
@@ -75,6 +76,7 @@ describe('Brain Array Synchronization', () => {
       teams: [{ name: 'BaseBuildingAnt', code: 'function() {}' }],
       seed: 54321,
       numBattles: 1,
+      numBattleTeams: 1,
     };
 
     let brainConsistencyChecked = false;

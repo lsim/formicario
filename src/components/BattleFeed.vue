@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue';
 import AntMagnifier from '@/components/AntMagnifier.vue';
 import { useMagicKeys, useMouseInElement } from '@vueuse/core';
 import { filter, tap } from 'rxjs';
-import useBattleRenderer from '@/renderer.ts';
+import useBattleRenderer from '@/composables/renderer.ts';
 import { useWorker } from '@/workers/WorkerDispatcher.ts';
 
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');

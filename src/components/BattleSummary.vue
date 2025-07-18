@@ -3,7 +3,7 @@ import type { BattleSummary } from '@/GameSummary.ts';
 import TeamBattleStats from '@/components/TeamBattleStats.vue';
 import BattleArgs from '@/components/BattleArgs.vue';
 import { nextTick, useTemplateRef, watch } from 'vue';
-import useBattleRenderer from '@/renderer.ts';
+import useBattleRenderer from '@/composables/renderer.ts';
 
 const props = defineProps<{
   battle: BattleSummary;

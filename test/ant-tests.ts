@@ -46,6 +46,7 @@ describe('Ant test-bench', () => {
         teams: [team],
         winPercent: 70,
         numBattles: 1,
+        numBattleTeams: 15,
       };
 
       const antFunction = instantiateParticipant(team.code, team.name);

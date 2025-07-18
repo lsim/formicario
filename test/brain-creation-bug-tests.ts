@@ -90,6 +90,7 @@ describe('Brain Data Consistency During Ant Creation', () => {
       timeOutTurn: 1000,
       winPercent: 70,
       numBattles: 1,
+      numBattleTeams: 1,
     };
 
     const battle = new Battle(gameSpec, [foodBringingAnt], 123);
@@ -211,6 +212,7 @@ describe('Brain Data Consistency During Ant Creation', () => {
       timeOutTurn: 1000,
       winPercent: 70,
       numBattles: 1,
+      numBattleTeams: 1,
     };
 
     const battle = new Battle(gameSpec, [coordinnatingAnt], 123);
