@@ -20,11 +20,6 @@ const selectionBools = computed<Record<string, boolean>>(() => {
   );
 });
 
-function selectTeam(team: Team) {
-  filter.value = '';
-  teamStore.selectForBattle(team);
-}
-
 function unselectTeam(team: Team) {
   teamStore.unselectForBattle(team);
 }
@@ -46,6 +41,16 @@ const filterInput = useTemplateRef('filterInput');
 function clearFilter() {
   filter.value = '';
   filterInput.value?.focus();
+}
+
+function toggleTeam(team: Team) {
+  filter.value = '';
+  if (teamStore.battleTeams.includes(team)) {
+    teamStore.unselectForBattle(team);
+  } else {
+    teamStore.selectForBattle(team);
+  }
+  filterInput.value?.focus(); // Remove focus from the button, so enter doesn't activate it
 }
 </script>
 
@@ -78,7 +83,7 @@ function clearFilter() {
               :class="{
                 'is-outlined is-link': !selectionBools[team.name],
               }"
-              @click.exact="selectionBools[team.name] ? unselectTeam(team) : selectTeam(team)"
+              @click.exact="toggleTeam(team)"
               @click.ctrl="teamStore.battleTeams = [team]"
               @click.meta="teamStore.battleTeams = [team]"
               type="button"
