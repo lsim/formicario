@@ -31,12 +31,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="columns">
+  <div class="columns" :class="{ 'game-running': gameStore.gameRunning }">
     <div class="column">
       <Teleport to="#navbarMenu">
         <game-controls />
       </Teleport>
-      <game-setup />
+      <game-setup class="game-setup" />
       <div class="box" v-if="gameStore.lastError.length">
         <h3>Last error</h3>
         <div
@@ -82,5 +82,15 @@ onBeforeUnmount(() => {
 .battle-feed-leave-to {
   opacity: 0;
   transform: translateX(-1em);
+}
+
+// slide game setup out of view to the left when game is running
+.game-setup {
+  transition: transform 0.5s ease;
+}
+.game-running {
+  .game-setup {
+    transform: translateX(-120%);
+  }
 }
 </style>

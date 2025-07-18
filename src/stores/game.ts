@@ -10,8 +10,8 @@ export const useGameStore = defineStore('game', () => {
   const teamStore = useTeamStore();
 
   const gameSpec: GameSpec = reactive<GameSpec>({
-    mapWidth: [256, 256],
-    mapHeight: [256, 256],
+    mapWidth: [128, 512],
+    mapHeight: [128, 512],
     newFoodSpace: [10, 20],
     newFoodMin: [10, 30],
     newFoodDiff: [5, 20],
@@ -24,6 +24,7 @@ export const useGameStore = defineStore('game', () => {
     numBattles: 3,
     seed: (Math.random() * 4294967295) >>> 0,
     teams: [],
+    numBattleTeams: 5,
   });
 
   const gameRunning = ref(false);

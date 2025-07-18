@@ -33,17 +33,30 @@ import { RouterView } from 'vue-router';
     <!--        </nav>-->
     <!--      </div>-->
 
-    <div class="box">
+    <section class="section">
       <RouterView />
-    </div>
+    </section>
   </div>
 </template>
 
 <style scoped lang="scss">
 #root {
+  .hero {
+    background-image: url('@/assets/battle.png');
+    // Rotate the background image slowly
+    animation: rotate 1000s linear infinite;
+    @keyframes rotate {
+      0% {
+        background-position: 0 0;
+      }
+      100% {
+        background-position: 100% 100%;
+      }
+    }
+  }
+
   .slide-in-menu {
     position: fixed;
-    //position: absolute;
     top: 0;
     left: 0;
     bottom: 0;
