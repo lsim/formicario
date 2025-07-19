@@ -33,7 +33,7 @@ export const useGameStore = defineStore('game', () => {
   const lastError = ref<string[]>([]);
   const liveFeed = ref(true);
 
-  async function start() {
+  async function start(pauseAfterTurns = -1) {
     if (teamStore.battleTeams.length === 0) {
       lastError.value = ['No teams selected'];
       return;
@@ -43,14 +43,15 @@ export const useGameStore = defineStore('game', () => {
         ...gameSpec,
         teams: [...teamStore.battleTeams.map((t) => ({ name: t.name, code: t.code }))],
         seed: gameSpec.seed,
-        statusInterval: !liveFeed.value ? -1 : gameSpec.statusInterval,
+        statusInterval: !liveFeed.value ? 100 : gameSpec.statusInterval,
         numBattles: gameSpec.numBattles,
       },
-      pause: gamePaused.value,
+      pauseAfterTurns,
     };
     gameRunning.value = true;
     await worker.startGame(message as Omit<RunGameCommand, 'id' | 'type'>);
     gameSpec.seed++;
+    lastError.value = [];
   }
 
   async function stop() {
@@ -72,10 +73,10 @@ export const useGameStore = defineStore('game', () => {
     gamePaused.value = false;
   }
 
-  async function step(numTurns: number) {
+  async function step(numTurns = -1) {
     gamePaused.value = true;
     if (!gameRunning.value) {
-      await start();
+      await start(numTurns);
     } else {
       await worker.stepGame(numTurns);
     }

@@ -4,7 +4,7 @@ import { RouterView } from 'vue-router';
 
 <template>
   <div id="root" class="article">
-    <section class="hero">
+    <section class="hero is-small">
       <div class="hero-body">
         <p class="title">Formicario</p>
       </div>
@@ -69,5 +69,10 @@ import { RouterView } from 'vue-router';
       transform: translateX(0);
     }
   }
+}
+
+p {
+  font-size: 400%;
+  filter: drop-shadow(3px 3px 10px gray);
 }
 </style>

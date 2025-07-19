@@ -154,6 +154,7 @@ export class Battle {
   currentTurn: number;
   rng: RNGFunction;
   private stopRequested = false;
+  private paused = false;
   startTime = Date.now(); // Battle start timestamp for identification
 
   // Performance tracking
@@ -165,7 +166,7 @@ export class Battle {
     spec: GameSpec,
     antFunctions: AntFunction[],
     private seed: number,
-    private paused = false,
+    private pauseAfterTurns = -1,
   ) {
     console.log('Battle seed', seed);
     this.rng = getRNG(seed);
@@ -508,6 +509,10 @@ export class Battle {
           this.currentTurn % this.args.statusInterval === 0)
       ) {
         this.emitStatus();
+      }
+
+      if (this.pauseAfterTurns > 0 && this.currentTurn === this.pauseAfterTurns) {
+        this.pause();
       }
 
       if ((this.paused && stepsToTake === -1) || stepsToTake === 0) {

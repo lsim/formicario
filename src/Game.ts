@@ -43,8 +43,8 @@ export class Game {
     this.teamFunctions = teamFunctions;
   }
 
-  public async run(pause = false): Promise<GameSummary | undefined> {
-    console.log('Running game', this.spec, pause);
+  public async run(pauseAfterTurns = -1): Promise<GameSummary | undefined> {
+    console.log('Running game', this.spec, pauseAfterTurns);
 
     const battleSummaries: BattleSummary[] = [];
     for (let i = 0; i < this.spec.numBattles && !this.stopRequested; i++) {
@@ -60,7 +60,7 @@ export class Game {
         this.spec,
         this.pickRandomTeamsForBattle(),
         battleSeed,
-        pause && i === 0,
+        i === 0 ? pauseAfterTurns : -1,
       );
 
       const battleSummary = await this.activeBattle.run();

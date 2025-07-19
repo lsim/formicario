@@ -27,7 +27,7 @@ declare type TypedMessage = {
 export interface RunGameCommand extends TypedMessage {
   type: 'run-game';
   game: GameSpec;
-  pause?: boolean;
+  pauseAfterTurns?: number;
 }
 
 export interface StopGameCommand extends TypedMessage {

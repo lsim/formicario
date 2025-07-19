@@ -1,10 +1,6 @@
 <script setup lang="ts">
-import BattleFeed from '@/components/BattleFeed.vue';
 import { onBeforeUnmount, ref } from 'vue';
-import BattleArgs from '@/components/BattleArgs.vue';
-import TeamBattleStats from '@/components/TeamBattleStats.vue';
 import GameSetup from '@/components/GameSetup.vue';
-import AntDebugger from '@/components/AntDebugger.vue';
 import type { GameSummary } from '@/GameSummary.ts';
 import { toObserver } from '@vueuse/rxjs';
 import { tap } from 'rxjs';
@@ -12,6 +8,7 @@ import BattleSummary from '@/components/BattleSummary.vue';
 import GameControls from '@/components/GameControls.vue';
 import { useWorker } from '@/workers/WorkerDispatcher.ts';
 import { useGameStore } from '@/stores/game.ts';
+import LiveBattleView from '@/components/LiveBattleView.vue';
 
 const gameSummary = ref<GameSummary>();
 
@@ -47,19 +44,6 @@ onBeforeUnmount(() => {
           <pre>{{ error }}</pre>
         </div>
       </div>
-    </div>
-    <div class="column">
-      <Transition name="battle-feed">
-        <div class="box" v-if="gameStore.gameRunning && gameStore.liveFeed">
-          <battle-feed class="control battle-feed" />
-          <ant-debugger
-            class="control ant-debugger"
-            v-if="gameStore.gameRunning && gameStore.gamePaused"
-          />
-        </div>
-      </Transition>
-      <team-battle-stats class="team-stats" v-if="gameStore.gameRunning && gameStore.liveFeed" />
-      <battle-args class="battle-args" v-if="gameStore.gameRunning" />
       <div class="game-summary" v-if="gameSummary">
         <h2>Previous game</h2>
         <div class="stat">Seed: {{ gameSummary.seed }}</div>
@@ -69,6 +53,12 @@ onBeforeUnmount(() => {
           <hr />
         </template>
       </div>
+    </div>
+    <div class="column">
+      <Transition name="battle-feed">
+        <live-battle-view />
+        <!-- TODO: slide live view (from right) in when a battle is running? -->
+      </Transition>
     </div>
   </div>
 </template>
