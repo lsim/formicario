@@ -30,7 +30,7 @@ function getAntFunctions(teams: { name: string; code: string }[]): {
 
 onmessage = async (e) => {
   const command: WorkerMessage = e.data as WorkerMessage;
-  console.log('Worker received message', command);
+  console.debug('Worker received message', command);
   try {
     if (command?.type === 'run-game') {
       activeGame?.stopGame();
@@ -61,7 +61,7 @@ onmessage = async (e) => {
       activeGame?.stopGame();
       postMessage({ type: 'ok', id: command.id });
     } else if (command?.type === 'skip-battle') {
-      activeGame?.activeBattle?.stop();
+      activeGame?.skipBattle();
       postMessage({ type: 'ok', id: command.id });
     } else if (command?.type === 'pause-game') {
       activeGame?.pause();

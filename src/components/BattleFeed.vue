@@ -60,7 +60,7 @@ function updateCanvas(ctx?: CanvasRenderingContext2D) {
   // squares is a list of squares that have changed since the last status update
   if (!ctx || lastReceivedTurn <= lastRenderedTurn) {
     // All caught up
-    console.debug('All caught up at turn', lastReceivedTurn);
+    // console.debug('All caught up at turn', lastReceivedTurn);
     rendering = false;
     return;
   }
@@ -74,7 +74,7 @@ function updateCanvas(ctx?: CanvasRenderingContext2D) {
   requestAnimationFrame(() => updateCanvas(ctx));
 }
 
-const subscription = worker.battleStatusSubject
+const subscription = worker.battleStatusSubject$
   .pipe(
     filter(() => !!canvas.value && !!context.value && !!backBufferCtx),
     tap((battle) => {

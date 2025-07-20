@@ -2,29 +2,41 @@
 import { onBeforeUnmount, ref } from 'vue';
 import GameSetup from '@/components/GameSetup.vue';
 import type { GameSummary } from '@/GameSummary.ts';
-import { toObserver } from '@vueuse/rxjs';
-import { tap } from 'rxjs';
-import BattleSummary from '@/components/BattleSummary.vue';
+import { map, switchAll, tap } from 'rxjs';
+import BattleSummaryUI from '@/components/BattleSummaryUI.vue';
 import GameControls from '@/components/GameControls.vue';
-import { useWorker } from '@/workers/WorkerDispatcher.ts';
 import { useGameStore } from '@/stores/game.ts';
 import LiveBattleView from '@/components/LiveBattleView.vue';
+import { type BattleSummaryStats } from '@/composables/stats.ts';
+import { useWorker } from '@/workers/WorkerDispatcher.ts';
 
 const gameSummary = ref<GameSummary>();
 
 const worker = useWorker();
 const gameStore = useGameStore();
 
-const subscription = worker.gameSummarySubject
-  .pipe(tap(() => (gameStore.gameRunning = false)))
-  .subscribe(toObserver(gameSummary));
+const gameStats = ref<BattleSummaryStats[]>([]);
 
-// TODO: Figure out a way to parallelize battles to multiple workers (perhaps a master worker managing the big picture with a couple of slaves?). Difficulty: battle state cannot be easily split up without bending the original rules
-// TODO: Collect samples of kills/losses/born, so we can graph them after the battle to help explain the result. Maybe they can even be live?
+const subscription = gameStore.battleStreams$
+  .pipe(
+    map(([, stats]) => stats),
+    switchAll(),
+    tap((bss) => gameStats.value.push(bss)),
+  )
+  .subscribe();
+
+const subscription2 = worker.gameSummarySubject$.subscribe(
+  (summary) => (gameSummary.value = summary),
+);
 
 onBeforeUnmount(() => {
-  subscription?.unsubscribe();
+  subscription.unsubscribe();
+  subscription2.unsubscribe();
 });
+
+// TODO: Figure out a way to parallelize battles to multiple workers (perhaps a master worker managing the big picture with a couple of slaves?). Difficulty: battle state cannot be easily split up without bending the original rules
+// TODO: Just parallelize separate battles to a configurable number of separate workers, and then aggregate the results afterwards
+// TODO: Collect samples of kills/losses/born, so we can graph them after the battle to help explain the result. Maybe they can even be live?
 </script>
 
 <template>
@@ -44,20 +56,20 @@ onBeforeUnmount(() => {
           <pre>{{ error }}</pre>
         </div>
       </div>
-      <div class="game-summary" v-if="gameSummary">
+      <div class="game-summary">
         <h2>Previous game</h2>
-        <div class="stat">Seed: {{ gameSummary.seed }}</div>
-        <template v-for="(battle, index) in gameSummary.battles" :key="index">
+        <div class="stat" v-if="gameSummary">Seed: {{ gameSummary.seed }}</div>
+        <template v-for="(battle, index) in gameStats" :key="index">
           <h3>Battle {{ index + 1 }}</h3>
-          <battle-summary :battle="battle" />
+          <battle-summary-u-i :summary="battle.summary" :stats="battle.stats" />
           <hr />
         </template>
       </div>
     </div>
     <div class="column">
       <Transition name="battle-feed">
-        <live-battle-view />
-        <!-- TODO: slide live view (from right) in when a battle is running? -->
+        <live-battle-view v-if="gameStore.gameRunning" />
+        <!-- TODO: slide live view in (from right) when a battle is running? -->
       </Transition>
     </div>
   </div>

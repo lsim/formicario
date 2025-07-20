@@ -15,48 +15,32 @@ const ACTION_CARRY_FOOD_FLAG = 8;
 const ACTION_BUILD_BASE = 16;
 const MAP_TILE_SIZE = 64;
 
-export class BattleArgs {
-  halfTimePercent: number;
-  halfTimeTurn: number;
-  mapHeight: number;
-  mapWidth: number;
-  newFoodDiff: number;
-  newFoodMin: number;
-  newFoodSpace: number;
-  startAnts: number;
-  timeOutTurn: number;
-  winPercent: number;
-  statusInterval: number;
+export type BattleArgs = ReturnType<typeof produceBattleArgs>;
 
-  constructor(spec: GameSpec, rng: RNGFunction) {
-    // Choose specific parameters for the battle from the game spec values/ranges
-
-    // Map width and height must be divisible by 64 and be randomly chosen between the min and max from the game spec
-    const mapWidthMin = Math.max(Math.round(spec.mapWidth[0] / MAP_TILE_SIZE), 1);
-    const mapWidthMax = Math.max(Math.round(spec.mapWidth[1] / MAP_TILE_SIZE), 1);
-    const mapHeightMin = Math.max(Math.round(spec.mapHeight[0] / MAP_TILE_SIZE), 1);
-    const mapHeightMax = Math.max(Math.round(spec.mapHeight[1] / MAP_TILE_SIZE), 1);
-    this.mapWidth = this.determineParameter(mapWidthMin, mapWidthMax, rng) * MAP_TILE_SIZE;
-    this.mapHeight = this.determineParameter(mapHeightMin, mapHeightMax, rng) * MAP_TILE_SIZE;
+export function produceBattleArgs(spec: GameSpec, rng: RNGFunction) {
+  // Map width and height must be divisible by 64 and be randomly chosen between the min and max from the game spec
+  const mapWidthMin = Math.max(Math.round(spec.mapWidth[0] / MAP_TILE_SIZE), 1);
+  const mapWidthMax = Math.max(Math.round(spec.mapWidth[1] / MAP_TILE_SIZE), 1);
+  const mapHeightMin = Math.max(Math.round(spec.mapHeight[0] / MAP_TILE_SIZE), 1);
+  const mapHeightMax = Math.max(Math.round(spec.mapHeight[1] / MAP_TILE_SIZE), 1);
+  return {
+    mapWidth: determineParameter(mapWidthMin, mapWidthMax, rng) * MAP_TILE_SIZE,
+    mapHeight: determineParameter(mapHeightMin, mapHeightMax, rng) * MAP_TILE_SIZE,
     // Random values for food space, minimum and difference
-    this.newFoodSpace = this.determineParameter(spec.newFoodSpace[0], spec.newFoodSpace[1], rng);
-    this.newFoodMin = this.determineParameter(spec.newFoodMin[0], spec.newFoodMin[1], rng);
-    this.newFoodDiff = this.determineParameter(spec.newFoodDiff[0], spec.newFoodDiff[1], rng);
-    this.startAnts = this.determineParameter(spec.startAnts[0], spec.startAnts[1], rng);
-    this.halfTimeTurn = spec.halfTimeTurn;
-    this.halfTimePercent = spec.halfTimePercent;
-    this.timeOutTurn = spec.timeOutTurn;
-    this.winPercent = spec.winPercent;
-    this.statusInterval = spec.statusInterval;
-  }
+    newFoodSpace: determineParameter(spec.newFoodSpace[0], spec.newFoodSpace[1], rng),
+    newFoodMin: determineParameter(spec.newFoodMin[0], spec.newFoodMin[1], rng),
+    newFoodDiff: determineParameter(spec.newFoodDiff[0], spec.newFoodDiff[1], rng),
+    startAnts: determineParameter(spec.startAnts[0], spec.startAnts[1], rng),
+    halfTimeTurn: spec.halfTimeTurn,
+    halfTimePercent: spec.halfTimePercent,
+    timeOutTurn: spec.timeOutTurn,
+    winPercent: spec.winPercent,
+    statusInterval: spec.statusInterval,
+  };
+}
 
-  private determineParameter(min: number, max: number, rng: RNGFunction): number {
-    return min + rng(max - min + 1);
-  }
-
-  public static fromGameSpec(spec: GameSpec, rng: RNGFunction): BattleArgs {
-    return new BattleArgs(spec, rng);
-  }
+function determineParameter(min: number, max: number, rng: RNGFunction): number {
+  return min + rng(max - min + 1);
 }
 
 // Corresponds to the TeamData struct in the C code
@@ -170,7 +154,7 @@ export class Battle {
   ) {
     console.log('Battle seed', seed);
     this.rng = getRNG(seed);
-    this.args = BattleArgs.fromGameSpec(spec, this.rng);
+    this.args = produceBattleArgs(spec, this.rng);
     this.teams = antFunctions.map((func) => {
       const descriptor = func();
       const team = { func, ...descriptor };
@@ -472,6 +456,7 @@ export class Battle {
     }
 
     const status: BattleStatus = {
+      seed: this.seed,
       args: this.args,
       teams: this.teams.map((team) => this.getTeamSummary(team)),
       deltaSquares: Array.from(this.touchedSquares).map((i) => {

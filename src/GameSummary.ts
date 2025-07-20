@@ -26,6 +26,7 @@ export type BattleInfo = {
 };
 
 export type BattleStatus = BattleInfo & {
+  seed: number;
   deltaSquares: SquareStatus[];
   turns: number;
   turnsPerSecond: number;

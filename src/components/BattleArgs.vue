@@ -2,33 +2,47 @@
 // This component shows the randomized parameters of an ongoing or finished battle
 
 import { onBeforeUnmount, ref } from 'vue';
-import { first, type Subscription } from 'rxjs';
+import { first, map, switchAll, tap } from 'rxjs';
 import type { TeamStatus } from '@/GameSummary.ts';
 import type { BattleArgs } from '@/Battle.ts';
-import { useWorker } from '@/workers/WorkerDispatcher.ts';
+import { useGameStore } from '@/stores/game.ts';
 
-const props = defineProps<{
-  args?: BattleArgs;
-  teams?: TeamStatus[];
-  seed?: number;
-}>();
+const props = withDefaults(
+  defineProps<{
+    isLive?: boolean;
+    args?: BattleArgs;
+    teams?: TeamStatus[];
+    seed?: number;
+  }>(),
+  {
+    isLive: false,
+  },
+);
 
-const worker = useWorker();
-
+const gameStore = useGameStore();
 const battleArgs = ref<BattleArgs | undefined>(props.args);
 const battleTeams = ref<TeamStatus[] | undefined>(props.teams);
 
-let subscription: Subscription | undefined;
 if (!battleArgs.value) {
-  subscription = worker.battleStatusSubject.pipe(first()).subscribe((status) => {
-    battleArgs.value = status.args;
-    battleTeams.value = status.teams;
+  const subscription = gameStore.battleStreams$
+    .pipe(
+      map(([status]) =>
+        status.pipe(
+          first(),
+          tap((status) => {
+            battleArgs.value = status.args;
+            battleTeams.value = status.teams;
+          }),
+        ),
+      ),
+      switchAll(),
+    )
+    .subscribe();
+
+  onBeforeUnmount(() => {
+    subscription.unsubscribe();
   });
 }
-
-onBeforeUnmount(() => {
-  subscription?.unsubscribe();
-});
 </script>
 
 <template>

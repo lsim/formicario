@@ -22,7 +22,7 @@ whenever(down, () => skipAnt(1));
 
 const ants = ref<AntData[]>([]);
 
-const subscription = worker.debugAntsSubject.subscribe(toObserver(ants));
+const subscription = worker.debugAntsSubject$.subscribe(toObserver(ants));
 
 const sortedAnts = computed(() => {
   return [...ants.value].sort((a, b) => {

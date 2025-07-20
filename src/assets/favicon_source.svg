@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Background grid -->
+  <rect width="32" height="32" fill="#2a2a2a" class="backdrop"/>
+
+  <!-- Team 1 owned squares -->
+  <circle cx="0" cy="4" r="16" class="team1 owned"/>
+
+  <!-- Team 2 owned squares -->
+  <circle cx="28" cy="30" r="16" class="team2 owned"/>
+
+  <!-- Team 1 base (top-left corner) -->
+  <rect x="2" y="2" width="4" height="4" class="team1 base"/>
+
+  <!-- Team 2 base (bottom-right corner) -->
+  <rect x="26" y="26" width="4" height="4" class="team2 base"/>
+
+  <!-- Food piles -->
+  <circle cx="13" cy="3" r="1"  class="food"/>
+  <circle cx="27" cy="5" r="1"  class="food"/>
+  <circle cx="15" cy="15" r="1"  class="food"/>
+  <circle cx="3" cy="25" r="1"  class="food"/>
+  <circle cx="25" cy="13" r="1" class="food"/>
+
+  <!-- Team 1 ants -->
+  <rect x="2" y="8" width="2" height="2" class="team1 ant"/>
+  <rect x="2" y="12" width="2" height="2" class="team1 ant"/>
+  <rect x="2" y="16" width="2" height="2" class="team1 ant"/>
+  <!-- Team 1 ant carrying food -->
+  <rect x="8" y="2" width="2" height="2" class="team1 ant carrying"/>
+
+  <!-- Team 2 ants -->
+  <rect x="26" y="16" width="2" height="2" class="team2 ant"/>
+  <rect x="22" y="18" width="2" height="2" class="team2 ant"/>
+  <rect x="18" y="22" width="2" height="2" class="team2 ant"/>
+  <rect x="16" y="26" width="2" height="2" class="team2 ant"/>
+  <rect x="16" y="30" width="2" height="2" class="team2 ant"/>
+  <rect x="24" y="22" width="2" height="2" class="team2 ant"/>
+
+  <!-- Grid lines for pixel effect -->
+  <defs>
+    <pattern id="grid" width="2" height="2" patternUnits="userSpaceOnUse">
+      <path d="M 4 0 L 0 0 0 4" fill="none" stroke="white" stroke-width="0.3" opacity="1"/>
+    </pattern>
+  </defs>
+<!--  <rect width="32" height="32" fill="url(#grid)" class="grid"/>-->
+
+  <style>
+    .backdrop {
+      fill: black;
+    }
+
+    .grid {
+
+    }
+
+    .carrying {
+      filter: brightness(1.8);
+    }
+
+    .team1 {
+      fill: #6bb6ff;
+    }
+
+    .team2 {
+      fill: #ff6b6b;
+    }
+
+    .ant {
+
+    }
+
+    .base {
+      filter: brightness(2);
+    }
+
+    .owned {
+      filter: brightness(0.3);
+    }
+    .food {
+      fill: white;
+    }
+  </style>
+</svg>

@@ -64,6 +64,7 @@ export class Game {
       );
 
       const battleSummary = await this.activeBattle.run();
+      postMessage({ type: 'battle-summary', summary: battleSummary });
       battleSummaries.push(battleSummary);
     }
 
@@ -92,7 +93,6 @@ export class Game {
     if (this.spec.numBattleTeams <= 1 || this.spec.numBattleTeams >= this.teamFunctions.length) {
       return teamFunctions;
     }
-    console.log('Picking random teams for battle', this.spec.numBattleTeams, teamFunctions);
     return teamFunctions.slice(0, this.spec.numBattleTeams);
   }
 

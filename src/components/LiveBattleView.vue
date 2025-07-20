@@ -5,19 +5,18 @@ import BattleFeed from '@/components/BattleFeed.vue';
 import { useGameStore } from '@/stores/game.ts';
 import TeamBattleStats from '@/components/TeamBattleStats.vue';
 import BattleArgs from '@/components/BattleArgs.vue';
+import BattleGraph from '@/components/BattleGraph.vue';
 
 const gameStore = useGameStore();
 </script>
 
 <template>
-  <div class="box" v-if="gameStore.gameRunning">
+  <div class="box">
     <battle-feed class="control battle-feed" v-if="gameStore.liveFeed" />
-    <ant-debugger
-      class="control ant-debugger"
-      v-if="gameStore.gameRunning && gameStore.gamePaused"
-    />
-    <team-battle-stats class="team-stats" v-if="gameStore.gameRunning && gameStore.liveFeed" />
-    <battle-args class="battle-args" v-if="gameStore.gameRunning" />
+    <ant-debugger class="control ant-debugger" v-if="gameStore.gamePaused" :is-live="true" />
+    <team-battle-stats class="team-stats" :is-live="true" />
+    <battle-graph :is-live="true" class="battle-graph" />
+    <battle-args class="battle-args" :is-live="true" />
   </div>
 </template>
 

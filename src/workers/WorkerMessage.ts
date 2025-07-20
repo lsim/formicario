@@ -100,6 +100,7 @@ export interface ErrorReply extends TypedMessage {
 declare type CommandMap = {
   RunGameCommand: RunGameCommand;
   GameSummaryMessage: GameSummaryMessage;
+  BattleSummaryMessage: BattleSummaryMessage;
   BattleStatusMessage: BattleStatusMessage;
   StopGameCommand: StopGameCommand;
   PauseGameCommand: PauseGameCommand;

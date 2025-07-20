@@ -9,14 +9,15 @@ import type {
   WorkerMessage,
 } from '@/workers/WorkerMessage.ts';
 import { Subject } from 'rxjs';
-import type { BattleStatus, GameSummary } from '@/GameSummary.ts';
+import type { BattleStatus, BattleSummary, GameSummary } from '@/GameSummary.ts';
 import type { AntData } from '@/Battle.ts';
 import type { Team } from '@/Team.ts';
 import { deepUnref } from 'vue-deepunref';
 
-const battleStatusSubject = new Subject<BattleStatus>();
-const gameSummarySubject = new Subject<GameSummary>();
-const debugAntsSubject = new Subject<AntData[]>();
+const battleStatusSubject$ = new Subject<BattleStatus>();
+const battleSummarySubject$ = new Subject<BattleSummary>();
+const gameSummarySubject$ = new Subject<GameSummary>();
+const debugAntsSubject$ = new Subject<AntData[]>();
 
 const worker = new Worker();
 let messageCount = 0;
@@ -24,11 +25,13 @@ const pendingCommands = new Map<number, (message: WorkerMessage) => void>();
 
 worker.onmessage = (e) => {
   if (e.data.type === 'battle-status') {
-    battleStatusSubject.next(e.data.status);
+    battleStatusSubject$.next(e.data.status);
   } else if (e.data.type === 'game-summary') {
-    gameSummarySubject.next(e.data.results);
+    gameSummarySubject$.next(e.data.results);
+  } else if (e.data.type === 'battle-summary') {
+    battleSummarySubject$.next(e.data.summary);
   } else {
-    if (e.data.type === 'debug-reply') debugAntsSubject.next(e.data.ants);
+    if (e.data.type === 'debug-reply') debugAntsSubject$.next(e.data.ants);
 
     const handler = pendingCommands.get(e.data.id);
     if (handler) {
@@ -95,13 +98,13 @@ async function getTeamInfo(team: Team) {
 
 export function useWorker() {
   return {
-    battleStatusSubject,
-    debugAntsSubject,
-    gameSummarySubject,
+    battleStatusSubject$,
+    battleSummarySubject$,
+    debugAntsSubject$,
+    gameSummarySubject$,
     getDebugAnts,
     getTeamInfo,
     pauseGame,
-    queueMessage,
     resumeGame,
     skipBattle,
     startGame,

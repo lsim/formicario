@@ -4,14 +4,23 @@ import { useWorker } from '@/workers/WorkerDispatcher.ts';
 import type { GameSpec } from '@/GameSpec.ts';
 import type { RunGameCommand } from '@/workers/WorkerMessage.ts';
 import { useTeamStore } from '@/stores/teams.ts';
+import {
+  type BattleStats,
+  type BattleSummaryStats,
+  type TeamStat,
+  useStats,
+} from '@/composables/stats.ts';
+import type { BattleStatus } from '@/GameSummary.ts';
+import { Observable, ReplaySubject } from 'rxjs';
 
 export const useGameStore = defineStore('game', () => {
   const worker = useWorker();
   const teamStore = useTeamStore();
+  const stats = useStats();
 
   const gameSpec: GameSpec = reactive<GameSpec>({
-    mapWidth: [128, 512],
-    mapHeight: [128, 512],
+    mapWidth: [128, 128],
+    mapHeight: [128, 128],
     newFoodSpace: [10, 20],
     newFoodMin: [10, 30],
     newFoodDiff: [5, 20],
@@ -24,24 +33,42 @@ export const useGameStore = defineStore('game', () => {
     numBattles: 3,
     seed: (Math.random() * 4294967295) >>> 0,
     teams: [],
-    numBattleTeams: 5,
+    numBattleTeams: 4,
   });
+
+  // We leak this subscription as it is a singleton
+  worker.gameSummarySubject$.subscribe(() => {
+    gameRunning.value = false;
+  });
+
+  // Replay the last set of streams, so components can get them even though the battle has already started
+  const battleStreams$ = ref(
+    new ReplaySubject<
+      [
+        // Stream of battle status updates from the worker
+        Observable<BattleStatus>,
+        // Stream of battle summary emissions from the worker enriched with statistics
+        Observable<BattleSummaryStats>,
+        // Stream of battle statistics updates from the stats aggregation
+        Observable<BattleStats>,
+      ]
+    >(1),
+  );
 
   const gameRunning = ref(false);
   const gamePaused = ref(false);
-
+  const selectedStatusProperty = ref<TeamStat>('numAnts');
   const lastError = ref<string[]>([]);
   const liveFeed = ref(true);
 
   async function start(pauseAfterTurns = -1) {
-    if (teamStore.battleTeams.length === 0) {
-      lastError.value = ['No teams selected'];
-      return;
-    }
+    const battleTeams =
+      teamStore.battleTeams.length === 0 ? teamStore.allTeams : teamStore.battleTeams;
+    if (gameRunning.value) return;
     const message = {
       game: {
         ...gameSpec,
-        teams: [...teamStore.battleTeams.map((t) => ({ name: t.name, code: t.code }))],
+        teams: [...battleTeams.map((t) => ({ name: t.name, code: t.code }))],
         seed: gameSpec.seed,
         statusInterval: !liveFeed.value ? 100 : gameSpec.statusInterval,
         numBattles: gameSpec.numBattles,
@@ -49,7 +76,13 @@ export const useGameStore = defineStore('game', () => {
       pauseAfterTurns,
     };
     gameRunning.value = true;
+    battleStreams$.value.next([
+      worker.battleStatusSubject$.asObservable(),
+      stats.expandedBattleSummaries$,
+      stats.aggregatedBattleStats,
+    ]);
     await worker.startGame(message as Omit<RunGameCommand, 'id' | 'type'>);
+
     gameSpec.seed++;
     lastError.value = [];
   }
@@ -93,6 +126,8 @@ export const useGameStore = defineStore('game', () => {
     gamePaused,
     lastError,
     liveFeed,
+    selectedStatusProperty,
+    battleStreams$,
 
     start,
     stop,
