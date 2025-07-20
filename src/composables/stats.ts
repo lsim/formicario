@@ -41,7 +41,7 @@ export function emptyTeamStats(color: string): TeamStats {
 export function useStats() {
   const worker = useWorker();
 
-  function aggregateBattleStats(throttle = 500) {
+  function aggregateBattleStats(throttle = 100) {
     return worker.battleStatusSubject$.pipe(
       throttleTime(throttle, undefined, { leading: true, trailing: true }),
       // Accumulate stats for each 200 turns

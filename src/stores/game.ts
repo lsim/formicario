@@ -19,8 +19,8 @@ export const useGameStore = defineStore('game', () => {
   const stats = useStats();
 
   const gameSpec: GameSpec = reactive<GameSpec>({
-    mapWidth: [128, 128],
-    mapHeight: [128, 128],
+    mapWidth: [128, 256],
+    mapHeight: [128, 256],
     newFoodSpace: [10, 20],
     newFoodMin: [10, 30],
     newFoodDiff: [5, 20],
@@ -33,7 +33,7 @@ export const useGameStore = defineStore('game', () => {
     numBattles: 3,
     seed: (Math.random() * 4294967295) >>> 0,
     teams: [],
-    numBattleTeams: 4,
+    numBattleTeams: 5,
   });
 
   // We leak this subscription as it is a singleton

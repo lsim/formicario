@@ -37,8 +37,14 @@ const props = withDefaults(
 const chartData = shallowRef<ChartData<'line', number[]>>({ labels: [], datasets: [] });
 
 const options: ChartOptions<'line'> = {
-  elements: { point: { radius: 0 } },
-  animation: false,
+  elements: {
+    point: { radius: 0 },
+    line: {
+      tension: 0.6,
+      borderWidth: 2,
+      cubicInterpolationMode: 'monotone',
+    },
+  },
 };
 
 function clearChart() {
