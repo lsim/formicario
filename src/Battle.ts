@@ -146,6 +146,10 @@ export class Battle {
   private turnsAtLastUpdate = 0;
   turnsPerSecond = 0;
 
+  public get isPaused() {
+    return this.paused;
+  }
+
   constructor(
     spec: GameSpec,
     antFunctions: AntFunction[],
@@ -1009,7 +1013,7 @@ export class Battle {
 
     // Win percentage reached (only applies to multi-team battles)
     if (this.teams.length > 1 && totalValue > 0) {
-      const winThreshold = (totalValue * this.args.winPercent) / 100;
+      const winThreshold = totalValue * (this.args.winPercent / 100);
       if (maxTeamValue >= winThreshold) {
         // console.debug(
         //   'Win percentage reached',

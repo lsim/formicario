@@ -54,13 +54,16 @@ export class Game {
         i--;
         continue;
       }
-      // Only pause the first battle
-
+      const _pauseAfterTurns = this.activeBattle?.isPaused
+        ? 1
+        : !this.activeBattle
+          ? pauseAfterTurns
+          : -1;
       this.activeBattle = new Battle(
         this.spec,
         this.pickRandomTeamsForBattle(),
         battleSeed,
-        i === 0 ? pauseAfterTurns : -1,
+        _pauseAfterTurns,
       );
 
       const battleSummary = await this.activeBattle.run();

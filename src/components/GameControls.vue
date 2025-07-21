@@ -7,8 +7,7 @@ import {
   faStop,
 } from '@fortawesome/free-solid-svg-icons';
 
-import { computed, ref } from 'vue';
-import { useTeamStore } from '@/stores/teams.ts';
+import { ref } from 'vue';
 import { useMagicKeys, whenever } from '@vueuse/core';
 import { useGameStore } from '@/stores/game.ts';
 const { enter, shift_space, escape } = useMagicKeys();
@@ -20,9 +19,6 @@ whenever(shift_space, () => gameStore.step(stepSize.value));
 
 whenever(escape, stop);
 
-const teamStore = useTeamStore();
-
-const noTeamsSelected = computed(() => teamStore.battleTeams.length === 0);
 const stepSize = ref(1);
 </script>
 
@@ -74,12 +70,7 @@ const stepSize = ref(1);
       </button>
     </div>
     <div class="control" v-show="gameStore.gamePaused && gameStore.gameRunning">
-      <button
-        class="button is-medium is-info"
-        type="button"
-        @click="gameStore.resume"
-        :disabled="noTeamsSelected"
-      >
+      <button class="button is-medium is-info" type="button" @click="gameStore.resume">
         <span class="icon">
           <font-awesome-icon :icon="faPlay" />
         </span>
