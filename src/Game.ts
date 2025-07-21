@@ -43,8 +43,8 @@ export class Game {
     this.teamFunctions = teamFunctions;
   }
 
-  public async run(pause = false): Promise<GameSummary | undefined> {
-    console.log('Running game', this.spec, pause);
+  public async run(pauseAfterTurns = -1): Promise<GameSummary | undefined> {
+    console.log('Running game', this.spec, pauseAfterTurns);
 
     const battleSummaries: BattleSummary[] = [];
     for (let i = 0; i < this.spec.numBattles && !this.stopRequested; i++) {
@@ -54,9 +54,20 @@ export class Game {
         i--;
         continue;
       }
-      this.activeBattle = new Battle(this.spec, this.teamFunctions, battleSeed, pause);
+      const _pauseAfterTurns = this.activeBattle?.isPaused
+        ? 1
+        : !this.activeBattle
+          ? pauseAfterTurns
+          : -1;
+      this.activeBattle = new Battle(
+        this.spec,
+        this.pickRandomTeamsForBattle(),
+        battleSeed,
+        _pauseAfterTurns,
+      );
 
       const battleSummary = await this.activeBattle.run();
+      postMessage({ type: 'battle-summary', summary: battleSummary });
       battleSummaries.push(battleSummary);
     }
 
@@ -64,6 +75,28 @@ export class Game {
       seed: this.spec.seed,
       battles: battleSummaries,
     };
+  }
+
+  // Note: Destructive on input array
+  fisherYates<T extends object>(array: Array<T>) {
+    let count = array.length,
+      randomNumber,
+      temp;
+    while (count) {
+      randomNumber = (((this.rng() % 10000) / 10000) * count--) | 0;
+      temp = array[count];
+      array[count] = array[randomNumber];
+      array[randomNumber] = temp;
+    }
+    return array;
+  }
+
+  pickRandomTeamsForBattle() {
+    const teamFunctions = this.fisherYates([...this.teamFunctions]);
+    if (this.spec.numBattleTeams <= 1 || this.spec.numBattleTeams >= this.teamFunctions.length) {
+      return teamFunctions;
+    }
+    return teamFunctions.slice(0, this.spec.numBattleTeams);
   }
 
   private stopRequested = false;

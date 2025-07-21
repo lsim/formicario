@@ -3,11 +3,11 @@ import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import type { GameSpec } from '@/GameSpec';
 import {
   Battle,
-  BattleArgs,
   type AntFunction,
   type AntInfo,
   type SquareData,
   type AntData,
+  produceBattleArgs,
 } from '@/Battle';
 import { getRNG, type RNGFunction } from '@/prng.ts';
 import type { BattleStatusMessage } from '@/workers/WorkerMessage.ts';
@@ -34,6 +34,7 @@ describe('Battle tests', () => {
       timeOutTurn: 1000,
       winPercent: 70,
       numBattles: 1,
+      numBattleTeams: 2,
     };
     rng = getRNG(42);
 
@@ -71,7 +72,7 @@ describe('Battle tests', () => {
 
   describe('BattleArgs', () => {
     it('should produce valid battle args from game spec', () => {
-      const battleArgs = BattleArgs.fromGameSpec(gameSpec, rng);
+      const battleArgs = produceBattleArgs(gameSpec, rng);
       expect(battleArgs).toBeTruthy();
       expect(battleArgs.halfTimePercent).toBe(60);
       expect(battleArgs.halfTimeTurn).toBe(100);
@@ -87,7 +88,7 @@ describe('Battle tests', () => {
         mapWidth: [200, 300] as [number, number],
         mapHeight: [150, 250] as [number, number],
       };
-      const battleArgs = BattleArgs.fromGameSpec(spec, rng);
+      const battleArgs = produceBattleArgs(spec, rng);
       expect(battleArgs.mapWidth % 64).toBe(0);
       expect(battleArgs.mapHeight % 64).toBe(0);
       expect(battleArgs.mapWidth).toBeGreaterThanOrEqual(192); // 200/64 rounded * 64

@@ -19,4 +19,5 @@ export const blacklist = [
   'AntAgonist', // Another single-byte ant I've given up on. Unobfuscated indeed!
   'Smiley', // Translation attempts have failed so far
   'Inkal', // Translation attempts have failed so far to get any movement from this one
+  'Tirsdag', // JS-translation won't tick
 ];

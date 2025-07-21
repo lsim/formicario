@@ -3,7 +3,7 @@ function Tirsdag(squareData, antInfo) {
   if (!squareData) {
     return {
       brainTemplate: {
-        id: 1,
+        id: 0, // Will be set to random in stINIT
         px: 0,
         py: 0,
         mx: 0,
@@ -45,21 +45,21 @@ function Tirsdag(squareData, antInfo) {
 
   // Helper functions
   function rnd(m) {
-    m.rnd = (m.rnd * 7813) ^ (m.rnd >> 2);
+    m.rnd = ((m.rnd * 7813) ^ (m.rnd >> 2)) & 0xFF; // Truncate to unsigned char (8 bits)
     return m.rnd;
   }
 
   function goOut(m) {
     const xx = abs(m.px);
     const yy = abs(m.py);
-    
+
     if (
       (m.id & (2048 | 4096)) ?
-        (m.id & 1024) ? 
+        (m.id & 1024) ?
           ((m.id & 1023) * xx < (yy << 6)) :
           ((m.id & 1023) * yy > (xx << 6))
         :
-        (m.id & 1024) ? 
+        (m.id & 1024) ?
           ((m.id & 1023) * xx < (yy << 10)) :
           ((m.id & 1023) * yy > (xx << 10))
     ) {
@@ -113,16 +113,24 @@ function Tirsdag(squareData, antInfo) {
 
   switch (myBrain.state) {
     case stINIT: {
-      myBrain.rnd = myBrain.id;
+      myBrain.id = antInfo.random;
+      myBrain.rnd = myBrain.id & 0xFF; // Initialize rnd from id like C version
       myBrain.state = (myBrain.id & (1024 | 512)) ? stGETFOOD : stWAIT;
-      // Continue to next case
+      // Continue to next case - deliberate fallthrough
+      if (myBrain.state === stGETFOOD) {
+        // Fall through to stGETFOOD
+      } else {
+        break; // Go to stWAIT
+      }
     }
     case stGETFOOD: {
       if (squareData[0].numFood) {
         myBrain.state = stRETURNFOOD;
         myBrain.mx = myBrain.px;
         myBrain.my = myBrain.py;
-        // Continue to stRETURNFOOD
+        // Fall through to stRETURNFOOD
+        dir = goHome(myBrain) | CARRY;
+        break;
       } else {
         if (myBrain.mx || myBrain.my) { // Know where food is
           if (myBrain.px === myBrain.mx && myBrain.py === myBrain.my) {

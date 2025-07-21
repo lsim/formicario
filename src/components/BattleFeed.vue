@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, useTemplateRef, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue';
 import AntMagnifier from '@/components/AntMagnifier.vue';
 import { useMagicKeys, useMouseInElement } from '@vueuse/core';
-import { battleStatusSubject, getDebugAnts } from '@/workers/WorkerDispatcher.ts';
 import { filter, tap } from 'rxjs';
-import useBattleRenderer from '@/renderer.ts';
+import useBattleRenderer from '@/composables/renderer.ts';
+import { useWorker } from '@/workers/WorkerDispatcher.ts';
 
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
 const canvasDefaultZoom = ref(2);
@@ -13,6 +13,7 @@ const backBuffer = document.createElement('canvas');
 const backBufferCtx = backBuffer.getContext('2d') as CanvasRenderingContext2D;
 
 const battleRenderer = useBattleRenderer();
+const worker = useWorker();
 
 // Magnifier stuff
 const { ctrl, meta } = useMagicKeys();
@@ -59,7 +60,7 @@ function updateCanvas(ctx?: CanvasRenderingContext2D) {
   // squares is a list of squares that have changed since the last status update
   if (!ctx || lastReceivedTurn <= lastRenderedTurn) {
     // All caught up
-    console.debug('All caught up at turn', lastReceivedTurn);
+    // console.debug('All caught up at turn', lastReceivedTurn);
     rendering = false;
     return;
   }
@@ -73,7 +74,7 @@ function updateCanvas(ctx?: CanvasRenderingContext2D) {
   requestAnimationFrame(() => updateCanvas(ctx));
 }
 
-battleStatusSubject
+const subscription = worker.battleStatusSubject$
   .pipe(
     filter(() => !!canvas.value && !!context.value && !!backBufferCtx),
     tap((battle) => {
@@ -105,11 +106,17 @@ function ensureRendering() {
 }
 
 function getAntData() {
-  getDebugAnts(
-    Math.round(magX.value / canvasDefaultZoom.value),
-    Math.round(magY.value / canvasDefaultZoom.value) - 1,
-  ).then(() => {});
+  worker
+    .getDebugAnts(
+      Math.round(magX.value / canvasDefaultZoom.value),
+      Math.round(magY.value / canvasDefaultZoom.value) - 1,
+    )
+    .then(() => {});
 }
+
+onBeforeUnmount(() => {
+  subscription?.unsubscribe();
+});
 </script>
 
 <template>

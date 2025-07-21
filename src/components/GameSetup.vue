@@ -1,205 +1,238 @@
 <script setup lang="ts">
 import TeamChooser from '@/components/TeamChooser.vue';
-import { computed, ref } from 'vue';
-import { useMagicKeys, whenever } from '@vueuse/core';
 import { useTeamStore } from '@/stores/teams.ts';
-
-const props = defineProps<{
-  isRunning: boolean;
-  isPaused: boolean;
-  statusInterval: number;
-  seed: number;
-  numBattles: number;
-  liveFeed: boolean;
-}>();
-
-const emit = defineEmits<{
-  (event: 'start-game'): void;
-  (event: 'stop-game'): void;
-  (event: 'pause-game'): void;
-  (event: 'resume-game'): void;
-  (event: 'skip-battle'): void;
-  (event: 'step-game', stepSize: number): void;
-  (event: 'update:status-interval', statusInterval: number): void;
-  (event: 'update:seed', seed: number): void;
-  (event: 'update:numBattles', numBattles: number): void;
-  (event: 'update:liveFeed', liveFeed: boolean): void;
-}>();
+import { useGameStore } from '@/stores/game.ts';
+import { ref, type Ref } from 'vue';
+import IntervalInput from '@/components/IntervalInput.vue';
 
 const teamStore = useTeamStore();
+const gameStore = useGameStore();
 
-const stepSize = ref(1);
-
-const { enter, shift_space, escape } = useMagicKeys();
-
-whenever(enter, start);
-
-whenever(shift_space, step);
-
-whenever(escape, stop);
-
-function start() {
-  if (props.isRunning) return;
-  if (props.isPaused) {
-    resume();
-  } else {
-    emit('start-game');
-  }
-}
-
-function stop() {
-  if (!props.isRunning) return;
-  emit('stop-game');
-}
-
-function skip() {
-  if (!props.isRunning) return;
-  emit('skip-battle');
-}
-
-function pause() {
-  emit('pause-game');
-}
-
-function resume() {
-  emit('resume-game');
-}
-
-function step() {
-  if (!props.isRunning || (props.isRunning && props.isPaused)) {
-    emit('step-game', stepSize.value);
-  }
-}
-
-const noTeamsSelected = computed(() => teamStore.battleTeams.length === 0);
+const activeTab: Ref<'teams' | 'intervals' | 'winning' | 'other' | 'ui'> = ref('teams');
 </script>
 
 <template>
-  <form>
-    <div class="field is-grouped">
-      <div class="control" v-show="!props.isRunning">
-        <button
-          class="button is-primary"
-          type="button"
-          @click="start"
-          :disabled="noTeamsSelected"
-          title="[Enter]"
-        >
-          Start game
-        </button>
-      </div>
-      <div class="control" v-show="props.isRunning">
-        <button class="button is-danger" type="button" @click="stop" title="[Escape]">Stop</button>
-      </div>
-      <div class="control" v-show="props.isRunning">
-        <button class="button" type="button" @click="skip">Skip</button>
-      </div>
-      <div class="control" v-show="!props.isPaused && props.isRunning">
-        <button class="button is-info" type="button" @click="pause" :disabled="noTeamsSelected">
-          Pause
-        </button>
-      </div>
-      <div class="control" v-show="props.isPaused && props.isRunning">
-        <button class="button is-info" type="button" @click="resume" :disabled="noTeamsSelected">
-          Resume
-        </button>
-      </div>
-      <div
-        class="field has-addons"
-        v-show="(props.isPaused && props.isRunning) || !props.isRunning"
+  <nav class="panel is-warning">
+    <div class="panel-heading">Game setup</div>
+    <p class="panel-tabs">
+      <a :class="{ 'is-active': activeTab === 'teams' }" @click="activeTab = 'teams'"
+        >Teams ({{ teamStore.battleTeams.length }})</a
       >
+      <a :class="{ 'is-active': activeTab === 'intervals' }" @click="activeTab = 'intervals'"
+        >Map/Food</a
+      >
+      <a :class="{ 'is-active': activeTab === 'winning' }" @click="activeTab = 'winning'"
+        >Winning</a
+      >
+      <a :class="{ 'is-active': activeTab === 'ui' }" @click="activeTab = 'ui'">UI</a>
+      <a :class="{ 'is-active': activeTab === 'other' }" @click="activeTab = 'other'">Other</a>
+    </p>
+    <div class="panel-block" v-if="activeTab === 'teams'">
+      <team-chooser @update:teams="teamStore.battleTeams = $event" class="team-chooser" />
+    </div>
+
+    <template v-if="activeTab === 'intervals'">
+      <div class="panel-block">
+        <interval-input
+          label="Map width interval for battles"
+          title="The width of the map in squares/pixels"
+          v-model:lower="gameStore.gameSpec.mapWidth[0]"
+          v-model:upper="gameStore.gameSpec.mapWidth[1]"
+          :min="64"
+          :max="1024"
+          :step="64"
+        />
+      </div>
+      <div class="panel-block">
+        <interval-input
+          label="Map height interval for battles"
+          title="The height of the map in squares/pixels"
+          v-model:lower="gameStore.gameSpec.mapHeight[0]"
+          v-model:upper="gameStore.gameSpec.mapHeight[1]"
+          :min="64"
+          :max="1024"
+          :step="64"
+        />
+      </div>
+      <div class="panel-block">
+        <interval-input
+          label="New food space interval for battles"
+          title="The average distance between food stashes"
+          v-model:lower="gameStore.gameSpec.newFoodSpace[0]"
+          v-model:upper="gameStore.gameSpec.newFoodSpace[1]"
+          :min="1"
+          :max="1000"
+          :step="1"
+        />
+      </div>
+      <div class="panel-block">
+        <interval-input
+          label="New food min interval for battles"
+          title="The minimum size of food stashes"
+          v-model:lower="gameStore.gameSpec.newFoodMin[0]"
+          v-model:upper="gameStore.gameSpec.newFoodMin[1]"
+          :min="1"
+          :max="1000"
+          :step="1"
+        />
+      </div>
+      <div class="panel-block">
+        <interval-input
+          label="New food diff interval for battles"
+          title="The variance of food stash sizes. Max stash size is min + diff"
+          v-model:lower="gameStore.gameSpec.newFoodDiff[0]"
+          v-model:upper="gameStore.gameSpec.newFoodDiff[1]"
+          :min="0"
+          :max="1000"
+          :step="1"
+        />
+      </div>
+    </template>
+    <template v-if="activeTab === 'winning'">
+      <div class="panel-block">
         <div class="control">
-          <button
-            class="button is-info"
-            type="button"
-            @click="step"
-            :disabled="noTeamsSelected"
-            title="[Shift + Space]"
-          >
-            Step
-          </button>
+          <div class="field has-addons">
+            <div class="control">
+              <a class="button is-static">Win with</a>
+            </div>
+            <div class="control">
+              <input
+                class="input"
+                type="number"
+                v-model="gameStore.gameSpec.winPercent"
+                min="10"
+                max="100"
+              />
+            </div>
+            <div class="control">
+              <a class="button is-static">% dominance at any point</a>
+            </div>
+          </div>
         </div>
+      </div>
+      <div class="panel-block">
         <div class="control">
-          <input class="step-size input" type="number" v-model="stepSize" min="1" step="10" />
+          <div class="field has-addons">
+            <div class="control">
+              <a class="button is-static">or</a>
+            </div>
+            <div class="control">
+              <input
+                class="input"
+                type="number"
+                v-model="gameStore.gameSpec.halfTimePercent"
+                min="10"
+                max="100"
+              />
+            </div>
+            <div class="control">
+              <a class="button is-static">% dominance after</a>
+            </div>
+            <div class="control">
+              <input
+                class="input"
+                type="number"
+                v-model="gameStore.gameSpec.halfTimeTurn"
+                min="100"
+                max="100000"
+                step="100"
+              />
+            </div>
+            <div class="control">
+              <a class="button is-static">turns</a>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-    <team-chooser @update:teams="teamStore.battleTeams = $event" />
-    <div class="field">
-      <div class="control">
-        <label class="checkbox label"
-          >Live feed
-          <input
-            type="checkbox"
-            :checked="liveFeed"
-            @input="emit('update:liveFeed', ($event.target as HTMLInputElement).checked)"
-          />
-        </label>
+      <div class="panel-block">
+        <div class="control">
+          <div class="field has-addons">
+            <div class="control">
+              <a class="button is-static">or majority after</a>
+            </div>
+            <div class="control">
+              <input
+                class="input"
+                type="number"
+                v-model="gameStore.gameSpec.timeOutTurn"
+                min="100"
+                max="100000"
+                step="100"
+              />
+            </div>
+            <div class="control">
+              <a class="button is-static">turns</a>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="field">
-      <div class="control">
-        <label class="label"
-          >Feed update interval
-          <input
-            class="input"
-            type="number"
-            :value="statusInterval"
-            :disabled="!liveFeed"
-            @input="
-              emit(
-                'update:status-interval',
-                ($event.target as HTMLInputElement).value
-                  ? parseInt(($event.target as HTMLInputElement).value, 10)
-                  : 0,
-              )
-            "
-        /></label>
+    </template>
+
+    <template v-if="activeTab === 'ui'">
+      <div class="panel-block">
+        <div class="control">
+          <label class="checkbox label"
+            >Live feed
+            <input type="checkbox" v-model="gameStore.liveFeed" />
+          </label>
+        </div>
       </div>
-    </div>
-    <div class="field">
-      <div class="control">
-        <label class="label"
-          >Number of battles
-          <input
-            class="input"
-            type="number"
-            :value="numBattles"
-            @input="
-              emit(
-                'update:numBattles',
-                ($event.target as HTMLInputElement).value
-                  ? parseInt(($event.target as HTMLInputElement).value, 10)
-                  : 0,
-              )
-            "
-        /></label>
+      <div class="panel-block">
+        <div class="control">
+          <label class="label"
+            >Feed update interval
+            <input
+              class="input"
+              type="number"
+              :disabled="!gameStore.liveFeed"
+              v-model="gameStore.gameSpec.statusInterval"
+              min="1"
+          /></label>
+        </div>
       </div>
-    </div>
-    <div class="field">
-      <div class="control">
-        <label class="label"
-          >Seed
-          <input
-            class="input"
-            type="number"
-            :value="seed"
-            @input="
-              emit(
-                'update:seed',
-                ($event.target as HTMLInputElement).value
-                  ? parseInt(($event.target as HTMLInputElement).value, 10)
-                  : 0,
-              )
-            "
-        /></label>
+    </template>
+
+    <template v-if="activeTab === 'other'">
+      <div class="panel-block">
+        <div class="control">
+          <label class="label"
+            >Number of battles<input
+              class="input"
+              type="number"
+              v-model="gameStore.gameSpec.numBattles"
+          /></label>
+        </div>
       </div>
-    </div>
-  </form>
+      <div class="panel-block">
+        <div class="control">
+          <label class="label"
+            >Number of randomly selected teams per battle<input
+              class="input"
+              type="number"
+              v-model="gameStore.gameSpec.numBattleTeams"
+          /></label>
+        </div>
+      </div>
+      <div class="panel-block">
+        <interval-input
+          label="Number of starting ants"
+          title="The number of starting ants for each team"
+          v-model:lower="gameStore.gameSpec.startAnts[0]"
+          v-model:upper="gameStore.gameSpec.startAnts[1]"
+          :min="10"
+          :max="1000"
+          :step="10"
+        />
+      </div>
+      <div class="panel-block">
+        <div class="control">
+          <label class="label"
+            >Seed<input class="input" type="number" v-model="gameStore.gameSpec.seed"
+          /></label>
+        </div>
+      </div>
+    </template>
+  </nav>
 </template>
 
-<style scoped lang="scss">
-.step-size {
-  width: 5em;
-}
-</style>
+<style scoped lang="scss"></style>

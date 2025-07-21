@@ -30,10 +30,10 @@ function getAntFunctions(teams: { name: string; code: string }[]): {
 
 onmessage = async (e) => {
   const command: WorkerMessage = e.data as WorkerMessage;
-  console.log('Worker received message', command);
+  console.debug('Worker received message', command);
   try {
     if (command?.type === 'run-game') {
-      activeGame?.skipBattle();
+      activeGame?.stopGame();
       const teamFunctions = getAntFunctions(command.game.teams);
       const failedAntFunctions = teamFunctions.filter((f) => f.error);
       if (failedAntFunctions.length > 0) {
@@ -48,7 +48,7 @@ onmessage = async (e) => {
         command.game,
         teamFunctions.map((f) => f.func).filter((f) => !!f),
       );
-      const p = activeGame.run(command.pause);
+      const p = activeGame.run(command.pauseAfterTurns);
       postMessage({ type: 'ok', id: command.id });
       const summary = await p;
       if (!summary) {
@@ -61,7 +61,7 @@ onmessage = async (e) => {
       activeGame?.stopGame();
       postMessage({ type: 'ok', id: command.id });
     } else if (command?.type === 'skip-battle') {
-      activeGame?.activeBattle?.stop();
+      activeGame?.skipBattle();
       postMessage({ type: 'ok', id: command.id });
     } else if (command?.type === 'pause-game') {
       activeGame?.pause();

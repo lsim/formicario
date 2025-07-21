@@ -63,6 +63,7 @@ describe('Base Building Brain Management', () => {
       timeOutTurn: 200,
       winPercent: 70,
       numBattles: 1,
+      numBattleTeams: 2,
     };
 
     const battle = new Battle(gameSpec, [baseBuildingAnt], 123);
@@ -140,6 +141,7 @@ describe('Base Building Brain Management', () => {
       timeOutTurn: 100,
       winPercent: 70,
       numBattles: 1,
+      numBattleTeams: 2,
     };
 
     const battle = new Battle(gameSpec, [newBaseTestAnt], 123);

@@ -1,76 +1,60 @@
 <script setup lang="ts">
-import type { TeamStatus } from '@/GameSummary.ts';
+import type { BattleSummary, TeamStatus } from '@/GameSummary.ts';
 import { computed, onBeforeUnmount, ref } from 'vue';
-import { battleStatusSubject } from '@/workers/WorkerDispatcher.ts';
-import { Subscription } from 'rxjs';
-
-declare type StatusProperty = keyof TeamStatus;
+import { map, switchAll } from 'rxjs';
+import type { BattleStats } from '@/composables/stats.ts';
+import { useGameStore } from '@/stores/game.ts';
 
 // Number typed properties of TeamStatus
-const statusProperties: StatusProperty[] = [
-  'numBorn',
-  'numAnts',
-  'numBases',
-  'basesBuilt',
-  'kill',
-  'killed',
-  'dieAge',
-];
+const game = useGameStore();
 
-const propertyLabels: Record<StatusProperty, string> = {
-  name: 'Name',
-  color: 'Color',
-  numBorn: 'Born',
-  numAnts: 'Ants',
-  numBases: 'Bases',
-  basesBuilt: 'Bases built',
-  kill: 'Kills',
-  killed: 'Losses',
-  dieAge: 'Die age',
-};
+const props = withDefaults(
+  defineProps<{
+    isLive?: boolean;
+    battleSummary?: BattleSummary;
+    battleStats?: BattleStats;
+  }>(),
+  {
+    isLive: false,
+  },
+);
 
-const props = defineProps<{
-  finalTeams?: TeamStatus[];
-}>();
-
-const selectedStatusProperty = ref<StatusProperty>('numAnts');
-
-const liveTeams = ref<TeamStatus[]>(props.finalTeams || []);
+const liveTeams = ref<TeamStatus[]>([]);
 const turn = ref<number>();
 const tps = ref<number>();
 
-const teams = computed(() => props.finalTeams || liveTeams.value);
+const teams = computed(() => props.battleSummary?.teams || liveTeams.value);
 
 // If we aren't given the final scores, subscribe to get live updates
-let subscription: Subscription | undefined;
-if (!props.finalTeams) {
-  subscription = battleStatusSubject.subscribe((battleStatus) => {
-    liveTeams.value = battleStatus.teams;
-    turn.value = battleStatus.turns;
-    tps.value = battleStatus.turnsPerSecond;
+if (!props.battleSummary) {
+  // Get fresh streams for each battle
+  const subscription = game.battleStreams$
+    .pipe(
+      map(([status]) => status),
+      switchAll(),
+    )
+    .subscribe((battleStatus) => {
+      liveTeams.value = battleStatus.teams;
+      turn.value = battleStatus.turns;
+      tps.value = battleStatus.turnsPerSecond;
+    });
+
+  onBeforeUnmount(() => {
+    subscription.unsubscribe();
   });
 }
 const maxForSelectedProperty = computed(() => {
-  return Math.max(...teams.value.map((t) => t[selectedStatusProperty.value] as number));
+  return Math.max(...teams.value.map((t) => t[game.selectedStatusProperty] as number));
 });
 
 function barWidth(team: TeamStatus) {
-  return (team[selectedStatusProperty.value] as number) / maxForSelectedProperty.value;
+  return (team[game.selectedStatusProperty] as number) / maxForSelectedProperty.value;
 }
-
-onBeforeUnmount(() => {
-  subscription?.unsubscribe();
-});
 </script>
 
 <template>
   <div class="team-stats">
     <div class="team-stats-header">
-      <select v-model="selectedStatusProperty">
-        <option v-for="prop in statusProperties" :key="prop" :value="prop">
-          {{ propertyLabels[prop] }}
-        </option>
-      </select>
       <span v-show="turn">Simulated turns {{ turn }}</span>
       <span v-show="tps">Simulated turns/second {{ tps }}</span>
     </div>
@@ -84,7 +68,7 @@ onBeforeUnmount(() => {
           width: `${barWidth(team) * 100}%`,
         }"
       >
-        {{ team[selectedStatusProperty] }}
+        {{ team[game.selectedStatusProperty] }}
       </div>
     </template>
   </div>
