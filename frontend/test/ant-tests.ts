@@ -12,7 +12,7 @@ function loadTeams() {
   const teams: Team[] = [];
   for (const [key, value] of Object.entries(rawImport)) {
     const code = value.default;
-    const name = key.replace(/^\/ants\/(.+)\.js$/, '$1');
+    const name = key.replace(/^\.\.\/ants\/(.+)\.js$/, '$1');
     const teamInfo: Team = { name, code };
     teams.push(teamInfo);
   }
