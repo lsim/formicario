@@ -12,7 +12,6 @@ export default mergeConfig(
       root: fileURLToPath(new URL('./', import.meta.url)),
       coverage: {
         enabled: false,
-        exclude: ['ants/*'],
       },
       poolOptions: {
         maxWorkers: 3,
