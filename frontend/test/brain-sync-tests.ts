@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { Battle, type AntFunction, type SquareData, type AntInfo } from '@/Battle';
-import type { GameSpec } from '@/GameSpec';
+import { Battle, type AntFunction, type SquareData, type AntInfo } from '@/Battle.ts';
+import type { GameSpec } from '@/GameSpec.ts';
 
 describe('Brain Array Synchronization', () => {
   it('should maintain sync between square.numAnts and brain array length', () => {

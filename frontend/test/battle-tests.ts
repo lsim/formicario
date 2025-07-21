@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 
-import type { GameSpec } from '@/GameSpec';
+import type { GameSpec } from '@/GameSpec.ts';
 import {
   Battle,
   type AntFunction,
@@ -8,7 +8,7 @@ import {
   type SquareData,
   type AntData,
   produceBattleArgs,
-} from '@/Battle';
+} from '@/Battle.ts';
 import { getRNG, type RNGFunction } from '@/prng.ts';
 import type { BattleStatusMessage } from '@/workers/WorkerMessage.ts';
 

@@ -74,7 +74,7 @@ describe('safeEval', () => {
   });
 
   it('should produce a viable ant function', async () => {
-    const source = (await import('../ants/reluctAnt.js?raw')).default;
+    const source = (await import('../../ants/reluctAnt.js?raw')).default;
     const antFunc = safeEval(source, 'fooTeam');
     expect(typeof antFunc).toBe('function');
     const antDescriptor = antFunc(); // Leave empty to get the descriptor

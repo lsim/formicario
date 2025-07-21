@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { Battle, type AntFunction, type SquareData, type AntInfo } from '@/Battle';
-import type { GameSpec } from '@/GameSpec';
+import { Battle, type AntFunction, type SquareData, type AntInfo } from '@/Battle.ts';
+import type { GameSpec } from '@/GameSpec.ts';
 
 describe('Brain Data Consistency During Ant Creation', () => {
   it('should provide all defined brains when new ants are created at bases', () => {

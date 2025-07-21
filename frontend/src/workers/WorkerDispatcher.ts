@@ -1,4 +1,4 @@
-import Worker from './worker?worker';
+import Worker from './worker.ts?worker';
 import type {
   AntInfoReplyMessage,
   AntInfoRequestMessage,

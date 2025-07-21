@@ -20,9 +20,9 @@ The purpose of the game is, in other words, to program an ant algorithm that can
 
 ## The rules
 
-Available in [English](Gospel/english/Rules.md) and the original [Danish](Gospel/original/Regler.md).
+Available in [English](../Gospel/english/Rules.md) and the original [Danish](../Gospel/original/Regler.md).
 
-The original C programming guide is also available in [English](Gospel/english/OriginalProgrammingGuide.md) and the original [Danish](Gospel/original/OriginalProgrammingGuide.md).
+The original C programming guide is also available in [English](../Gospel/english/OriginalProgrammingGuide.md) and the original [Danish](../Gospel/original/OriginalProgrammingGuide.md).
 
 Note that the syntax looks slightly different in javascript. But there are lots of examples available in the **ants** folder for inspiration. Ranging from the banal to the downright mystical.
 

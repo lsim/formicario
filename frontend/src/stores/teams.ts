@@ -15,7 +15,7 @@ export const useTeamStore = defineStore('team', () => {
 
     for (const [key, value] of Object.entries(rawImport)) {
       const code = value.default;
-      const name = key.replace(/^\/ants\/(.+)\.js$/, '$1');
+      const name = key.replace(/^\.\.\/ants\/(.+)\.js$/, '$1');
       const teamInfo: Team = { name, code };
       try {
         const moreInfo = await worker.getTeamInfo(teamInfo);
