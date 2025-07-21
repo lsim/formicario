@@ -21,7 +21,7 @@ const subscription = gameStore.battleStreams$
   .pipe(
     map(([, stats]) => stats),
     switchAll(),
-    tap((bss) => gameStats.value.push(bss)),
+    tap((bss) => gameStats.value.unshift(bss)),
   )
   .subscribe();
 
@@ -60,7 +60,7 @@ onBeforeUnmount(() => {
         <h2>Previous game</h2>
         <div class="stat" v-if="gameSummary">Seed: {{ gameSummary.seed }}</div>
         <template v-for="(battle, index) in gameStats" :key="index">
-          <h3>Battle {{ index + 1 }}</h3>
+          <h3>Battle {{ gameStats.length - index }}</h3>
           <battle-summary-u-i :summary="battle.summary" :stats="battle.stats" />
           <hr />
         </template>
