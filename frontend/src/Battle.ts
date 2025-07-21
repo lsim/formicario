@@ -105,6 +105,7 @@ export type AntDescriptor = {
   name: string;
   brainTemplate: object;
   description?: string;
+  backendId?: string;
 };
 
 export type AntFunction = (() => AntDescriptor) & ((map: SquareData[], antInfo: AntInfo) => number);

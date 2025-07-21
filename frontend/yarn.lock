@@ -3562,6 +3562,11 @@ vue-component-type-helpers@^2.0.0:
   resolved "https://registry.npmjs.org/vue-component-type-helpers/-/vue-component-type-helpers-2.2.12.tgz"
   integrity sha512-YbGqHZ5/eW4SnkPNR44mKVc6ZKQoRs/Rux1sxC6rdwXb4qpbOSYfDr9DsTHolOTGmIKgM9j141mZbBeg05R1pw==
 
+vue-confetti-explosion@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/vue-confetti-explosion/-/vue-confetti-explosion-1.0.2.tgz#84b873d400cf0301814bdd71329daa1ac741fd86"
+  integrity sha512-80OboM3/6BItIoZ6DpNcZFqGpF607kjIVc5af56oKgtFmt5yWehvJeoYhkzYlqxrqdBe0Ko4Ie3bWrmLau+dJw==
+
 vue-deepunref@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/vue-deepunref/-/vue-deepunref-1.0.1.tgz#9369b945ce422534f2c52e7580797077e180401d"

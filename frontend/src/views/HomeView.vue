@@ -9,6 +9,8 @@ import { useGameStore } from '@/stores/game.ts';
 import LiveBattleView from '@/components/LiveBattleView.vue';
 import { type BattleSummaryStats } from '@/composables/stats.ts';
 import { useWorker } from '@/workers/WorkerDispatcher.ts';
+import Toaster from '@/components/MessageToaster.vue'
+import Authenticator from '@/components/UserAuthenticator.vue'
 
 const gameSummary = ref<GameSummary>();
 
@@ -34,14 +36,13 @@ onBeforeUnmount(() => {
   subscription2.unsubscribe();
 });
 
-// TODO: Figure out a way to parallelize battles to multiple workers (perhaps a master worker managing the big picture with a couple of slaves?). Difficulty: battle state cannot be easily split up without bending the original rules
-// TODO: Just parallelize separate battles to a configurable number of separate workers, and then aggregate the results afterwards
-// TODO: Collect samples of kills/losses/born, so we can graph them after the battle to help explain the result. Maybe they can even be live?
+// TODO: parallelize separate battles to a configurable number of separate workers
 </script>
 
 <template>
   <div class="columns" :class="{ 'game-running': gameStore.gameRunning }">
     <div class="column">
+      <toaster />
       <Teleport to="#navbarMenu">
         <game-controls />
       </Teleport>
@@ -72,6 +73,7 @@ onBeforeUnmount(() => {
         <!-- TODO: slide live view in (from right) when a battle is running? -->
       </Transition>
     </div>
+    <authenticator />
   </div>
 </template>
 

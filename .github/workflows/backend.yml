@@ -1,0 +1,30 @@
+name: Deploy backend
+on: [push]
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/feature/backend' && github.repository == 'lsim/formicario'
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write # Needed for auth with Deno Deploy
+      contents: read # Needed to clone the repository
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Install Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Upload to Deno Deploy
+        uses: denoland/deployctl@v1
+        with:
+          project: "formicario"
+          entrypoint: ./src/main.ts
+          root: ./backend/
