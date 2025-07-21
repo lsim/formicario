@@ -25,7 +25,7 @@ jobs:
         with:
           path: ./dist
   Deploy-Job:
-    if: github.ref == 'refs/heads/master' && github.repository == 'lsim/formicario'
+    if: github.ref == 'refs/heads/main' && github.repository == 'lsim/formicario'
     runs-on: ubuntu-latest
     needs: Build-Job
     permissions:
