@@ -1,6 +1,6 @@
 import { createFetch, useLocalStorage, useWebSocket, type UseWebSocketReturn } from '@vueuse/core';
 import { ref, watch } from 'vue';
-import type { AntDescriptor } from '@/Battle.ts'
+import type { AntDescriptor } from '@/Battle.ts';
 import useToast from '@/composables/toast.ts';
 import useBusy from '@/composables/busy.ts';
 
@@ -28,7 +28,7 @@ function antPublicationFromApiObject(obj: Record<keyof AntPublication, string>):
     code: obj.code,
     authorId: obj.authorId,
     authorName: obj.authorName,
-  }
+  };
 }
 
 const sslBackend = import.meta.env.VITE_SSL_BACKEND === 'true';
@@ -261,12 +261,13 @@ class ApiClient {
     return data.value;
   }
 
+  // TODO: Add a digest to the team code, so we can track changes
+  // crypto.subtle
+  //   .digest('SHA-256', new TextEncoder().encode(teamCode))
+  //   .then((x) => console.log('SHA-256', x));
+
   // Returns the backend id of the publication
-  async publishTeam(
-    team: AntDescriptor,
-    code: string,
-    timestamp: number,
-  ): Promise<string | null> {
+  async publishTeam(team: AntDescriptor, code: string, timestamp: number): Promise<string | null> {
     const publication: Omit<AntPublication, 'id'> = {
       code: code,
       color: team.color,
@@ -286,10 +287,7 @@ class ApiClient {
       return null;
     }
 
-    this.toast.show(
-      `The team '${team.name}' was published successfully!`,
-      'celebrate',
-    );
+    this.toast.show(`The team '${team.name}' was published successfully!`, 'celebrate');
     return data.value;
   }
 

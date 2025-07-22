@@ -9,8 +9,8 @@ import { useGameStore } from '@/stores/game.ts';
 import LiveBattleView from '@/components/LiveBattleView.vue';
 import { type BattleSummaryStats } from '@/composables/stats.ts';
 import { useWorker } from '@/workers/WorkerDispatcher.ts';
-import Toaster from '@/components/MessageToaster.vue'
-import Authenticator from '@/components/UserAuthenticator.vue'
+import Toaster from '@/components/MessageToaster.vue';
+import Authenticator from '@/components/UserAuthenticator.vue';
 
 const gameSummary = ref<GameSummary>();
 
@@ -73,7 +73,7 @@ onBeforeUnmount(() => {
         <!-- TODO: slide live view in (from right) when a battle is running? -->
       </Transition>
     </div>
-    <authenticator />
+    <!--    <authenticator />-->
   </div>
 </template>
 
