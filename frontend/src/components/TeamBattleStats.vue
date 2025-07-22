@@ -50,6 +50,20 @@ const maxForSelectedProperty = computed(() => {
 function barWidth(team: TeamStatus) {
   return (team[game.selectedStatusProperty] as number) / maxForSelectedProperty.value;
 }
+
+// A computed property with value and color for each team, ordered by the value
+const sortedBars = computed(() => {
+  return teams.value
+    .map((team) => {
+      return {
+        width: barWidth(team),
+        value: team[game.selectedStatusProperty],
+        color: team.color,
+        name: team.name,
+      };
+    })
+    .sort((a, b) => b.value - a.value);
+});
 </script>
 
 <template>
@@ -58,17 +72,17 @@ function barWidth(team: TeamStatus) {
       <span v-show="turn">Simulated turns {{ turn }}</span>
       <span v-show="tps">Simulated turns/second {{ tps }}</span>
     </div>
-    <template v-for="team in teams" :key="team.name">
-      <div class="team-name">{{ team.name }}</div>
-      <!-- A colored bar for the selected property and the current team -->
+    <template v-for="bar in sortedBars" :key="bar.name">
+      <div class="team-name">{{ bar.name }}</div>
+      <!-- A colored bar for the selected property and the current bar -->
       <div
         class="team-bar"
         :style="{
-          backgroundColor: team.color,
-          width: `${barWidth(team) * 100}%`,
+          backgroundColor: bar.color,
+          width: `${bar.width * 100}%`,
         }"
       >
-        {{ team[game.selectedStatusProperty] }}
+        {{ bar.value }}
       </div>
     </template>
   </div>

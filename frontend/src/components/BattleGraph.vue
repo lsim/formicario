@@ -40,9 +40,26 @@ const options: ChartOptions<'line'> = {
   elements: {
     point: { radius: 0 },
     line: {
-      tension: 0.6,
+      // tension: 0.9,
       borderWidth: 2,
       cubicInterpolationMode: 'monotone',
+    },
+  },
+  animations: {
+    y: {
+      type: 'number',
+      properties: ['y'],
+      // Last point in the dataset animates from the previous point for less seizure inducing visuals
+      from(ctx) {
+        if (ctx.type !== 'data') return;
+        if (ctx.mode !== 'default') return;
+        const data = ctx.chart.getDatasetMeta(ctx.datasetIndex)?.data;
+        if (!data || data.length < 2) return;
+        if (data.length - 1 === ctx.dataIndex) {
+          const point = data[ctx.dataIndex - 1];
+          return point?.y;
+        }
+      },
     },
   },
 };
@@ -50,7 +67,6 @@ const options: ChartOptions<'line'> = {
 function clearChart() {
   if (!chartRef.value) return;
   const chartInstance = chartRef.value.chart as { clear: () => void };
-  console.debug('BattleGraph clearing');
   chartInstance.clear();
 }
 

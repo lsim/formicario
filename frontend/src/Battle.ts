@@ -1013,6 +1013,11 @@ export class Battle {
     }
 
     // Win percentage reached (only applies to multi-team battles)
+    // NOTE: With eg 5 teams, where 4 teams have just their bases (75), the dominator will need to have a very high number of ants to win
+    // Or must capture the bases. This can give a very long and boring battle. We should tweak this. Perhaps bases shouldn't factor in?
+    // Another factor that plays into this is that a resource equilibrium is reached since no ants are dying.
+    // Perhaps an additional winning condition should be added - the number of turns without significant change in team totals?
+    // Or perhaps a n turns without any new ants being born (no new food appearing)?
     if (this.teams.length > 1 && totalValue > 0) {
       const winThreshold = totalValue * (this.args.winPercent / 100);
       if (maxTeamValue >= winThreshold) {
