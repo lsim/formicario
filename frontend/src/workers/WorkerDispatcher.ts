@@ -8,7 +8,7 @@ import type {
   StepGameCommand,
   WorkerMessage,
 } from '@/workers/WorkerMessage.ts';
-import { Subject } from 'rxjs';
+import { ReplaySubject, Subject } from 'rxjs';
 import type { BattleStatus, BattleSummary, GameSummary } from '@/GameSummary.ts';
 import type { AntData } from '@/Battle.ts';
 import type { Team } from '@/Team.ts';
@@ -16,7 +16,7 @@ import { deepUnref } from 'vue-deepunref';
 
 const battleStatusSubject$ = new Subject<BattleStatus>();
 const battleSummarySubject$ = new Subject<BattleSummary>();
-const gameSummarySubject$ = new Subject<GameSummary>();
+const gameSummarySubject$ = new ReplaySubject<GameSummary>(1);
 const debugAntsSubject$ = new Subject<AntData[]>();
 
 const worker = new Worker();

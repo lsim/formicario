@@ -111,6 +111,15 @@ if (props.isLive || !props.battleStats) {
 }
 
 watch(
+  () => props.battleStats,
+  (newStats) => {
+    clearChart();
+    chartData.value = chartDataFromStats(newStats);
+  },
+  { immediate: true },
+);
+
+watch(
   () => gameStore.selectedStatusProperty,
   () => {
     clearChart();

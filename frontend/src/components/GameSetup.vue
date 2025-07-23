@@ -12,7 +12,7 @@ const activeTab: Ref<'teams' | 'intervals' | 'winning' | 'other' | 'ui'> = ref('
 </script>
 
 <template>
-  <nav class="panel is-warning">
+  <nav class="panel is-primary">
     <div class="panel-heading">Game setup</div>
     <p class="panel-tabs">
       <a :class="{ 'is-active': activeTab === 'teams' }" @click="activeTab = 'teams'"

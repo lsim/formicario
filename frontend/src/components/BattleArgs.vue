@@ -1,9 +1,6 @@
 <script setup lang="ts">
-// This component shows the randomized parameters of an ongoing or finished battle
-
-import { onBeforeUnmount, ref } from 'vue';
-import { first, map, switchAll, tap } from 'rxjs';
-import type { TeamStatus } from '@/GameSummary.ts';
+import { onBeforeUnmount, ref, watch } from 'vue';
+import { distinctUntilChanged, map, switchAll, tap } from 'rxjs';
 import type { BattleArgs } from '@/Battle.ts';
 import { useGameStore } from '@/stores/game.ts';
 
@@ -11,7 +8,6 @@ const props = withDefaults(
   defineProps<{
     isLive?: boolean;
     args?: BattleArgs;
-    teams?: TeamStatus[];
     seed?: number;
   }>(),
   {
@@ -20,18 +16,16 @@ const props = withDefaults(
 );
 
 const gameStore = useGameStore();
-const battleArgs = ref<BattleArgs | undefined>(props.args);
-const battleTeams = ref<TeamStatus[] | undefined>(props.teams);
+const battleArgs = ref<BattleArgs | undefined>();
 
-if (!battleArgs.value) {
+if (props.isLive) {
   const subscription = gameStore.battleStreams$
     .pipe(
       map(([status]) =>
         status.pipe(
-          first(),
+          distinctUntilChanged((prev, curr) => prev?.seed === curr.seed),
           tap((status) => {
             battleArgs.value = status.args;
-            battleTeams.value = status.teams;
           }),
         ),
       ),
@@ -42,18 +36,20 @@ if (!battleArgs.value) {
   onBeforeUnmount(() => {
     subscription.unsubscribe();
   });
+} else {
+  watch(
+    () => props.args,
+    (newArgs) => {
+      battleArgs.value = newArgs;
+    },
+    { immediate: true },
+  );
 }
 </script>
 
 <template>
-  <div class="args-table" v-if="battleArgs && battleTeams">
-    <div class="lbl">Teams:</div>
-    <div class="val">{{ battleTeams.map((t) => t.name).join(', ') }}</div>
-    <template v-if="seed">
-      <div class="lbl">Seed:</div>
-      <div class="val">{{ seed }}</div>
-      <div class="lbl">Map width:</div>
-    </template>
+  <div class="args-table" v-if="battleArgs">
+    <div class="lbl">Map width:</div>
     <div class="val">{{ battleArgs.mapWidth }}</div>
     <div class="lbl">Map height:</div>
     <div class="val">{{ battleArgs.mapHeight }}</div>

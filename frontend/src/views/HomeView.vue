@@ -3,14 +3,13 @@ import { onBeforeUnmount, ref } from 'vue';
 import GameSetup from '@/components/GameSetup.vue';
 import type { GameSummary } from '@/GameSummary.ts';
 import { map, switchAll, tap } from 'rxjs';
-import BattleSummaryUI from '@/components/BattleSummaryUI.vue';
 import GameControls from '@/components/GameControls.vue';
 import { useGameStore } from '@/stores/game.ts';
 import LiveBattleView from '@/components/LiveBattleView.vue';
 import { type BattleSummaryStats } from '@/composables/stats.ts';
 import { useWorker } from '@/workers/WorkerDispatcher.ts';
 import Toaster from '@/components/MessageToaster.vue';
-import Authenticator from '@/components/UserAuthenticator.vue';
+import GameSummaryUi from '@/components/GameSummaryUi.vue';
 
 const gameSummary = ref<GameSummary>();
 
@@ -46,7 +45,10 @@ onBeforeUnmount(() => {
       <Teleport to="#navbarMenu">
         <game-controls />
       </Teleport>
-      <game-setup class="game-setup" />
+      <div class="game-setup">
+        <game-setup />
+        <game-summary-ui />
+      </div>
       <div class="box" v-if="gameStore.lastError.length">
         <h3>Last error</h3>
         <div
@@ -56,15 +58,6 @@ onBeforeUnmount(() => {
         >
           <pre>{{ error }}</pre>
         </div>
-      </div>
-      <div class="game-summary">
-        <h2>Previous game</h2>
-        <div class="stat" v-if="gameSummary">Seed: {{ gameSummary.seed }}</div>
-        <template v-for="(battle, index) in gameStats" :key="index">
-          <h3>Battle {{ gameStats.length - index }}</h3>
-          <battle-summary-u-i :summary="battle.summary" :stats="battle.stats" />
-          <hr />
-        </template>
       </div>
     </div>
     <div class="column">
