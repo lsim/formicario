@@ -91,7 +91,7 @@ const sortedBars = computed(() => {
 <style scoped lang="scss">
 .team-stats {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: auto 1fr;
   grid-template-rows: repeat(3, 1fr);
   gap: 4px;
   font-size: 80%;

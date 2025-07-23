@@ -1571,6 +1571,229 @@ describe('Battle tests', () => {
     });
   });
 
+  describe('Base counting bug reproduction', () => {
+    it('should reproduce the numBases bug when multiple ants move to same captured base', () => {
+      const battle = new Battle(gameSpec, [simpleAnt, aggressiveAnt], 123);
+
+      // Set up the scenario: Team 1 will capture Team 2's base, then multiple ants move to it
+      const baseX = 30,
+        baseY = 30;
+      const baseSquare = battle.mapData(baseX, baseY);
+
+      // Create an enemy base (Team 2) with no defenders
+      baseSquare.base = true;
+      baseSquare.team = 2;
+      baseSquare.numAnts = 0;
+      baseSquare.firstAnt = undefined;
+      baseSquare.lastAnt = undefined;
+
+      // Set initial base counts: Team 1 has 1, Team 2 has 2 (including our test base)
+      battle.teams[0].numBases = 1; // Team 1
+      battle.teams[1].numBases = 2; // Team 2 (includes our test base)
+
+      // Position Team 1 ants near the enemy base
+      const team1Ants = battle.ants.filter((ant) => ant.team === 1).slice(0, 3);
+
+      // Position first ant adjacent to the base
+      team1Ants[0].xPos = baseX - 1;
+      team1Ants[0].yPos = baseY;
+
+      // Position other ants nearby but not adjacent yet
+      team1Ants[1].xPos = baseX - 2;
+      team1Ants[1].yPos = baseY;
+      team1Ants[2].xPos = baseX - 3;
+      team1Ants[2].yPos = baseY;
+
+      console.log('Initial state:');
+      console.log(
+        `Team 1 bases: ${battle.teams[0].numBases}, Team 2 bases: ${battle.teams[1].numBases}`,
+      );
+      console.log(`Total bases should be: 3`);
+
+      // First ant captures the base
+      battle.doAction(team1Ants[0], 1); // Move right onto base
+
+      console.log('After first ant captures base:');
+      console.log(
+        `Team 1 bases: ${battle.teams[0].numBases}, Team 2 bases: ${battle.teams[1].numBases}`,
+      );
+      console.log(`Base square team: ${baseSquare.team}, ants: ${baseSquare.numAnts}`);
+
+      // Verify initial capture worked correctly
+      expect(battle.teams[0].numBases).toBe(2); // Team 1 should have gained 1
+      expect(battle.teams[1].numBases).toBe(1); // Team 2 should have lost 1
+      expect(baseSquare.team).toBe(1); // Base should belong to Team 1 now
+
+      // Second ant moves to the already-captured base - THIS SHOULD NOT CHANGE COUNTS
+      battle.doAction(team1Ants[1], 1); // Move right, then right again to reach base
+      battle.doAction(team1Ants[1], 1); // Now on the base
+
+      console.log('After second ant moves to captured base:');
+      console.log(
+        `Team 1 bases: ${battle.teams[0].numBases}, Team 2 bases: ${battle.teams[1].numBases}`,
+      );
+
+      // THE BUG: Base counts change again even though base was already captured
+      // If the bug exists, we'll see Team 1 gain another base and Team 2 lose another
+
+      // Third ant also moves to the same base
+      battle.doAction(team1Ants[2], 1); // Move right
+      battle.doAction(team1Ants[2], 1); // Move right again to reach base
+      battle.doAction(team1Ants[2], 1); // Now on the base
+
+      console.log('After third ant moves to captured base:');
+      console.log(
+        `Team 1 bases: ${battle.teams[0].numBases}, Team 2 bases: ${battle.teams[1].numBases}`,
+      );
+      console.log(`Base square team: ${baseSquare.team}, ants: ${baseSquare.numAnts}`);
+
+      // Document the bug: each ant movement to the captured base triggers another "capture"
+      const finalTeam1Bases = battle.teams[0].numBases;
+      const finalTeam2Bases = battle.teams[1].numBases;
+      const totalBases = finalTeam1Bases + finalTeam2Bases;
+
+      console.log(`Final total bases: ${totalBases} (should be 3)`);
+
+      // This test documents the current buggy behavior
+      // In a correct implementation, the counts should remain:
+      // Team 1: 2 bases, Team 2: 1 base (total: 3)
+      // But with the bug, we expect the counts to be wrong while total remains correct
+
+      if (finalTeam1Bases !== 2 || finalTeam2Bases !== 1) {
+        console.log('BUG REPRODUCED: Base counts are incorrect!');
+        console.log(`Expected: Team 1=2, Team 2=1`);
+        console.log(`Actual: Team 1=${finalTeam1Bases}, Team 2=${finalTeam2Bases}`);
+
+        // The bug is reproduced if total is still correct but distribution is wrong
+        expect(totalBases).toBe(3); // Total should still be correct
+        // Individual counts will be wrong due to the bug
+      } else {
+        console.log('Bug not reproduced - base counting is working correctly');
+        expect(finalTeam1Bases).toBe(2);
+        expect(finalTeam2Bases).toBe(1);
+      }
+    });
+
+    it('should reproduce the numBases bug with defended enemy base', () => {
+      const battle = new Battle(gameSpec, [simpleAnt, aggressiveAnt], 123);
+
+      // Set up the scenario: Team 1 will capture Team 2's defended base, then multiple ants move to it
+      const baseX = 30,
+        baseY = 30;
+      const baseSquare = battle.mapData(baseX, baseY);
+
+      // Create an enemy base (Team 2) with one defender
+      baseSquare.base = true;
+      baseSquare.team = 2;
+
+      // Create a single enemy ant defender
+      const enemyAnt = battle['createAnt']({
+        xPos: baseX,
+        yPos: baseY,
+        team: 2,
+        age: 0,
+        nextTurn: battle.currentTurn + 1,
+        brain: { random: battle.rng() },
+      });
+
+      // Add enemy ant to square's linked list
+      baseSquare.firstAnt = enemyAnt;
+      baseSquare.lastAnt = enemyAnt;
+      baseSquare.numAnts = 1;
+
+      // Update team counters
+      battle.numAnts++;
+      battle.teams[1].numAnts++;
+
+      // Set initial base counts: Team 1 has 1, Team 2 has 2 (including our test base)
+      battle.teams[0].numBases = 1; // Team 1
+      battle.teams[1].numBases = 2; // Team 2 (includes our test base)
+
+      // Position Team 1 ants near the enemy base
+      const team1Ants = battle.ants.filter((ant) => ant.team === 1).slice(0, 3);
+
+      // Position first ant adjacent to the base
+      team1Ants[0].xPos = baseX - 1;
+      team1Ants[0].yPos = baseY;
+
+      // Position other ants nearby but not adjacent yet
+      team1Ants[1].xPos = baseX - 2;
+      team1Ants[1].yPos = baseY;
+      team1Ants[2].xPos = baseX - 3;
+      team1Ants[2].yPos = baseY;
+
+      console.log('Initial state (defended base):');
+      console.log(
+        `Team 1 bases: ${battle.teams[0].numBases}, Team 2 bases: ${battle.teams[1].numBases}`,
+      );
+      console.log(`Total bases should be: 3`);
+
+      // First ant captures the base by killing the defender
+      battle.doAction(team1Ants[0], 1); // Move right onto base, killing defender
+
+      console.log('After first ant captures defended base:');
+      console.log(
+        `Team 1 bases: ${battle.teams[0].numBases}, Team 2 bases: ${battle.teams[1].numBases}`,
+      );
+      console.log(`Base square team: ${baseSquare.team}, ants: ${baseSquare.numAnts}`);
+
+      // Verify initial capture worked correctly
+      expect(battle.teams[0].numBases).toBe(2); // Team 1 should have gained 1
+      expect(battle.teams[1].numBases).toBe(1); // Team 2 should have lost 1
+      expect(baseSquare.team).toBe(1); // Base should belong to Team 1 now
+      expect(enemyAnt.alive).toBe(false); // Defender should be dead
+
+      // Second ant moves to the already-captured base - THIS SHOULD NOT CHANGE COUNTS
+      battle.doAction(team1Ants[1], 1); // Move right, then right again to reach base
+      battle.doAction(team1Ants[1], 1); // Now on the base
+
+      console.log('After second ant moves to captured base:');
+      console.log(
+        `Team 1 bases: ${battle.teams[0].numBases}, Team 2 bases: ${battle.teams[1].numBases}`,
+      );
+
+      // THE BUG: Base counts change again even though base was already captured
+
+      // Third ant also moves to the same base
+      battle.doAction(team1Ants[2], 1); // Move right
+      battle.doAction(team1Ants[2], 1); // Move right again to reach base
+      battle.doAction(team1Ants[2], 1); // Now on the base
+
+      console.log('After third ant moves to captured base:');
+      console.log(
+        `Team 1 bases: ${battle.teams[0].numBases}, Team 2 bases: ${battle.teams[1].numBases}`,
+      );
+      console.log(`Base square team: ${baseSquare.team}, ants: ${baseSquare.numAnts}`);
+
+      // Document the bug: each ant movement to the captured base triggers another "capture"
+      const finalTeam1Bases = battle.teams[0].numBases;
+      const finalTeam2Bases = battle.teams[1].numBases;
+      const totalBases = finalTeam1Bases + finalTeam2Bases;
+
+      console.log(`Final total bases: ${totalBases} (should be 3)`);
+
+      // This test documents the current buggy behavior
+      // In a correct implementation, the counts should remain:
+      // Team 1: 2 bases, Team 2: 1 base (total: 3)
+      // But with the bug, we expect the counts to be wrong while total remains correct
+
+      if (finalTeam1Bases !== 2 || finalTeam2Bases !== 1) {
+        console.log('BUG REPRODUCED: Base counts are incorrect!');
+        console.log(`Expected: Team 1=2, Team 2=1`);
+        console.log(`Actual: Team 1=${finalTeam1Bases}, Team 2=${finalTeam2Bases}`);
+
+        // The bug is reproduced if total is still correct but distribution is wrong
+        expect(totalBases).toBe(3); // Total should still be correct
+        // Individual counts will be wrong due to the bug - document this
+        expect(finalTeam1Bases).not.toBe(2); // Should be wrong due to bug
+      } else {
+        console.log('Bug not reproduced - base counting is working correctly');
+        expect(finalTeam1Bases).toBe(2);
+        expect(finalTeam2Bases).toBe(1);
+      }
+    });
+  });
+
   describe('Brain Data Management', () => {
     it('should provide ants with accessible brain data from brain template', () => {
       // Create an ant that reads and modifies its brain

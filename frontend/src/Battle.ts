@@ -260,6 +260,16 @@ export class Battle {
     square.lastAnt = ant;
   }
 
+  // Helper method to handle base capture
+  private captureBase(attackerTeam: number, defenderTeam: number): void {
+    if (defenderTeam > 0 && defenderTeam <= this.teams.length) {
+      if (this.teams[defenderTeam - 1].numBases > 0) {
+        this.teams[defenderTeam - 1].numBases--;
+        this.teams[attackerTeam - 1].numBases++;
+      }
+    }
+  }
+
   resetTeam(p: Partial<TeamData> & { func: AntFunction } & AntDescriptor): TeamData {
     return Object.assign(p, {
       numBorn: 0,
@@ -824,11 +834,8 @@ export class Battle {
       this.teams[enemyTeam - 1].numAnts -= killedAnts;
 
       // Take over enemy base if present
-      if (newSquare.base && enemyTeam > 0 && enemyTeam <= this.teams.length) {
-        if (this.teams[enemyTeam - 1].numBases > 0) {
-          this.teams[enemyTeam - 1].numBases--;
-          this.teams[ant.team - 1].numBases++;
-        }
+      if (newSquare.base) {
+        this.captureBase(ant.team, enemyTeam);
       }
 
       this.teams[enemyTeam - 1].squareOwn--;
@@ -838,7 +845,15 @@ export class Battle {
       newSquare.numAnts = 0;
       newSquare.team = 0;
     } else if (newSquare.team > 0 && newSquare.team !== ant.team) {
-      this.teams[newSquare.team - 1].squareOwn--;
+      // Moving to enemy territory without combat
+      const enemyTeam = newSquare.team;
+
+      // Handle base capture for undefended bases
+      if (newSquare.base) {
+        this.captureBase(ant.team, enemyTeam);
+      }
+
+      this.teams[enemyTeam - 1].squareOwn--;
       this.teams[ant.team - 1].squareOwn++;
     }
 
