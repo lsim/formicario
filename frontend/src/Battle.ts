@@ -855,6 +855,9 @@ export class Battle {
 
       this.teams[enemyTeam - 1].squareOwn--;
       this.teams[ant.team - 1].squareOwn++;
+    } else if (newSquare.team === 0) {
+      // Moving to neutral territory - claim it
+      this.teams[ant.team - 1].squareOwn++;
     }
 
     // Move ant
