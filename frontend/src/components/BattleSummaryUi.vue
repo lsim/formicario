@@ -22,23 +22,23 @@ const activeTab = ref<'bars' | 'graph' | 'params' | 'end-shot'>('graph');
 watch(
   () => [activeTab.value, canvas.value, props.summary],
   ([newTab, newCanvas, newSummary]) => {
-    if (!newSummary) return;
-    if (newTab === 'end-shot') {
-      if (!newCanvas) return;
-      const ctx = newCanvas.getContext('2d');
+    const [t, c, s]: [string, HTMLCanvasElement | undefined, BattleSummary | undefined] = [
+      newTab as typeof activeTab.value,
+      newCanvas as HTMLCanvasElement | undefined,
+      newSummary as BattleSummary | undefined,
+    ];
+    if (!s) return;
+    if (t === 'end-shot') {
+      if (!c) return;
+      const ctx = c.getContext('2d');
       if (!ctx) return;
-      newCanvas.width = newSummary.args.mapWidth;
-      newCanvas.height = newSummary.args.mapHeight;
-      battleRenderer.setTeamColors(newSummary.teams.map((t) => t.color));
-      battleRenderer.renderDeltasToBackBuffer(newSummary.squares, newSummary.args, ctx);
+      c.width = s.args.mapWidth;
+      c.height = s.args.mapHeight;
+      battleRenderer.setTeamColors(s.teams.map((t) => t.color));
+      battleRenderer.renderDeltasToBackBuffer(s.squares, s.args, ctx);
     }
   },
   { immediate: true },
-);
-
-watch(
-  () => [canvas.value, activeTab.value],
-  () => {},
 );
 
 // // Format duration as in HH:MM:SS
