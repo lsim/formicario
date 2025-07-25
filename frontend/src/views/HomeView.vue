@@ -5,11 +5,11 @@ import type { GameSummary } from '@/GameSummary.ts';
 import { map, switchAll, tap } from 'rxjs';
 import GameControls from '@/components/GameControls.vue';
 import { useGameStore } from '@/stores/game.ts';
-import LiveBattleView from '@/components/LiveBattleView.vue';
 import { type BattleSummaryStats } from '@/composables/stats.ts';
 import { useWorker } from '@/workers/WorkerDispatcher.ts';
 import Toaster from '@/components/MessageToaster.vue';
 import GameSummaryUi from '@/components/GameSummaryUi.vue';
+import BattleView from '@/components/BattleView.vue';
 
 const gameSummary = ref<GameSummary>();
 
@@ -22,7 +22,7 @@ const subscription = gameStore.battleStreams$
   .pipe(
     map(([, stats]) => stats),
     switchAll(),
-    tap((bss) => gameStats.value.unshift(bss)),
+    tap((bss: BattleSummaryStats) => gameStats.value.unshift(bss)),
   )
   .subscribe();
 
@@ -39,31 +39,37 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="columns" :class="{ 'game-running': gameStore.gameRunning }">
-    <div class="column">
-      <toaster />
-      <Teleport to="#navbarMenu">
-        <game-controls />
-      </Teleport>
-      <div class="game-setup">
-        <game-setup />
-        <game-summary-ui />
-      </div>
-      <div class="box" v-if="gameStore.lastError.length">
-        <h3>Last error</h3>
-        <div
-          class="notification is-danger is-family-code"
-          v-for="error in gameStore.lastError"
-          :key="error"
-        >
-          <pre>{{ error }}</pre>
-        </div>
+  <div
+    class="container is-max-tablet"
+    :class="{
+      'split-screen': gameStore.selectedBattleSummaryStats != null,
+      'game-running': gameStore.gameRunning,
+    }"
+  >
+    <toaster />
+    <Teleport to="#navbarMenu">
+      <game-controls />
+    </Teleport>
+    <div class="game-setup">
+      <game-setup />
+      <game-summary-ui />
+    </div>
+    <div class="box" v-if="gameStore.lastError.length">
+      <h3>Last error</h3>
+      <div
+        class="notification is-danger is-family-code"
+        v-for="error in gameStore.lastError"
+        :key="error"
+      >
+        <pre>{{ error }}</pre>
       </div>
     </div>
-    <div class="column">
+    <div class="battle-info">
       <Transition name="battle-feed">
-        <live-battle-view v-if="gameStore.gameRunning" />
-        <!-- TODO: slide live view in (from right) when a battle is running? -->
+        <battle-view
+          class="battle-view"
+          v-if="gameStore.selectedBattleSummaryStats != null || gameStore.gameRunning"
+        />
       </Transition>
     </div>
     <!--    <authenticator />-->
@@ -83,11 +89,37 @@ onBeforeUnmount(() => {
 
 // slide game setup out of view to the left when game is running
 .game-setup {
-  transition: transform 0.5s ease;
+  width: 100%;
+  position: absolute;
+  transition:
+    transform 0.5s ease,
+    opacity 0.5s ease;
 }
+
+.battle-info {
+  width: 100%;
+  position: absolute;
+  transition: transform 0.5s ease;
+  transform: translateX(200%);
+}
+
 .game-running {
   .game-setup {
-    transform: translateX(-120%);
+    transform: translateX(-200%);
+    opacity: 0;
+  }
+  .battle-info {
+    transform: translateX(0);
+  }
+}
+
+.split-screen {
+  .game-setup {
+    transform: translateX(-51%);
+  }
+
+  .battle-info {
+    transform: translateX(51%);
   }
 }
 </style>

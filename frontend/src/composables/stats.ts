@@ -34,6 +34,13 @@ export function emptyTeamStats(color: string): TeamStats {
       kill: [],
       killed: [],
       dieAge: [],
+      squareOwn: [],
+      foodOwn: [],
+      foodTouch: [],
+      foodKnown: [],
+      // timesRun: [],
+      // timesTimed: [],
+      timeUsed: [],
     },
   };
 }

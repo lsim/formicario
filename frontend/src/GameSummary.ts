@@ -18,6 +18,11 @@ export type TeamStatus = {
   kill: number;
   killed: number;
   dieAge: number;
+  squareOwn: number;
+  foodOwn: number;
+  foodTouch: number;
+  foodKnown: number;
+  timeUsed: number;
 };
 
 export type BattleInfo = {

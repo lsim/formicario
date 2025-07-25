@@ -14,9 +14,10 @@ import {
 } from 'chart.js';
 
 import { type BattleStats } from '@/composables/stats.ts';
-import { onBeforeUnmount, shallowRef, useTemplateRef, watch } from 'vue';
+import { nextTick, onBeforeUnmount, shallowRef, useTemplateRef, watch } from 'vue';
 import { map, switchAll } from 'rxjs';
 import { useGameStore } from '@/stores/game.ts';
+import StatPropChooser from '@/components/StatPropChooser.vue';
 
 ChartJS.register(Title, Tooltip, Legend, PointElement, LineElement, CategoryScale, LinearScale);
 
@@ -114,7 +115,9 @@ watch(
   () => props.battleStats,
   (newStats) => {
     clearChart();
-    chartData.value = chartDataFromStats(newStats);
+    setTimeout(() => {
+      chartData.value = chartDataFromStats(newStats);
+    }, 100);
   },
   { immediate: true },
 );
@@ -129,8 +132,13 @@ watch(
 </script>
 
 <template>
-  <div>
-    <Line :data="chartData" :options="options" ref="chart" />
+  <div class="columns">
+    <div class="column is-one-fifth">
+      <stat-prop-chooser />
+    </div>
+    <div class="column">
+      <Line :data="chartData" :options="options" ref="chart" />
+    </div>
   </div>
 </template>
 

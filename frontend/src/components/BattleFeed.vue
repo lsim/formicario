@@ -148,9 +148,10 @@ onBeforeUnmount(() => {
 
 <style scoped lang="scss">
 .battle-feed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   position: relative;
-  width: auto;
-  height: auto;
 }
 canvas {
   background-color: black;

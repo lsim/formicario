@@ -4,6 +4,7 @@ import { computed, onBeforeUnmount, ref } from 'vue';
 import { map, switchAll } from 'rxjs';
 import type { BattleStats } from '@/composables/stats.ts';
 import { useGameStore } from '@/stores/game.ts';
+import StatPropChooser from '@/components/StatPropChooser.vue';
 
 // Number typed properties of TeamStatus
 const game = useGameStore();
@@ -67,24 +68,32 @@ const sortedBars = computed(() => {
 </script>
 
 <template>
-  <div class="team-stats">
-    <div class="team-stats-header">
-      <span v-show="turn">Simulated turns {{ turn }}</span>
-      <span v-show="tps">Simulated turns/second {{ tps }}</span>
+  <div class="columns">
+    <div class="column is-one-fifth">
+      <stat-prop-chooser />
     </div>
-    <template v-for="bar in sortedBars" :key="bar.name">
-      <div class="team-name">{{ bar.name }}</div>
-      <!-- A colored bar for the selected property and the current bar -->
-      <div
-        class="team-bar"
-        :style="{
-          backgroundColor: bar.color,
-          width: `${bar.width * 100}%`,
-        }"
-      >
-        {{ bar.value }}
+    <div class="column">
+      <div class="team-stats">
+        <div class="team-stats-header">
+          <span v-show="turn">Simulated turns {{ turn }}</span>
+          <span v-show="tps">Simulated turns/second {{ tps }}</span>
+        </div>
+        <template v-for="bar in sortedBars" :key="bar.name">
+          <div class="team-name" :title="bar.value + ''">{{ bar.name }}</div>
+          <!-- A colored bar for the selected property and the current bar -->
+          <div
+            class="team-bar"
+            :style="{
+              backgroundColor: bar.color,
+              width: `${bar.width * 100}%`,
+            }"
+            :title="bar.value + ''"
+          >
+            {{ bar.value }}
+          </div>
+        </template>
       </div>
-    </template>
+    </div>
   </div>
 </template>
 
@@ -94,7 +103,6 @@ const sortedBars = computed(() => {
   grid-template-columns: auto 1fr;
   grid-template-rows: repeat(3, 1fr);
   gap: 4px;
-  font-size: 80%;
   .team-stats-header {
     grid-column: 1 / 3;
   }

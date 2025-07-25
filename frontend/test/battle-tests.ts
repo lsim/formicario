@@ -690,26 +690,6 @@ describe('Battle tests', () => {
       expect(startSquare.team).toBe(1); // Team ownership persists
     });
 
-    it('should call foodOwnTouch during termination check', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
-
-      // Set up a square with food and ants
-      const square = battle.mapData(10, 10);
-      square.numAnts = 3;
-      square.numFood = 5;
-      square.team = 1;
-
-      const initialFoodOwn = battle.teams[0].foodOwn;
-
-      // Call foodOwnTouch manually to test the function
-      battle.foodOwnTouch(square, 1);
-
-      // Verify food statistics are updated
-      expect(battle.teams[0].foodOwn).toBeGreaterThan(initialFoodOwn);
-      expect(battle.teams[0].foodTouch).toBeGreaterThan(0);
-      expect(battle.teams[0].foodKnown).toBe(5);
-    });
-
     it('should handle termination by win percentage', () => {
       const battle = new Battle({ ...gameSpec, winPercent: 50 }, [simpleAnt, aggressiveAnt], 123);
 
@@ -1795,15 +1775,16 @@ describe('Battle tests', () => {
 
     it('should reveal the squareOwn counter bug in combat scenarios', () => {
       const battle = new Battle(gameSpec, [simpleAnt, aggressiveAnt], 123);
-      
+
       // Set up combat scenario: Team 1 attacks Team 2 square with defenders
-      const targetX = 40, targetY = 40;
+      const targetX = 40,
+        targetY = 40;
       const targetSquare = battle.mapData(targetX, targetY);
-      
+
       // Create enemy-controlled square with defenders
       targetSquare.team = 2;
       targetSquare.base = false; // Not a base to focus on squareOwn issue
-      
+
       // Create enemy ant defenders
       const enemyAnt = battle['createAnt']({
         xPos: targetX,
@@ -1813,68 +1794,76 @@ describe('Battle tests', () => {
         nextTurn: battle.currentTurn + 1,
         brain: { random: battle.rng() },
       });
-      
+
       targetSquare.firstAnt = enemyAnt;
       targetSquare.lastAnt = enemyAnt;
       targetSquare.numAnts = 1;
-      
+
       // Update team counters
       battle.numAnts++;
       battle.teams[1].numAnts++;
-      
+
       // Set initial squareOwn counts - we'll track these carefully
       battle.teams[0].squareOwn = 100; // Team 1 baseline
-      battle.teams[1].squareOwn = 50;  // Team 2 baseline (includes target square)
-      
+      battle.teams[1].squareOwn = 50; // Team 2 baseline (includes target square)
+
       // Position attacking ant adjacent to target
-      const attackingAnt = battle.ants.find(ant => ant.team === 1)!;
+      const attackingAnt = battle.ants.find((ant) => ant.team === 1)!;
       attackingAnt.xPos = targetX - 1;
       attackingAnt.yPos = targetY;
-      
+
       console.log('Before combat:');
-      console.log(`Team 1 squareOwn: ${battle.teams[0].squareOwn}, Team 2 squareOwn: ${battle.teams[1].squareOwn}`);
+      console.log(
+        `Team 1 squareOwn: ${battle.teams[0].squareOwn}, Team 2 squareOwn: ${battle.teams[1].squareOwn}`,
+      );
       console.log(`Target square team: ${targetSquare.team}, numAnts: ${targetSquare.numAnts}`);
-      
+
       const initialTeam1SquareOwn = battle.teams[0].squareOwn;
       const initialTeam2SquareOwn = battle.teams[1].squareOwn;
-      
+
       // Attack the enemy square (this triggers combat)
       battle.doAction(attackingAnt, 1); // Move right into enemy square
-      
+
       console.log('After combat:');
-      console.log(`Team 1 squareOwn: ${battle.teams[0].squareOwn}, Team 2 squareOwn: ${battle.teams[1].squareOwn}`);
+      console.log(
+        `Team 1 squareOwn: ${battle.teams[0].squareOwn}, Team 2 squareOwn: ${battle.teams[1].squareOwn}`,
+      );
       console.log(`Target square team: ${targetSquare.team}, numAnts: ${targetSquare.numAnts}`);
       console.log(`Enemy ant alive: ${enemyAnt.alive}`);
-      
+
       // Verify combat occurred
       expect(enemyAnt.alive).toBe(false); // Enemy should be dead
       expect(targetSquare.numAnts).toBe(1); // Only attacking ant remains
-      
+
       // Check squareOwn counter updates
       expect(battle.teams[0].squareOwn).toBe(initialTeam1SquareOwn + 1); // Team 1 gained square
       expect(battle.teams[1].squareOwn).toBe(initialTeam2SquareOwn - 1); // Team 2 lost square
-      
+
       // THE BUG: Check if square ownership matches the counters
       console.log(`\nBUG CHECK:`);
       console.log(`Team 1 squareOwn counter says they gained 1 square`);
       console.log(`Team 2 squareOwn counter says they lost 1 square`);
       console.log(`But target square team is: ${targetSquare.team}`);
-      
+
       if (targetSquare.team === 0) {
-        console.log('BUG REVEALED: Square team is 0 (neutral) but counters show team ownership transfer!');
+        console.log(
+          'BUG REVEALED: Square team is 0 (neutral) but counters show team ownership transfer!',
+        );
         console.log('The squareOwn counters are out of sync with actual square ownership');
-        
+
         // Document the bug - counters updated but square ownership cleared
         expect(targetSquare.team).toBe(0); // Square incorrectly cleared
         expect(battle.teams[0].squareOwn).toBe(initialTeam1SquareOwn + 1); // Counter incorrectly incremented
         expect(battle.teams[1].squareOwn).toBe(initialTeam2SquareOwn - 1); // Counter incorrectly decremented
       } else if (targetSquare.team === attackingAnt.team) {
-        console.log('Bug not reproduced - square ownership is correctly assigned to attacking team');
+        console.log(
+          'Bug not reproduced - square ownership is correctly assigned to attacking team',
+        );
         expect(targetSquare.team).toBe(attackingAnt.team);
       } else {
         console.log(`Unexpected square team: ${targetSquare.team}`);
       }
-      
+
       // Additional check: When the ant is added to the square later in doAction,
       // the square.team should be set to the ant's team, but squareOwn won't be updated again
       // This creates a mismatch between the counters and actual ownership
@@ -1882,49 +1871,50 @@ describe('Battle tests', () => {
 
     it('should correctly handle squareOwn when multiple ants move to same square', () => {
       const battle = new Battle(gameSpec, [simpleAnt, aggressiveAnt], 123);
-      
+
       // Set up a neutral square that Team 1 will occupy
-      const targetX = 45, targetY = 45;
+      const targetX = 45,
+        targetY = 45;
       const targetSquare = battle.mapData(targetX, targetY);
       targetSquare.team = 0; // Neutral square
       targetSquare.numAnts = 0;
-      
+
       // Set initial squareOwn counts
       battle.teams[0].squareOwn = 100; // Team 1 baseline
-      
+
       // Position two Team 1 ants to move to the same square
-      const ant1 = battle.ants.filter(ant => ant.team === 1)[0];
-      const ant2 = battle.ants.filter(ant => ant.team === 1)[1];
-      
+      const ant1 = battle.ants.filter((ant) => ant.team === 1)[0];
+      const ant2 = battle.ants.filter((ant) => ant.team === 1)[1];
+
       ant1.xPos = targetX - 1;
       ant1.yPos = targetY;
       ant2.xPos = targetX;
       ant2.yPos = targetY - 1;
-      
+
       console.log('Before any moves:');
       console.log(`Team 1 squareOwn: ${battle.teams[0].squareOwn}`);
       console.log(`Target square team: ${targetSquare.team}, numAnts: ${targetSquare.numAnts}`);
-      
+
       const initialSquareOwn = battle.teams[0].squareOwn;
-      
+
       // First ant moves to neutral square
       battle.doAction(ant1, 1); // Move right to target square
-      
+
       console.log('After first ant moves:');
       console.log(`Team 1 squareOwn: ${battle.teams[0].squareOwn}`);
       console.log(`Target square team: ${targetSquare.team}, numAnts: ${targetSquare.numAnts}`);
-      
-      // Second ant moves to the same square (now controlled by Team 1)  
+
+      // Second ant moves to the same square (now controlled by Team 1)
       battle.doAction(ant2, 2); // Move down to target square
-      
+
       console.log('After second ant moves:');
       console.log(`Team 1 squareOwn: ${battle.teams[0].squareOwn}`);
       console.log(`Target square team: ${targetSquare.team}, numAnts: ${targetSquare.numAnts}`);
-      
+
       // Check if squareOwn was double-counted
       const finalSquareOwn = battle.teams[0].squareOwn;
       const expectedSquareOwn = initialSquareOwn + 1; // Should be +1 since first ant claimed neutral territory
-      
+
       if (finalSquareOwn > expectedSquareOwn) {
         console.log('POTENTIAL BUG: squareOwn incremented more than expected');
         console.log(`Expected: ${expectedSquareOwn}, Actual: ${finalSquareOwn}`);
@@ -1932,53 +1922,56 @@ describe('Battle tests', () => {
       } else {
         console.log('squareOwn counting appears correct for same-team movements');
       }
-      
+
       // The square should be owned by Team 1 with 2 ants
       expect(targetSquare.team).toBe(1);
       expect(targetSquare.numAnts).toBe(2);
-      
+
       // squareOwn should be +1 for first ant claiming neutral territory, unchanged for second ant
       expect(battle.teams[0].squareOwn).toBe(expectedSquareOwn);
     });
 
     it('should correctly update squareOwn when claiming neutral territory', () => {
       const battle = new Battle(gameSpec, [simpleAnt, aggressiveAnt], 123);
-      
-      // Set up a neutral square 
-      const targetX = 50, targetY = 50;
+
+      // Set up a neutral square
+      const targetX = 50,
+        targetY = 50;
       const targetSquare = battle.mapData(targetX, targetY);
       targetSquare.team = 0; // Neutral - not owned by anyone
       targetSquare.numAnts = 0;
-      
+
       // Set initial squareOwn count
       battle.teams[0].squareOwn = 100; // Team 1 baseline
-      
+
       // Position ant adjacent to neutral square
-      const ant = battle.ants.find(ant => ant.team === 1)!;
+      const ant = battle.ants.find((ant) => ant.team === 1)!;
       ant.xPos = targetX - 1;
       ant.yPos = targetY;
-      
+
       console.log('Before claiming neutral territory:');
       console.log(`Team 1 squareOwn: ${battle.teams[0].squareOwn}`);
       console.log(`Target square team: ${targetSquare.team}, numAnts: ${targetSquare.numAnts}`);
-      
+
       const initialSquareOwn = battle.teams[0].squareOwn;
-      
+
       // Move to neutral square - this should claim it for Team 1
       battle.doAction(ant, 1); // Move right to neutral square
-      
+
       console.log('After claiming neutral territory:');
       console.log(`Team 1 squareOwn: ${battle.teams[0].squareOwn}`);
       console.log(`Target square team: ${targetSquare.team}, numAnts: ${targetSquare.numAnts}`);
-      
+
       // BUG CHECK: Square is now owned by Team 1, but was squareOwn updated?
       expect(targetSquare.team).toBe(1); // Square should now belong to Team 1
       expect(targetSquare.numAnts).toBe(1); // Ant should be there
-      
+
       console.log('\nBUG CHECK:');
       console.log(`Square team changed from 0 to ${targetSquare.team} (Team 1 now owns it)`);
-      console.log(`But Team 1 squareOwn went from ${initialSquareOwn} to ${battle.teams[0].squareOwn}`);
-      
+      console.log(
+        `But Team 1 squareOwn went from ${initialSquareOwn} to ${battle.teams[0].squareOwn}`,
+      );
+
       if (battle.teams[0].squareOwn === initialSquareOwn + 1) {
         console.log('Bug fixed - squareOwn correctly updated for neutral territory');
         expect(battle.teams[0].squareOwn).toBe(initialSquareOwn + 1); // Should have incremented
@@ -1995,60 +1988,60 @@ describe('Battle tests', () => {
         if (!map || !antInfo) {
           return { name: 'TestAnt', color: '#FF0000', brainTemplate: {} };
         }
-        
+
         // Capture the map data that the ant sees
-        capturedMapData = map.map(square => ({ ...square }));
+        capturedMapData = map.map((square) => ({ ...square }));
         return 0; // Stay in place
       }) as AntFunction;
 
       const battle = new Battle(gameSpec, [testAnt, aggressiveAnt], 123);
-      
+
       // Set up the scenario according to C semantics
       const ant = battle.ants[0]; // Team 1 ant
       ant.xPos = 10;
       ant.yPos = 10;
-      
+
       // Get the squares around the ant (center + 4 adjacent)
       const centerSquare = battle.mapData(10, 10);
       const rightSquare = battle.mapData(11, 10);
       const downSquare = battle.mapData(10, 11);
       const leftSquare = battle.mapData(9, 10);
       const upSquare = battle.mapData(10, 9);
-      
+
       // Set up different scenarios
-      centerSquare.team = 1;  // Ant's own team with ants
+      centerSquare.team = 1; // Ant's own team with ants
       centerSquare.numAnts = 1;
-      
-      rightSquare.team = 2;   // Enemy team with ants (should be visible and obfuscated)
+
+      rightSquare.team = 2; // Enemy team with ants (should be visible and obfuscated)
       rightSquare.numAnts = 1;
-      
-      downSquare.team = 0;    // Neutral with base (should be visible)
+
+      downSquare.team = 0; // Neutral with base (should be visible)
       downSquare.base = true;
       downSquare.numAnts = 0;
-      
-      leftSquare.team = 2;    // Enemy team but EMPTY (should appear as 0 per C semantics)
+
+      leftSquare.team = 2; // Enemy team but EMPTY (should appear as 0 per C semantics)
       leftSquare.numAnts = 0;
       leftSquare.base = false;
-      
-      upSquare.team = 1;      // Own team with base (should appear as 0)
+
+      upSquare.team = 1; // Own team with base (should appear as 0)
       upSquare.base = true;
       upSquare.numAnts = 0;
-      
+
       // Run the ant to capture what it sees
       battle.runAnt(ant);
-      
+
       expect(capturedMapData).not.toBeNull();
-      
+
       // C SEMANTICS: Own team squares (with ants/bases) appear as 0
       expect(capturedMapData![0].team).toBe(0); // Center: own team with ants
       expect(capturedMapData![4].team).toBe(0); // Up: own team with base
-      
+
       // C SEMANTICS: Enemy squares with ants/bases appear as obfuscated non-zero numbers
       expect(capturedMapData![1].team).toBeGreaterThan(0); // Right: enemy with ants
-      
+
       // C SEMANTICS: Neutral squares with bases appear as obfuscated (should be 0 since shuffle[0] = undefined)
       expect(capturedMapData![2].team).toBe(0); // Down: neutral with base (shuffle[0] || 0 = 0)
-      
+
       // C SEMANTICS: Empty squares always appear as 0, even if owned by enemy
       expect(capturedMapData![3].team).toBe(0); // Left: enemy owned but empty
     });

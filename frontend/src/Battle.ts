@@ -442,6 +442,11 @@ export class Battle {
       kill: team.kill,
       killed: team.killed,
       dieAge: team.killed > 0 ? Math.round(team.dieAge / team.killed) : 0,
+      squareOwn: team.squareOwn,
+      foodOwn: team.foodOwn,
+      foodTouch: team.foodTouch,
+      foodKnown: team.foodKnown,
+      timeUsed: team.timeUsed / team.timesTimed,
     };
   }
 
@@ -751,11 +756,20 @@ export class Battle {
     // Handle base building
     if (buildBase) {
       const square = this.mapData(ant.xPos, ant.yPos);
-      if (square.numAnts >= NEW_BASE_ANTS && square.numFood >= NEW_BASE_FOOD && !square.base) {
+      if (square.numAnts > NEW_BASE_ANTS && square.numFood >= NEW_BASE_FOOD && !square.base) {
+        // Update food statistics before base building (subtract old values)
+        this.relinquishFood(square, ant.team);
+
+        // Temporarily remove the building ant from the list (like C implementation)
+        this.removeAntFromSquareList(ant);
+        square.numAnts--;
+
         // Kill NEW_BASE_ANTS ants to build the base using the linked list
+        // Note: We can only kill as many ants as are available (excluding the builder)
         let killedAnts = 0;
         let currentAnt = square.firstAnt;
-        while (currentAnt && killedAnts < NEW_BASE_ANTS) {
+        const maxAntsToKill = Math.min(NEW_BASE_ANTS, square.numAnts);
+        while (currentAnt && killedAnts < maxAntsToKill) {
           const nextAnt = currentAnt.mapNext;
           if (currentAnt.alive && currentAnt.team === ant.team) {
             this.killAnt(currentAnt);
@@ -764,7 +778,11 @@ export class Battle {
           currentAnt = nextAnt;
         }
 
-        // Build base - consume food (numAnts already decremented by killAnt calls)
+        // Re-insert the building ant (like C implementation)
+        this.addAntToSquareList(ant, square);
+        square.numAnts++;
+
+        // Build base - consume food (numAnts should now be 1 - just the builder)
         square.numFood -= NEW_BASE_FOOD;
         square.base = true;
         square.team = ant.team;
@@ -775,10 +793,14 @@ export class Battle {
         this.teams[ant.team - 1].numBases++;
         this.teams[ant.team - 1].basesBuilt++;
 
-        // Remove consumed ants from global count
+        // Remove consumed ants from global count (but not the builder)
         this.numAnts -= killedAnts;
         this.teams[ant.team - 1].numAnts -= killedAnts;
         this.touchedSquares.add(this.mapIndex(ant.xPos, ant.yPos));
+
+        // Update food statistics after base building (add new values)
+        // Now square has 1 ant (the builder) and reduced food
+        this.seizeFood(square, ant.team);
       }
       return;
     }
@@ -860,6 +882,10 @@ export class Battle {
       this.teams[ant.team - 1].squareOwn++;
     }
 
+    // Update food statistics before ant movement (relinquish food from squares this team owns)
+    this.relinquishFood(oldSquare, ant.team);
+    this.relinquishFood(newSquare, ant.team);
+
     // Move ant
     oldSquare.numAnts--;
 
@@ -875,7 +901,7 @@ export class Battle {
     newSquare.numAnts++;
     newSquare.team = ant.team;
 
-    // Handle food transport
+    // Handle food transport BEFORE updating food statistics
     if (carryFood && oldSquare.numFood > 0) {
       oldSquare.numFood--;
       this.numFood--;
@@ -906,6 +932,10 @@ export class Battle {
         this.numFood++;
       }
     }
+
+    // Update food statistics after all state changes are complete (seize food from squares this team now owns)
+    this.seizeFood(oldSquare, ant.team);
+    this.seizeFood(newSquare, ant.team);
   }
 
   // Instance array to track last food placements (converted from C static variables)
@@ -983,10 +1013,27 @@ export class Battle {
     this.numFood += foodAmount;
   }
 
-  foodOwnTouch(square: SquareData, factor: number) {
-    if (square.team === 0) return;
+  relinquishFood(square: SquareData, team: number) {
+    this.foodOwnTouch(square, team, -1);
+  }
+  seizeFood(square: SquareData, team: number) {
+    this.foodOwnTouch(square, team, 1);
+  }
+  //   foodOwn: Food the team can directly control (min(square.numFood, square.numAnts))
+  //   foodTouch: Excess food the team can potentially access (square.numFood - foodOwn)
+  //   foodKnown: Total food the team is aware of (square.numFood)
+  //
+  //   Strategic Purpose:
+  //
+  //   These metrics track how effectively teams are controlling food resources:
+  //   - High foodOwn: Team has good ant-to-food ratios (efficient control)
+  //   - High foodTouch: Team has access to abundant food sources
+  //   - foodKnown: Team's overall food awareness/territory reach
+  foodOwnTouch(square: SquareData, teamNumber: number, factor: number) {
+    // Only update stats if the specified team actually owns this square
+    if (square.team !== teamNumber) return;
 
-    const team = this.teams[square.team - 1];
+    const team = this.teams[teamNumber - 1];
     const foodOwned = Math.min(square.numFood, square.numAnts);
     const foodTouched = square.numFood - foodOwned;
     const foodKnown = square.numFood;
@@ -1081,5 +1128,12 @@ export class Battle {
       }
       return antsOnSquare;
     }
+  }
+
+  public testAccess() {
+    return {
+      createAnt: this.createAnt.bind(this),
+      addAntToSquareList: this.addAntToSquareList.bind(this),
+    };
   }
 }

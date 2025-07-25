@@ -13,7 +13,7 @@ const activeTab: Ref<'teams' | 'intervals' | 'winning' | 'other' | 'ui'> = ref('
 
 <template>
   <nav class="panel is-primary">
-    <div class="panel-heading">Game setup</div>
+    <div class="panel-heading">Next game</div>
     <p class="panel-tabs">
       <a :class="{ 'is-active': activeTab === 'teams' }" @click="activeTab = 'teams'"
         >Teams ({{ teamStore.battleTeams.length }})</a
@@ -235,4 +235,14 @@ const activeTab: Ref<'teams' | 'intervals' | 'winning' | 'other' | 'ui'> = ref('
   </nav>
 </template>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+nav.panel {
+  height: 8em;
+  overflow: hidden;
+  transition: height 0.5s ease;
+  interpolate-size: allow-keywords;
+  &:hover {
+    height: auto;
+  }
+}
+</style>

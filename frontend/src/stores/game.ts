@@ -60,8 +60,10 @@ export const useGameStore = defineStore('game', () => {
   const selectedStatusProperty = ref<TeamStat>('numAnts');
   const lastError = ref<string[]>([]);
   const liveFeed = ref(true);
+  const selectedBattleSummaryStats = ref<BattleSummaryStats | null>(null);
 
   async function start(pauseAfterTurns = -1) {
+    selectedBattleSummaryStats.value = null;
     const battleTeams =
       teamStore.battleTeams.length === 0 ? teamStore.allTeams : teamStore.battleTeams;
     if (gameRunning.value) return;
@@ -128,6 +130,7 @@ export const useGameStore = defineStore('game', () => {
     liveFeed,
     selectedStatusProperty,
     battleStreams$,
+    selectedBattleSummaryStats,
 
     start,
     stop,
