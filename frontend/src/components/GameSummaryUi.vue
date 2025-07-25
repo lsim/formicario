@@ -18,6 +18,8 @@ const subscription = worker.gameSummarySubject$.subscribe(
 
 const battleSummaryStats = ref<BattleSummaryStats[]>([]);
 
+const selectedRow = ref<number | null>(null);
+
 const subscription2 = gameStore.battleStreams$
   .pipe(
     map(([, summaryStats]) => summaryStats),
@@ -29,8 +31,6 @@ const subscription2 = gameStore.battleStreams$
     tap((bss: BattleSummaryStats) => battleSummaryStats.value.push(bss)),
   )
   .subscribe();
-
-const selectedRow = ref<number | null>(null);
 
 onBeforeUnmount(() => {
   subscription.unsubscribe();

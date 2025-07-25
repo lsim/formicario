@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router';
+import { RouterView, useRoute } from 'vue-router';
+
+const route = useRoute();
 </script>
 
 <template>
   <div id="root" class="article">
     <section class="hero is-small">
-      <div class="hero-body">
-        <p class="title">Formicario</p>
-      </div>
-      <div class="hero-foot">
+      <div class="hero-head">
         <nav class="navbar">
           <div class="container">
             <div class="navbar-menu">
@@ -17,22 +16,24 @@ import { RouterView } from 'vue-router';
           </div>
         </nav>
       </div>
+      <div class="hero-body">
+        <p class="title">Formicario</p>
+      </div>
+      <div class="hero-foot">
+        <nav class="tabs is-boxed">
+          <div class="container">
+            <ul>
+              <li :class="{ 'is-active': route.path === '/' }">
+                <router-link to="/">Battle</router-link>
+              </li>
+              <li :class="{ 'is-active': route.path === '/edit' }">
+                <router-link to="/edit">Edit</router-link>
+              </li>
+            </ul>
+          </div>
+        </nav>
+      </div>
     </section>
-    <!--    <div class="slide-in-menu">-->
-    <!--      <aside class="menu">-->
-    <!--        <ul class="menu-list">-->
-    <!--          <li><a>Foo</a></li>-->
-    <!--          <li><a>Bar</a></li>-->
-    <!--        </ul>-->
-    <!--      </aside>-->
-    <!--    </div>-->
-
-    <!--      <div class="wrapper">-->
-    <!--        <nav>-->
-    <!--          <RouterLink to="/">Home</RouterLink>-->
-    <!--        </nav>-->
-    <!--      </div>-->
-
     <section class="section">
       <RouterView />
     </section>
@@ -54,25 +55,14 @@ import { RouterView } from 'vue-router';
       }
     }
   }
-
-  .slide-in-menu {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 200px;
-    z-index: 100;
-
-    transform: translateX(-90%);
-    transition: transform 0.3s ease;
-    &:hover {
-      transform: translateX(0);
-    }
-  }
 }
 
 p {
   font-size: 400%;
   filter: drop-shadow(3px 3px 10px gray);
+}
+
+.tabs {
+  background-color: rgba(grey, 0.5);
 }
 </style>
