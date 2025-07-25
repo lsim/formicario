@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { BattleSummary, TeamStatus } from '@/GameSummary.ts';
-import { computed, onBeforeUnmount, ref } from 'vue';
-import { map, switchAll } from 'rxjs';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { map, type Subscription, switchAll } from 'rxjs';
 import type { BattleStats } from '@/composables/stats.ts';
 import { useGameStore } from '@/stores/game.ts';
 import StatPropChooser from '@/components/StatPropChooser.vue';
@@ -26,24 +26,39 @@ const tps = ref<number>();
 
 const teams = computed(() => props.battleSummary?.teams || liveTeams.value);
 
-// If we aren't given the final scores, subscribe to get live updates
-if (!props.battleSummary) {
-  // Get fresh streams for each battle
-  const subscription = game.battleStreams$
-    .pipe(
-      map(([status]) => status),
-      switchAll(),
-    )
-    .subscribe((battleStatus) => {
-      liveTeams.value = battleStatus.teams;
-      turn.value = battleStatus.turns;
-      tps.value = battleStatus.turnsPerSecond;
-    });
+let subscription: Subscription | null = null;
+watch(
+  () => props.isLive,
+  (isLive) => {
+    // If we aren't given the final scores, subscribe to get live updates
+    if (isLive) {
+      // Get fresh streams for each battle
+      subscription?.unsubscribe();
+      subscription = game.battleStreams$
+        .pipe(
+          map(([status]) => status),
+          switchAll(),
+        )
+        .subscribe((battleStatus) => {
+          liveTeams.value = battleStatus.teams;
+          turn.value = battleStatus.turns;
+          tps.value = battleStatus.turnsPerSecond;
+        });
+    } else {
+      subscription?.unsubscribe();
+      subscription = null;
+      liveTeams.value = [];
+    }
+  },
+  { immediate: true },
+);
 
-  onBeforeUnmount(() => {
-    subscription.unsubscribe();
-  });
-}
+onBeforeUnmount(() => {
+  subscription?.unsubscribe();
+  subscription = null;
+  liveTeams.value = [];
+});
+
 const maxForSelectedProperty = computed(() => {
   return Math.max(...teams.value.map((t) => t[game.selectedStatusProperty] as number));
 });

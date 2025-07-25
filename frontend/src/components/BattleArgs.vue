@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from 'vue';
-import { distinctUntilChanged, map, switchAll, tap } from 'rxjs';
+import { distinctUntilChanged, map, type Subscription, switchAll, tap } from 'rxjs';
 import type { BattleArgs } from '@/Battle.ts';
 import { useGameStore } from '@/stores/game.ts';
 
@@ -18,33 +18,44 @@ const props = withDefaults(
 const gameStore = useGameStore();
 const battleArgs = ref<BattleArgs | undefined>();
 
-if (props.isLive) {
-  const subscription = gameStore.battleStreams$
-    .pipe(
-      map(([status]) =>
-        status.pipe(
-          distinctUntilChanged((prev, curr) => prev?.seed === curr.seed),
-          tap((status) => {
-            battleArgs.value = status.args;
-          }),
-        ),
-      ),
-      switchAll(),
-    )
-    .subscribe();
+let subscription: Subscription | null = null;
+watch(
+  () => props.isLive,
+  (isLive) => {
+    if (isLive) {
+      subscription?.unsubscribe();
+      subscription = gameStore.battleStreams$
+        .pipe(
+          map(([status]) =>
+            status.pipe(
+              distinctUntilChanged((prev, curr) => prev?.seed === curr.seed),
+              tap((status) => {
+                battleArgs.value = status.args;
+              }),
+            ),
+          ),
+          switchAll(),
+        )
+        .subscribe();
+    } else {
+      subscription?.unsubscribe();
+      subscription = null;
+    }
+  },
+  { immediate: true },
+);
 
-  onBeforeUnmount(() => {
-    subscription.unsubscribe();
-  });
-} else {
-  watch(
-    () => props.args,
-    (newArgs) => {
-      battleArgs.value = newArgs;
-    },
-    { immediate: true },
-  );
-}
+watch(
+  () => props.args,
+  (newArgs) => {
+    battleArgs.value = newArgs;
+  },
+  { immediate: true },
+);
+onBeforeUnmount(() => {
+  subscription?.unsubscribe();
+  subscription = null;
+});
 </script>
 
 <template>

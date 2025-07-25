@@ -15,7 +15,7 @@ import {
 
 import { type BattleStats } from '@/composables/stats.ts';
 import { onBeforeUnmount, shallowRef, useTemplateRef, watch } from 'vue';
-import { map, switchAll } from 'rxjs';
+import { map, Subscription, switchAll } from 'rxjs';
 import { useGameStore } from '@/stores/game.ts';
 import StatPropChooser from '@/components/StatPropChooser.vue';
 
@@ -87,29 +87,40 @@ function chartDataFromStats(stats?: BattleStats) {
   return { labels, datasets };
 }
 
-if (props.isLive || !props.battleStats) {
-  let lastBattleSeed = 0;
-  const subscription = gameStore.battleStreams$
-    .pipe(
-      map(([, , stats]) => stats),
-      switchAll(),
-      // When status from a new battle is received, clear the chart. The new battle will have a new seed.
-    )
-    .subscribe((stats) => {
-      if (stats.seed !== lastBattleSeed) {
-        // Clear chart when new battle is received
-        clearChart();
-        lastBattleSeed = stats.seed;
-      }
-      chartData.value = chartDataFromStats(stats);
-    });
+let subscription: Subscription | null = null;
+watch(
+  () => [props.isLive, props.battleStats],
+  ([newIsLive, newBattleStats]) => {
+    if (newIsLive) {
+      let lastBattleSeed = 0;
+      subscription?.unsubscribe();
+      subscription = gameStore.battleStreams$
+        .pipe(
+          map(([, , stats]) => stats),
+          switchAll(),
+          // When status from a new battle is received, clear the chart. The new battle will have a new seed.
+        )
+        .subscribe((stats) => {
+          if (stats.seed !== lastBattleSeed) {
+            // Clear chart when new battle is received
+            clearChart();
+            lastBattleSeed = stats.seed;
+          }
+          chartData.value = chartDataFromStats(stats);
+        });
+    } else if (newBattleStats) {
+      subscription?.unsubscribe();
+      subscription = null;
+      chartData.value = chartDataFromStats(newBattleStats as BattleStats);
+    }
+  },
+  { immediate: true },
+);
 
-  onBeforeUnmount(() => {
-    subscription.unsubscribe();
-  });
-} else {
-  chartData.value = chartDataFromStats(props.battleStats);
-}
+onBeforeUnmount(() => {
+  subscription?.unsubscribe();
+  subscription = null;
+});
 
 watch(
   () => props.battleStats,

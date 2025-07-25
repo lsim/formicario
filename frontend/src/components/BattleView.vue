@@ -59,19 +59,20 @@ const activeTabComputed = computed(() =>
     </template>
     <template v-else-if="activeTabComputed === 'bars'">
       <battle-bars
-        class="panel-block team-stats"
+        class="panel-block"
         :is-live="isLive"
         :battle-summary="summaryStats?.summary"
         :battle-stats="summaryStats?.stats"
       />
     </template>
     <template v-else-if="activeTabComputed === 'params'">
-      <battle-args
-        class="battle-args"
-        :is-live="isLive"
-        :args="summaryStats?.summary.args"
-        :seed="summaryStats?.summary.seed"
-      />
+      <div class="panel-block battle-args">
+        <battle-args
+          :is-live="isLive"
+          :args="summaryStats?.summary.args"
+          :seed="summaryStats?.summary.seed"
+        />
+      </div>
     </template>
     <template v-else-if="gameStore.gameRunning && activeTabComputed === 'debugger'">
       <ant-debugger class="panel-block ant-debugger" :is-live="isLive" />
@@ -79,4 +80,10 @@ const activeTabComputed = computed(() =>
   </nav>
 </template>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+.battle-args {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+</style>
