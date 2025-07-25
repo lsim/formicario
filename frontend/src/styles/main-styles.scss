@@ -16,3 +16,8 @@
 // utilities
 @use "bulma/sass/utilities/mixins";
 @use "bulma/sass/utilities/controls";
+
+:root {
+  --bulma-primary-h: 200deg;
+}
+
