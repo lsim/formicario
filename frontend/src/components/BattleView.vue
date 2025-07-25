@@ -31,6 +31,7 @@ const activeTabComputed = computed(() =>
     <battle-render
       class="panel-block battle-render"
       :summary="summaryStats?.summary"
+      :zoom-level="2"
       v-if="!isLive && summaryStats"
     />
     <p class="panel-tabs">
@@ -50,7 +51,7 @@ const activeTabComputed = computed(() =>
     </p>
     <template v-if="activeTabComputed === 'graph'">
       <battle-graph
-        class="battle-graph"
+        class="panel-block battle-graph"
         :is-live="isLive"
         :stat-prop="gameStore.selectedStatusProperty"
         :battle-stats="summaryStats?.stats"

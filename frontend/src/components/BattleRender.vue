@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { BattleSummary } from '@/GameSummary.ts';
-import { nextTick, useTemplateRef, watch } from 'vue';
+import { useTemplateRef, watch } from 'vue';
 import useBattleRenderer from '@/composables/renderer.ts';
 
 const props = withDefaults(
@@ -27,12 +27,10 @@ watch(
     if (!s || !c) return;
     const ctx = c.getContext('2d');
     if (!ctx) return;
-    setTimeout(() => {
-      c.width = s.args.mapWidth;
-      c.height = s.args.mapHeight;
-      battleRenderer.setTeamColors(s.teams.map((t) => t.color));
-      battleRenderer.renderDeltasToBackBuffer(s.squares, s.args, ctx);
-    }, 100);
+    c.width = s.args.mapWidth;
+    c.height = s.args.mapHeight;
+    battleRenderer.setTeamColors(s.teams.map((t) => t.color));
+    battleRenderer.renderDeltasToBackBuffer(s.squares, s.args, ctx);
   },
   { immediate: true },
 );

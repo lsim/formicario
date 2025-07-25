@@ -14,7 +14,7 @@ import {
 } from 'chart.js';
 
 import { type BattleStats } from '@/composables/stats.ts';
-import { nextTick, onBeforeUnmount, shallowRef, useTemplateRef, watch } from 'vue';
+import { onBeforeUnmount, shallowRef, useTemplateRef, watch } from 'vue';
 import { map, switchAll } from 'rxjs';
 import { useGameStore } from '@/stores/game.ts';
 import StatPropChooser from '@/components/StatPropChooser.vue';
@@ -115,9 +115,7 @@ watch(
   () => props.battleStats,
   (newStats) => {
     clearChart();
-    setTimeout(() => {
-      chartData.value = chartDataFromStats(newStats);
-    }, 100);
+    chartData.value = chartDataFromStats(newStats);
   },
   { immediate: true },
 );

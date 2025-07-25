@@ -49,9 +49,16 @@ function winnerStyle(battle: BattleSummary) {
 
 watch(
   () => selectedRow.value,
-  () => {
-    gameStore.selectedBattleSummaryStats =
-      selectedRow.value != null ? battleSummaryStats.value[selectedRow.value] || null : null;
+  (newIdx) => {
+    if (newIdx == null) {
+      gameStore.selectedBattleSummaryStats = null;
+      return;
+    }
+    // Delay the heavy lifting a bit, so the table selection updates smoothly
+    setTimeout(() => {
+      gameStore.selectedBattleSummaryStats =
+        selectedRow.value != null ? battleSummaryStats.value[selectedRow.value] || null : null;
+    }, 50);
   },
 );
 </script>
@@ -105,6 +112,7 @@ watch(
 </template>
 
 <style scoped lang="scss">
-.table-container {
+.table td {
+  cursor: pointer;
 }
 </style>
