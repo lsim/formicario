@@ -76,31 +76,29 @@ const stepSize = ref(1);
     </button>
   </div>
   <div class="navbar-item">
-    <button
-      class="button is-medium is-info"
-      type="button"
-      @click="() => gameStore.step(stepSize)"
-      :disabled="gameStore.gameRunning && !gameStore.gamePaused"
-      title="[Shift + Space]"
-    >
-      <span class="icon">
-        <font-awesome-icon :icon="faStepForward" />
-      </span>
-    </button>
-  </div>
-  <div class="navbar-item">
-    <input class="step-size input is-medium" type="number" v-model="stepSize" />
+    <div class="field has-addons">
+      <div class="control">
+        <button
+          class="button is-medium is-info"
+          type="button"
+          @click="() => gameStore.step(stepSize)"
+          :disabled="gameStore.gameRunning && !gameStore.gamePaused"
+          title="[Shift + Space]"
+        >
+          <span class="icon">
+            <font-awesome-icon :icon="faStepForward" />
+          </span>
+        </button>
+      </div>
+      <div class="control">
+        <input class="step-size input is-medium" type="number" v-model="stepSize" />
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped lang="scss">
 .step-size.input {
   width: 5em;
-}
-
-.field {
-  margin-bottom: 1em;
-  // white drop-shadow for emphasis
-  filter: drop-shadow(0 0 1em rgba(white, 0.5));
 }
 </style>
