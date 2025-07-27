@@ -44,6 +44,9 @@ watch(
 
 <style scoped lang="scss">
 .battle-render {
+  canvas {
+    background-color: black;
+  }
   display: flex;
   flex-direction: column;
   align-items: center;

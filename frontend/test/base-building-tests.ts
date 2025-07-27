@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { Battle, type AntFunction, type SquareData, type AntInfo } from '@/Battle.ts';
+import {
+  Battle,
+  type AntFunction,
+  type SquareData,
+  type AntInfo,
+  type BattleArgs,
+  produceBattleArgs,
+} from '@/Battle.ts';
 import type { GameSpec } from '@/GameSpec.ts';
+import { getRNG, type RNGFunction } from '@/prng.ts';
 
 describe('Base Building Brain Management', () => {
   it('should maintain consistent brain arrays during base building', () => {
@@ -66,11 +74,13 @@ describe('Base Building Brain Management', () => {
       numBattleTeams: 2,
     };
 
-    const battle = new Battle(gameSpec, [baseBuildingAnt], 123);
+    const rng: RNGFunction = getRNG(42);
+    const battleArgs: BattleArgs = produceBattleArgs(gameSpec, rng);
+    const battle = new Battle(battleArgs, [baseBuildingAnt], 123);
 
     // Add food to enable base building
-    const baseX = Math.floor(battle.args.mapWidth / 2);
-    const baseY = Math.floor(battle.args.mapHeight / 2);
+    const baseX = Math.floor(battle.testAccess().mapWidth / 2);
+    const baseY = Math.floor(battle.testAccess().mapHeight / 2);
     const baseSquare = battle['mapData'](baseX, baseY);
     baseSquare.numFood = 60; // Enough food for base building
     battle.numFood += 60;
@@ -144,14 +154,16 @@ describe('Base Building Brain Management', () => {
       numBattleTeams: 2,
     };
 
-    const battle = new Battle(gameSpec, [newBaseTestAnt], 123);
+    const rng2: RNGFunction = getRNG(123);
+    const battleArgs2: BattleArgs = produceBattleArgs(gameSpec, rng2);
+    const battle = new Battle(battleArgs2, [newBaseTestAnt], 123);
 
     // Set up conditions for base building and ant creation
-    const baseX = Math.floor(battle.args.mapWidth / 2);
-    const baseY = Math.floor(battle.args.mapHeight / 2);
+    const baseX = Math.floor(battle.testAccess().mapWidth / 2);
+    const baseY = Math.floor(battle.testAccess().mapHeight / 2);
 
     // Place food one square down from base to trigger ant movement and creation
-    const foodY = (baseY + 1) % battle.args.mapHeight;
+    const foodY = (baseY + 1) % battle.testAccess().mapHeight;
     const foodSquare = battle['mapData'](baseX, foodY);
     foodSquare.numFood = 20; // Enough food for multiple ant creation cycles
     battle.numFood += 20;

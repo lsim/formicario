@@ -74,7 +74,7 @@ function updateCanvas(ctx?: CanvasRenderingContext2D) {
   requestAnimationFrame(() => updateCanvas(ctx));
 }
 
-const subscription = worker.battleStatusSubject$
+const subscription = worker.battleStatuses$
   .pipe(
     filter(() => !!canvas.value && !!context.value && !!backBufferCtx),
     tap((battle) => {

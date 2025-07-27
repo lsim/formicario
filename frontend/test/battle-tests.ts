@@ -7,6 +7,7 @@ import {
   type AntInfo,
   type SquareData,
   type AntData,
+  type BattleArgs,
   produceBattleArgs,
 } from '@/Battle.ts';
 import { getRNG, type RNGFunction } from '@/prng.ts';
@@ -14,6 +15,7 @@ import type { BattleStatusMessage } from '@/workers/WorkerMessage.ts';
 
 describe('Battle tests', () => {
   let gameSpec: GameSpec;
+  let battleArgs: BattleArgs;
   let simpleAnt: AntFunction;
   let aggressiveAnt: AntFunction;
   let rng: RNGFunction;
@@ -37,6 +39,7 @@ describe('Battle tests', () => {
       numBattleTeams: 2,
     };
     rng = getRNG(42);
+    battleArgs = produceBattleArgs(gameSpec, rng);
 
     // Simple ant that moves randomly
     simpleAnt = ((map?: SquareData[], antInfo?: AntInfo) => {
@@ -98,7 +101,7 @@ describe('Battle tests', () => {
 
   describe('Battle initialization', () => {
     it('should initialize battle with correct starting state', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
 
       expect(battle.teams).toHaveLength(1);
       expect(battle.teams[0].name).toBe('SimpleAnt');
@@ -106,22 +109,22 @@ describe('Battle tests', () => {
       expect(battle.numAnts).toBeGreaterThan(0);
       expect(battle.numBases).toBe(1);
       expect(battle.currentTurn).toBe(0);
-      expect(battle.ants).toHaveLength(battle.args.startAnts);
+      expect(battle.ants).toHaveLength(battle.testAccess().startAnts);
     });
 
     it('should initialize multiple teams with proper base separation', () => {
-      const battle = new Battle(gameSpec, [simpleAnt, aggressiveAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt, aggressiveAnt], 123);
 
       expect(battle.teams).toHaveLength(2);
       expect(battle.numBases).toBe(2);
-      expect(battle.ants).toHaveLength(battle.args.startAnts * 2);
+      expect(battle.ants).toHaveLength(battle.testAccess().startAnts * 2);
 
       // Check that teams have different base positions
       const team1Ants = battle.ants.filter((ant) => ant.team === 1);
       const team2Ants = battle.ants.filter((ant) => ant.team === 2);
 
-      expect(team1Ants).toHaveLength(battle.args.startAnts);
-      expect(team2Ants).toHaveLength(battle.args.startAnts);
+      expect(team1Ants).toHaveLength(battle.testAccess().startAnts);
+      expect(team2Ants).toHaveLength(battle.testAccess().startAnts);
 
       // Teams should have different starting positions
       const team1Pos = { x: team1Ants[0].xPos, y: team1Ants[0].yPos };
@@ -130,7 +133,7 @@ describe('Battle tests', () => {
     });
 
     it('should create team shuffle tables', () => {
-      const battle = new Battle(gameSpec, [simpleAnt, aggressiveAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt, aggressiveAnt], 123);
 
       expect(battle.teamShuffleTables).toHaveLength(2);
       expect(battle.teamShuffleTables[0]).toHaveLength(3); // numTeams + 1
@@ -144,10 +147,10 @@ describe('Battle tests', () => {
 
   describe('Map operations', () => {
     it('should correctly access map data with coordinates', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
 
-      const centerX = Math.floor(battle.args.mapWidth / 2);
-      const centerY = Math.floor(battle.args.mapHeight / 2);
+      const centerX = Math.floor(battle.testAccess().mapWidth / 2);
+      const centerY = Math.floor(battle.testAccess().mapHeight / 2);
 
       const square = battle.mapData(centerX, centerY);
       expect(square).toBeDefined();
@@ -156,7 +159,7 @@ describe('Battle tests', () => {
     });
 
     it('should get correct surroundings with wrapping', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
 
       const surroundings = battle['getSurroundings'](0, 0); // Access private method for testing
       expect(surroundings).toHaveLength(5);
@@ -168,13 +171,13 @@ describe('Battle tests', () => {
       // Down
       expect(surroundings[2]).toBe(battle.mapData(0, 1));
       // Left (wraps from 0 to mapWidth-1)
-      expect(surroundings[3]).toBe(battle.mapData(battle.args.mapWidth - 1, 0));
+      expect(surroundings[3]).toBe(battle.mapData(battle.testAccess().mapWidth - 1, 0));
       // Up (wraps from 0 to mapHeight-1)
-      expect(surroundings[4]).toBe(battle.mapData(0, battle.args.mapHeight - 1));
+      expect(surroundings[4]).toBe(battle.mapData(0, battle.testAccess().mapHeight - 1));
     });
 
     it('should find ants on square correctly', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
 
       const firstAnt = battle.ants[0];
       const antsOnSquare = battle['getAntsOnSquare'](firstAnt.xPos, firstAnt.yPos);
@@ -188,7 +191,7 @@ describe('Battle tests', () => {
 
   describe('Game mechanics', () => {
     it('should execute a single turn', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
       const initialTurn = battle.currentTurn;
 
       battle.doTurn();
@@ -209,7 +212,7 @@ describe('Battle tests', () => {
         return 0; // Stay in place
       }) as AntFunction;
 
-      const battle = new Battle(gameSpec, [testAnt], 123);
+      const battle = new Battle(battleArgs, [testAnt], 123);
       battle.doTurn();
 
       expect(calledWithMap).toBe(true);
@@ -217,7 +220,7 @@ describe('Battle tests', () => {
     });
 
     it('should handle ant movement', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
       const ant = battle.ants[0];
       const originalX = ant.xPos;
       const originalY = ant.yPos;
@@ -225,17 +228,17 @@ describe('Battle tests', () => {
       // Force ant to move right
       battle.doAction(ant, 1);
 
-      const expectedX = (originalX + 1) % battle.args.mapWidth;
+      const expectedX = (originalX + 1) % battle.testAccess().mapWidth;
       expect(ant.xPos).toBe(expectedX);
       expect(ant.yPos).toBe(originalY);
     });
 
     it('should handle toroidal wrap-around for ant movement across map boundaries', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
       const ant = battle.ants[0];
 
       // Test moving right from the eastern edge (wraps to western edge)
-      ant.xPos = battle.args.mapWidth - 1;
+      ant.xPos = battle.testAccess().mapWidth - 1;
       ant.yPos = 10;
       const eastSquare = battle.mapData(ant.xPos, ant.yPos);
       eastSquare.numAnts = 1;
@@ -258,15 +261,15 @@ describe('Battle tests', () => {
 
       battle.doAction(ant, 3); // Move left
 
-      expect(ant.xPos).toBe(battle.args.mapWidth - 1); // Should wrap to eastern edge
+      expect(ant.xPos).toBe(battle.testAccess().mapWidth - 1); // Should wrap to eastern edge
       expect(ant.yPos).toBe(20);
-      expect(battle.mapData(battle.args.mapWidth - 1, 20).numAnts).toBe(1);
-      expect(battle.mapData(battle.args.mapWidth - 1, 20).team).toBe(ant.team);
+      expect(battle.mapData(battle.testAccess().mapWidth - 1, 20).numAnts).toBe(1);
+      expect(battle.mapData(battle.testAccess().mapWidth - 1, 20).team).toBe(ant.team);
       expect(westSquare.numAnts).toBe(0);
 
       // Test moving down from the southern edge (wraps to northern edge)
       ant.xPos = 30;
-      ant.yPos = battle.args.mapHeight - 1;
+      ant.yPos = battle.testAccess().mapHeight - 1;
       const southSquare = battle.mapData(ant.xPos, ant.yPos);
       southSquare.numAnts = 1;
       southSquare.team = ant.team;
@@ -289,18 +292,18 @@ describe('Battle tests', () => {
       battle.doAction(ant, 4); // Move up
 
       expect(ant.xPos).toBe(40);
-      expect(ant.yPos).toBe(battle.args.mapHeight - 1); // Should wrap to southern edge
-      expect(battle.mapData(40, battle.args.mapHeight - 1).numAnts).toBe(1);
-      expect(battle.mapData(40, battle.args.mapHeight - 1).team).toBe(ant.team);
+      expect(ant.yPos).toBe(battle.testAccess().mapHeight - 1); // Should wrap to southern edge
+      expect(battle.mapData(40, battle.testAccess().mapHeight - 1).numAnts).toBe(1);
+      expect(battle.mapData(40, battle.testAccess().mapHeight - 1).team).toBe(ant.team);
       expect(northSquare.numAnts).toBe(0);
     });
 
     it('should handle toroidal wrap-around for food transport across boundaries', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
       const ant = battle.ants[0];
 
       // Place food at eastern edge
-      ant.xPos = battle.args.mapWidth - 1;
+      ant.xPos = battle.testAccess().mapWidth - 1;
       ant.yPos = 50;
       const sourceSquare = battle.mapData(ant.xPos, ant.yPos);
       sourceSquare.numFood = 5;
@@ -320,7 +323,7 @@ describe('Battle tests', () => {
     });
 
     it('should verify getSurroundings handles corner cases correctly', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
 
       // Test corner position (0,0)
       const cornerSurroundings = battle['getSurroundings'](0, 0);
@@ -328,30 +331,30 @@ describe('Battle tests', () => {
       expect(cornerSurroundings[0]).toBe(battle.mapData(0, 0)); // Current
       expect(cornerSurroundings[1]).toBe(battle.mapData(1, 0)); // Right
       expect(cornerSurroundings[2]).toBe(battle.mapData(0, 1)); // Down
-      expect(cornerSurroundings[3]).toBe(battle.mapData(battle.args.mapWidth - 1, 0)); // Left (wrapped)
-      expect(cornerSurroundings[4]).toBe(battle.mapData(0, battle.args.mapHeight - 1)); // Up (wrapped)
+      expect(cornerSurroundings[3]).toBe(battle.mapData(battle.testAccess().mapWidth - 1, 0)); // Left (wrapped)
+      expect(cornerSurroundings[4]).toBe(battle.mapData(0, battle.testAccess().mapHeight - 1)); // Up (wrapped)
 
       // Test opposite corner (mapWidth-1, mapHeight-1)
       const oppositeSurroundings = battle['getSurroundings'](
-        battle.args.mapWidth - 1,
-        battle.args.mapHeight - 1,
+        battle.testAccess().mapWidth - 1,
+        battle.testAccess().mapHeight - 1,
       );
       expect(oppositeSurroundings).toHaveLength(5);
       expect(oppositeSurroundings[0]).toBe(
-        battle.mapData(battle.args.mapWidth - 1, battle.args.mapHeight - 1),
+        battle.mapData(battle.testAccess().mapWidth - 1, battle.testAccess().mapHeight - 1),
       ); // Current
-      expect(oppositeSurroundings[1]).toBe(battle.mapData(0, battle.args.mapHeight - 1)); // Right (wrapped)
-      expect(oppositeSurroundings[2]).toBe(battle.mapData(battle.args.mapWidth - 1, 0)); // Down (wrapped)
+      expect(oppositeSurroundings[1]).toBe(battle.mapData(0, battle.testAccess().mapHeight - 1)); // Right (wrapped)
+      expect(oppositeSurroundings[2]).toBe(battle.mapData(battle.testAccess().mapWidth - 1, 0)); // Down (wrapped)
       expect(oppositeSurroundings[3]).toBe(
-        battle.mapData(battle.args.mapWidth - 2, battle.args.mapHeight - 1),
+        battle.mapData(battle.testAccess().mapWidth - 2, battle.testAccess().mapHeight - 1),
       ); // Left
       expect(oppositeSurroundings[4]).toBe(
-        battle.mapData(battle.args.mapWidth - 1, battle.args.mapHeight - 2),
+        battle.mapData(battle.testAccess().mapWidth - 1, battle.testAccess().mapHeight - 2),
       ); // Up
     });
 
     it('should handle base building', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
       const ant = battle.ants[0];
       const square = battle.mapData(ant.xPos, ant.yPos);
 
@@ -368,7 +371,7 @@ describe('Battle tests', () => {
     });
 
     it('should handle food placement', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
       const initialFood = battle.numFood;
 
       battle.placeFood();
@@ -377,18 +380,19 @@ describe('Battle tests', () => {
     });
 
     it('should calculate termination conditions correctly', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
 
       // Initial state should not be terminated
       expect(battle.checkTermination()).toBe(false);
 
       // Force timeout
-      battle.currentTurn = battle.args.timeOutTurn;
+      battle.currentTurn = battle.testAccess().timeOutTurn;
       expect(battle.checkTermination()).toBe(true);
     });
 
     it('should calculate termination correctly for multiple teams', () => {
-      const battle = new Battle({ ...gameSpec, winPercent: 70 }, [simpleAnt, aggressiveAnt], 123);
+      const testBattleArgs = produceBattleArgs({ ...gameSpec, winPercent: 70 }, rng);
+      const battle = new Battle(testBattleArgs, [simpleAnt, aggressiveAnt], 123);
 
       // Test edge case: teams with zero values should not affect termination calculations
       // Team 1: 100 ants + 1 base = 175 total value
@@ -439,7 +443,8 @@ describe('Battle tests', () => {
   });
 
   it('foobar', () => {
-    const battle = new Battle({ ...gameSpec, winPercent: 70 }, [simpleAnt, aggressiveAnt], 123);
+    const testBattleArgs = produceBattleArgs({ ...gameSpec, winPercent: 70 }, rng);
+    const battle = new Battle(testBattleArgs, [simpleAnt, aggressiveAnt], 123);
 
     battle.teams[0].numAnts = 10;
     battle.teams[0].numBases = 1;
@@ -452,8 +457,8 @@ describe('Battle tests', () => {
   describe('Battle execution', () => {
     it('should run complete battle and produce summary', async () => {
       // Use shorter timeout for test
-      const testSpec = { ...gameSpec, timeOutTurn: 5 };
-      const battle = new Battle(testSpec, [simpleAnt], 123);
+      const testBattleArgs = produceBattleArgs({ ...gameSpec, timeOutTurn: 5 }, rng);
+      const battle = new Battle(testBattleArgs, [simpleAnt], 123);
 
       const summary = await battle.run();
 
@@ -463,13 +468,13 @@ describe('Battle tests', () => {
         expect(summary.winner).toBeDefined();
         expect(summary.teams.map((t) => t.name)).toContain('SimpleAnt');
         expect(summary.startTime).toBeGreaterThan(0);
-        expect(summary.args).toBe(battle.args);
+        expect(summary.args).toBe(testBattleArgs);
       }
     });
 
     it('should handle multiple teams battle', async () => {
-      const testSpec = { ...gameSpec, timeOutTurn: 10 };
-      const battle = new Battle(testSpec, [simpleAnt, aggressiveAnt], 123);
+      const testBattleArgs = produceBattleArgs({ ...gameSpec, timeOutTurn: 10 }, rng);
+      const battle = new Battle(testBattleArgs, [simpleAnt, aggressiveAnt], 123);
 
       const summary = await battle.run();
 
@@ -482,8 +487,8 @@ describe('Battle tests', () => {
     });
 
     it('should respect timeout conditions', async () => {
-      const testSpec = { ...gameSpec, timeOutTurn: 3 };
-      const battle = new Battle(testSpec, [simpleAnt], 123);
+      const testBattleArgs = produceBattleArgs({ ...gameSpec, timeOutTurn: 3 }, rng);
+      const battle = new Battle(testBattleArgs, [simpleAnt], 123);
 
       const summary = await battle.run();
       if (summary) {
@@ -499,8 +504,8 @@ describe('Battle tests', () => {
         throw new Error('Test error');
       }) as AntFunction;
 
-      const testSpec = { ...gameSpec, timeOutTurn: 3 };
-      const battle = new Battle(testSpec, [errorAnt], 123);
+      const testBattleArgs = produceBattleArgs({ ...gameSpec, timeOutTurn: 3 }, rng);
+      const battle = new Battle(testBattleArgs, [errorAnt], 123);
 
       // Should not throw, should handle gracefully
       const summary = await battle.run();
@@ -510,7 +515,7 @@ describe('Battle tests', () => {
 
   describe('Team interactions', () => {
     it('should handle combat between teams', () => {
-      const battle = new Battle(gameSpec, [simpleAnt, aggressiveAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt, aggressiveAnt], 123);
 
       // Find ants from different teams
       const team1Ant = battle.ants.find((ant) => ant.team === 1)!;
@@ -571,7 +576,7 @@ describe('Battle tests', () => {
     });
 
     it('should handle base capture during combat', () => {
-      const battle = new Battle(gameSpec, [simpleAnt, aggressiveAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt, aggressiveAnt], 123);
 
       const team1Ant = battle.ants.find((ant) => ant.team === 1)!;
       const targetX = 20,
@@ -603,7 +608,7 @@ describe('Battle tests', () => {
     });
 
     it('should handle food transport and ant creation', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
 
       const ant = battle.ants[0];
       const sourceX = 30,
@@ -637,7 +642,7 @@ describe('Battle tests', () => {
     });
 
     it('should handle food transport without ant creation', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
 
       const ant = battle.ants[0];
       const sourceX = 40,
@@ -669,7 +674,7 @@ describe('Battle tests', () => {
     });
 
     it('should not update square ownership when ants leave', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
 
       const ant = battle.ants[0];
       const startX = 50,
@@ -691,7 +696,8 @@ describe('Battle tests', () => {
     });
 
     it('should handle termination by win percentage', () => {
-      const battle = new Battle({ ...gameSpec, winPercent: 50 }, [simpleAnt, aggressiveAnt], 123);
+      const testBattleArgs = produceBattleArgs({ ...gameSpec, winPercent: 50 }, rng);
+      const battle = new Battle(testBattleArgs, [simpleAnt, aggressiveAnt], 123);
 
       // Manually set up a scenario where team 1 has > 50% of total value
       battle.teams[0].numAnts = 100;
@@ -704,11 +710,11 @@ describe('Battle tests', () => {
     });
 
     it('should handle termination by half-time advantage', () => {
-      const battle = new Battle(
+      const testBattleArgs = produceBattleArgs(
         { ...gameSpec, halfTimeTurn: 10, halfTimePercent: 60 },
-        [simpleAnt, aggressiveAnt],
-        123,
+        rng,
       );
+      const battle = new Battle(testBattleArgs, [simpleAnt, aggressiveAnt], 123);
 
       // Set current turn past half-time
       battle.currentTurn = 15;
@@ -724,7 +730,7 @@ describe('Battle tests', () => {
     });
 
     it('should handle termination when only one team remains active', () => {
-      const battle = new Battle(gameSpec, [simpleAnt, aggressiveAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt, aggressiveAnt], 123);
 
       // Simulate one team being completely eliminated
       battle.teams[0].numAnts = 50;
@@ -737,7 +743,7 @@ describe('Battle tests', () => {
     });
 
     it('should handle timing measurements for performance tracking', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
 
       const ant = battle.ants[0];
       const initialTimesTimed = battle.teams[0].timesTimed;
@@ -752,7 +758,7 @@ describe('Battle tests', () => {
     });
 
     it('should track team statistics', () => {
-      const battle = new Battle(gameSpec, [simpleAnt, aggressiveAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt, aggressiveAnt], 123);
 
       expect(battle.teams[0].numAnts).toBeGreaterThan(0);
       expect(battle.teams[1].numAnts).toBeGreaterThan(0);
@@ -761,7 +767,7 @@ describe('Battle tests', () => {
     });
 
     it('should handle battle stop functionality', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
 
       // Initially stop is not requested
       expect(battle.checkTermination()).toBe(false);
@@ -774,7 +780,7 @@ describe('Battle tests', () => {
     });
 
     it('should handle square ownership transfer when moving to enemy territory', () => {
-      const battle = new Battle(gameSpec, [simpleAnt, aggressiveAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt, aggressiveAnt], 123);
 
       const ant = battle.ants.find((a) => a.team === 1)!;
       const targetX = 60;
@@ -803,11 +809,11 @@ describe('Battle tests', () => {
     });
 
     it('should test advanced food placement with distance optimization', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
 
       // Clear any existing food
-      for (let x = 0; x < battle.args.mapWidth; x++) {
-        for (let y = 0; y < battle.args.mapHeight; y++) {
+      for (let x = 0; x < battle.testAccess().mapWidth; x++) {
+        for (let y = 0; y < battle.testAccess().mapHeight; y++) {
           const square = battle.mapData(x, y);
           square.numFood = 0;
           square.numAnts = 0;
@@ -832,7 +838,7 @@ describe('Battle tests', () => {
     });
 
     it('should handle edge cases for base building requirements', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
       const ant = battle.ants[0];
       const square = battle.mapData(ant.xPos, ant.yPos);
 
@@ -858,7 +864,7 @@ describe('Battle tests', () => {
     });
 
     it('should handle paused battle state correctly', async () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
 
       // Set battle to start in paused state
       battle.pause();
@@ -883,7 +889,7 @@ describe('Battle tests', () => {
     });
 
     it('should handle ant movement to same position', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
       const ant = battle.ants[0];
       const originalX = ant.xPos;
       const originalY = ant.yPos;
@@ -896,7 +902,7 @@ describe('Battle tests', () => {
     });
 
     it('should handle status emission with touched squares', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
 
       // Mock postMessage to capture status emissions
       const statusMessages: BattleStatusMessage[] = [];
@@ -921,7 +927,7 @@ describe('Battle tests', () => {
     });
 
     it('should handle status emission with no touched squares', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
 
       // Mock postMessage
       let statusEmitted = false;
@@ -940,11 +946,11 @@ describe('Battle tests', () => {
     });
 
     it('should emit status during battle run at specified intervals', () => {
-      const battle = new Battle(
+      const testBattleArgs = produceBattleArgs(
         { ...gameSpec, statusInterval: 2, timeOutTurn: 5 },
-        [simpleAnt],
-        123,
+        rng,
       );
+      const battle = new Battle(testBattleArgs, [simpleAnt], 123);
 
       // Mock postMessage
       const statusMessages: BattleStatusMessage[] = [];
@@ -967,14 +973,14 @@ describe('Battle tests', () => {
       const seed = 12345;
       const testSpec = {
         ...gameSpec,
-        seed,
-        rng: getRNG(seed),
         timeOutTurn: 10,
         statusInterval: 1000, // Prevent status emission during short test
       };
 
       // Run first battle
-      const battle1 = new Battle(testSpec, [simpleAnt], seed);
+      const rng1 = getRNG(seed);
+      const battleArgs1 = produceBattleArgs(testSpec, rng1);
+      const battle1 = new Battle(battleArgs1, [simpleAnt], seed);
       const firstBattleState = {
         mapState: battle1.map.map((s) => ({ ...s })),
         antPositions: battle1.ants.map((a) => ({ x: a.xPos, y: a.yPos, team: a.team })),
@@ -983,7 +989,9 @@ describe('Battle tests', () => {
       };
 
       // Run second battle with same seed
-      const battle2 = new Battle({ ...testSpec }, [simpleAnt], seed);
+      const rng2 = getRNG(seed);
+      const battleArgs2 = produceBattleArgs(testSpec, rng2);
+      const battle2 = new Battle(battleArgs2, [simpleAnt], seed);
       const secondBattleState = {
         mapState: battle2.map.map((s) => ({ ...s })),
         antPositions: battle2.ants.map((a) => ({ x: a.xPos, y: a.yPos, team: a.team })),
@@ -1028,21 +1036,24 @@ describe('Battle tests', () => {
     it('should produce different results with different seeds', () => {
       const testSpec1 = {
         ...gameSpec,
-        seed: 12345,
         timeOutTurn: 10,
         statusInterval: 1000,
       };
 
       const testSpec2 = {
         ...gameSpec,
-        seed: 54321,
         timeOutTurn: 10,
         statusInterval: 1000,
       };
 
       // Run battles with different seeds
-      const battle1 = new Battle(testSpec1, [simpleAnt], 12345);
-      const battle2 = new Battle(testSpec2, [simpleAnt], 54321);
+      const rng1 = getRNG(12345);
+      const battleArgs1 = produceBattleArgs(testSpec1, rng1);
+      const battle1 = new Battle(battleArgs1, [simpleAnt], 12345);
+      
+      const rng2 = getRNG(54321);
+      const battleArgs2 = produceBattleArgs(testSpec2, rng2);
+      const battle2 = new Battle(battleArgs2, [simpleAnt], 54321);
 
       // Run both battles for a few turns
       for (let i = 0; i < 5; i++) {
@@ -1133,12 +1144,12 @@ describe('Battle tests', () => {
     }
 
     it('should properly maintain linked lists during initialization', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
 
       // Find the base square where initial ants are placed
       let baseSquare: SquareData | undefined;
-      for (let x = 0; x < battle.args.mapWidth; x++) {
-        for (let y = 0; y < battle.args.mapHeight; y++) {
+      for (let x = 0; x < battle.testAccess().mapWidth; x++) {
+        for (let y = 0; y < battle.testAccess().mapHeight; y++) {
           const square = battle.mapData(x, y);
           if (square.base && square.numAnts > 0) {
             baseSquare = square;
@@ -1157,8 +1168,8 @@ describe('Battle tests', () => {
       const antsOnSquare = battle.ants.filter(
         (ant) =>
           ant.alive &&
-          ant.xPos === battle.map.indexOf(baseSquare!) % battle.args.mapWidth &&
-          ant.yPos === Math.floor(battle.map.indexOf(baseSquare!) / battle.args.mapWidth),
+          ant.xPos === battle.map.indexOf(baseSquare!) % battle.testAccess().mapWidth &&
+          ant.yPos === Math.floor(battle.map.indexOf(baseSquare!) / battle.testAccess().mapWidth),
       );
 
       expect(antsOnSquare.length).toBeGreaterThan(0);
@@ -1181,7 +1192,7 @@ describe('Battle tests', () => {
     });
 
     it('should maintain linked list integrity during ant creation', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
       const targetX = 5,
         targetY = 5;
       const square = battle.mapData(targetX, targetY);
@@ -1260,7 +1271,7 @@ describe('Battle tests', () => {
     });
 
     it('should maintain linked list integrity when killing ants', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
       const targetX = 10,
         targetY = 10;
       const square = battle.mapData(targetX, targetY);
@@ -1350,7 +1361,7 @@ describe('Battle tests', () => {
     });
 
     it('should properly maintain linked lists during combat', () => {
-      const battle = new Battle(gameSpec, [simpleAnt, aggressiveAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt, aggressiveAnt], 123);
       const targetX = 15,
         targetY = 15;
       const targetSquare = battle.mapData(targetX, targetY);
@@ -1407,7 +1418,7 @@ describe('Battle tests', () => {
     });
 
     it('should maintain linked list integrity during ant movement', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
       const sourceX = 20,
         sourceY = 20;
       const destX = 21,
@@ -1493,7 +1504,7 @@ describe('Battle tests', () => {
     });
 
     it('should verify ant recycling system works correctly', () => {
-      const battle = new Battle(gameSpec, [simpleAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt], 123);
 
       // Check initial state - the battle starts with some dead indices from initialization
       const initialAntCount = battle.ants.length;
@@ -1553,7 +1564,7 @@ describe('Battle tests', () => {
 
   describe('Base counting bug reproduction', () => {
     it('should reproduce the numBases bug when multiple ants move to same captured base', () => {
-      const battle = new Battle(gameSpec, [simpleAnt, aggressiveAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt, aggressiveAnt], 123);
 
       // Set up the scenario: Team 1 will capture Team 2's base, then multiple ants move to it
       const baseX = 30,
@@ -1655,7 +1666,7 @@ describe('Battle tests', () => {
     });
 
     it('should reproduce the numBases bug with defended enemy base', () => {
-      const battle = new Battle(gameSpec, [simpleAnt, aggressiveAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt, aggressiveAnt], 123);
 
       // Set up the scenario: Team 1 will capture Team 2's defended base, then multiple ants move to it
       const baseX = 30,
@@ -1774,7 +1785,7 @@ describe('Battle tests', () => {
     });
 
     it('should reveal the squareOwn counter bug in combat scenarios', () => {
-      const battle = new Battle(gameSpec, [simpleAnt, aggressiveAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt, aggressiveAnt], 123);
 
       // Set up combat scenario: Team 1 attacks Team 2 square with defenders
       const targetX = 40,
@@ -1870,7 +1881,7 @@ describe('Battle tests', () => {
     });
 
     it('should correctly handle squareOwn when multiple ants move to same square', () => {
-      const battle = new Battle(gameSpec, [simpleAnt, aggressiveAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt, aggressiveAnt], 123);
 
       // Set up a neutral square that Team 1 will occupy
       const targetX = 45,
@@ -1932,7 +1943,7 @@ describe('Battle tests', () => {
     });
 
     it('should correctly update squareOwn when claiming neutral territory', () => {
-      const battle = new Battle(gameSpec, [simpleAnt, aggressiveAnt], 123);
+      const battle = new Battle(battleArgs, [simpleAnt, aggressiveAnt], 123);
 
       // Set up a neutral square
       const targetX = 50,
@@ -1994,7 +2005,7 @@ describe('Battle tests', () => {
         return 0; // Stay in place
       }) as AntFunction;
 
-      const battle = new Battle(gameSpec, [testAnt, aggressiveAnt], 123);
+      const battle = new Battle(battleArgs, [testAnt, aggressiveAnt], 123);
 
       // Set up the scenario according to C semantics
       const ant = battle.ants[0]; // Team 1 ant
@@ -2072,7 +2083,8 @@ describe('Battle tests', () => {
         ...gameSpec,
         startAnts: [1, 1] as [number, number],
       };
-      const battle = new Battle(singleAntGameSpec, [brainTestAnt], 123);
+      const testBattleArgs = produceBattleArgs(singleAntGameSpec, rng);
+      const battle = new Battle(testBattleArgs, [brainTestAnt], 123);
       const ant = battle.ants[0];
 
       // Check initial state
@@ -2107,13 +2119,13 @@ describe('Battle tests', () => {
         return 0; // Stay in place
       }) as AntFunction;
 
-      const battle = new Battle(gameSpec, [multiAntTestAnt], 123);
+      const battle = new Battle(battleArgs, [multiAntTestAnt], 123);
 
       // Create multiple ants on the same square
       const baseSquare = battle.map.find((s) => s.base)!;
       const baseIndex = battle.map.indexOf(baseSquare);
-      const baseX = baseIndex % battle.args.mapWidth;
-      const baseY = Math.floor(baseIndex / battle.args.mapWidth);
+      const baseX = baseIndex % battle.testAccess().mapWidth;
+      const baseY = Math.floor(baseIndex / battle.testAccess().mapWidth);
 
       // Add 2 more ants to the base square
       for (let i = 0; i < 2; i++) {
@@ -2170,7 +2182,7 @@ describe('Battle tests', () => {
         return 0;
       }) as AntFunction;
 
-      const battle = new Battle(gameSpec, [templateTestAnt], 123);
+      const battle = new Battle(battleArgs, [templateTestAnt], 123);
 
       // Verify initial ants have proper brain template data
       const ant = battle.ants[0];
@@ -2207,7 +2219,8 @@ describe('Battle tests', () => {
         ...gameSpec,
         startAnts: [1, 1] as [number, number],
       };
-      const battle = new Battle(singleAntGameSpec, [recyclingTestAnt], 123);
+      const testBattleArgs = produceBattleArgs(singleAntGameSpec, rng);
+      const battle = new Battle(testBattleArgs, [recyclingTestAnt], 123);
 
       // Use the existing ant from initialization instead of manually creating one
       const originalAnt = battle.ants[0];

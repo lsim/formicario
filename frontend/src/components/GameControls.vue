@@ -7,7 +7,7 @@ import {
   faStop,
 } from '@fortawesome/free-solid-svg-icons';
 
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useMagicKeys, whenever } from '@vueuse/core';
 import { useGameStore } from '@/stores/game.ts';
 const { enter, shift_space, escape } = useMagicKeys();
@@ -19,6 +19,8 @@ whenever(shift_space, () => gameStore.step(stepSize.value));
 
 whenever(escape, stop);
 
+const running = computed(() => gameStore.gameRunning || gameStore.battleReplaying);
+
 const stepSize = ref(1);
 </script>
 
@@ -28,11 +30,11 @@ const stepSize = ref(1);
       class="button is-medium is-success"
       type="button"
       @click="() => gameStore.start()"
-      :disabled="gameStore.gameRunning"
-      :class="{ 'is-loading': gameStore.gameRunning }"
+      :disabled="running"
+      :class="{ 'is-loading': running }"
       title="[Enter]"
     >
-      <span class="icon" v-if="!gameStore.gameRunning">
+      <span class="icon" v-if="!running">
         <font-awesome-icon :icon="faPlay" />
       </span>
       <template v-else> &nbsp; &nbsp; </template>
@@ -44,7 +46,7 @@ const stepSize = ref(1);
       type="button"
       @click="gameStore.stop"
       title="[Escape]"
-      :disabled="!gameStore.gameRunning"
+      :disabled="!running"
     >
       <span class="icon"><font-awesome-icon :icon="faStop" /></span>
     </button>
@@ -54,21 +56,21 @@ const stepSize = ref(1);
       class="button is-medium is-info"
       type="button"
       @click="gameStore.skipBattle"
-      :disabled="!gameStore.gameRunning"
+      :disabled="!running"
     >
       <span class="icon">
         <font-awesome-icon :icon="faFastForward" />
       </span>
     </button>
   </div>
-  <div class="navbar-item" v-show="!gameStore.gamePaused && gameStore.gameRunning">
+  <div class="navbar-item" v-show="!gameStore.gamePaused && running">
     <button class="button is-medium is-info" type="button" @click="gameStore.pause">
       <span class="icon">
         <font-awesome-icon :icon="faPause" />
       </span>
     </button>
   </div>
-  <div class="navbar-item" v-show="gameStore.gamePaused && gameStore.gameRunning">
+  <div class="navbar-item" v-show="gameStore.gamePaused && running">
     <button class="button is-medium is-info" type="button" @click="gameStore.resume">
       <span class="icon">
         <font-awesome-icon :icon="faPlay" />
@@ -82,7 +84,7 @@ const stepSize = ref(1);
           class="button is-medium is-info"
           type="button"
           @click="() => gameStore.step(stepSize)"
-          :disabled="gameStore.gameRunning && !gameStore.gamePaused"
+          :disabled="running && !gameStore.gamePaused"
           title="[Shift + Space]"
         >
           <span class="icon">

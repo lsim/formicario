@@ -11,7 +11,9 @@ import {
   useStats,
 } from '@/composables/stats.ts';
 import type { BattleStatus } from '@/GameSummary.ts';
-import { Observable, ReplaySubject } from 'rxjs';
+import { filter, finalize, Observable, ReplaySubject, take, timeout } from 'rxjs';
+import type { BattleArgs } from '@/Battle.ts';
+import type { Team } from '@/Team.ts';
 
 export const useGameStore = defineStore('game', () => {
   const worker = useWorker();
@@ -37,7 +39,7 @@ export const useGameStore = defineStore('game', () => {
   });
 
   // We leak this subscription as it is a singleton
-  worker.gameSummarySubject$.subscribe(() => {
+  worker.gameSummaries$.subscribe(() => {
     gameRunning.value = false;
   });
 
@@ -56,6 +58,7 @@ export const useGameStore = defineStore('game', () => {
   );
 
   const gameRunning = ref(false);
+  const battleReplaying = ref(false);
   const gamePaused = ref(false);
   const selectedStatusProperty = ref<TeamStat>('numAnts');
   const lastError = ref<string[]>([]);
@@ -66,7 +69,7 @@ export const useGameStore = defineStore('game', () => {
     selectedBattleSummaryStats.value = null;
     const battleTeams =
       teamStore.battleTeams.length === 0 ? teamStore.allTeams : teamStore.battleTeams;
-    if (gameRunning.value) return;
+    if (gameRunning.value || battleReplaying.value) return;
     const message = {
       game: {
         ...gameSpec,
@@ -79,38 +82,39 @@ export const useGameStore = defineStore('game', () => {
     };
     gameRunning.value = true;
     battleStreams$.value.next([
-      worker.battleStatusSubject$.asObservable(),
+      worker.battleStatuses$,
       stats.expandedBattleSummaries$,
-      stats.aggregatedBattleStats,
+      stats.aggregatedBattleStats$,
     ]);
+    lastError.value = [];
     await worker.startGame(message as Omit<RunGameCommand, 'id' | 'type'>);
 
     gameSpec.seed++;
-    lastError.value = [];
   }
 
   async function stop() {
-    if (!gameRunning.value) return;
+    if (!gameRunning.value && !battleReplaying.value) return;
     await worker.stopGame();
     gamePaused.value = false;
     gameRunning.value = false;
+    battleReplaying.value = false;
   }
 
   async function pause() {
-    if (!gameRunning.value) return;
+    if (!gameRunning.value && !battleReplaying.value) return;
     await worker.pauseGame();
     gamePaused.value = true;
   }
 
   async function resume() {
-    if (!gameRunning.value) return;
+    if (!gameRunning.value && !battleReplaying.value) return;
     await worker.resumeGame();
     gamePaused.value = false;
   }
 
   async function step(numTurns = -1) {
     gamePaused.value = true;
-    if (!gameRunning.value) {
+    if (!gameRunning.value && !battleReplaying.value) {
       await start(numTurns);
     } else {
       await worker.stepGame(numTurns);
@@ -118,13 +122,43 @@ export const useGameStore = defineStore('game', () => {
   }
 
   async function skipBattle() {
-    if (!gameRunning.value) return;
+    if (!gameRunning.value && !battleReplaying.value) return;
     await worker.skipBattle();
+  }
+
+  async function runBattle(
+    args: BattleArgs,
+    teams: Team[],
+    seed: number,
+    pauseAfterTurns: number = -1,
+  ) {
+    if (gameRunning.value || battleReplaying.value) return;
+    if (teams.length === 0) throw new Error('No teams selected');
+    battleReplaying.value = true;
+    lastError.value = [];
+    gamePaused.value = pauseAfterTurns > 0;
+    worker.battleSummaries$
+      .pipe(
+        filter((summary) => summary.seed === seed),
+        take(1),
+        timeout(10 * 60 * 1000),
+        finalize(() => (battleReplaying.value = false)),
+      )
+      .subscribe();
+    console.debug('Rerunning battle');
+    await worker.runBattle({
+      args,
+      teams,
+      seed,
+      pauseAfterTurns,
+    });
+    console.debug('Rerun started');
   }
 
   return {
     gameSpec,
     gameRunning,
+    battleReplaying,
     gamePaused,
     lastError,
     liveFeed,
@@ -138,5 +172,6 @@ export const useGameStore = defineStore('game', () => {
     step,
     resume,
     skipBattle,
+    runBattle,
   };
 });

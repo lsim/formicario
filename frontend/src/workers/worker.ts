@@ -1,6 +1,6 @@
 import type { WorkerMessage } from '@/workers/WorkerMessage.ts';
 import { Game, instantiateParticipant } from '@/Game.ts';
-import type { AntFunction } from '@/Battle.ts';
+import { type AntFunction } from '@/Battle.ts';
 
 let activeGame: Game | undefined;
 
@@ -30,7 +30,7 @@ function getAntFunctions(teams: { name: string; code: string }[]): {
 
 onmessage = async (e) => {
   const command: WorkerMessage = e.data as WorkerMessage;
-  console.debug('Worker received message', command);
+  // console.debug('Worker received message', command);
   try {
     if (command?.type === 'run-game') {
       activeGame?.stopGame();
@@ -63,6 +63,28 @@ onmessage = async (e) => {
     } else if (command?.type === 'skip-battle') {
       activeGame?.skipBattle();
       postMessage({ type: 'ok', id: command.id });
+    } else if (command?.type === 'run-battle') {
+      activeGame?.stopGame();
+      const teamFunctions = getAntFunctions(command.teams);
+      const failedAntFunctions = teamFunctions.filter((f) => f.error);
+      if (failedAntFunctions.length > 0) {
+        postMessage({
+          type: 'error',
+          id: command.id,
+          error: failedAntFunctions.map((f) => `${f.name}: ${f.error}\n${f.line}:${f.column}`),
+        });
+        return;
+      }
+      activeGame = new Game(
+        null,
+        teamFunctions.map((f) => f.func).filter((f) => !!f),
+        command.args,
+        command.seed,
+      );
+      const p = activeGame.run(command.pauseAfterTurns);
+      postMessage({ type: 'ok', id: command.id });
+      await p;
+      activeGame = undefined;
     } else if (command?.type === 'pause-game') {
       activeGame?.pause();
       postMessage({ type: 'ok', id: command.id });

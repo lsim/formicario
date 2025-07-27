@@ -1,4 +1,10 @@
-import { type AntFunction, Battle, type BattleContinuation } from '@/Battle.ts';
+import {
+  type AntFunction,
+  Battle,
+  type BattleArgs,
+  type BattleContinuation,
+  produceBattleArgs,
+} from '@/Battle.ts';
 import type { GameSpec } from '@/GameSpec.ts';
 import type { BattleSummary, GameSummary } from '@/GameSummary.ts';
 import { getRNG, type RNGFunction } from '@/prng.ts';
@@ -35,46 +41,69 @@ export class Game {
   rng: RNGFunction;
 
   constructor(
-    private spec: GameSpec,
+    private spec: GameSpec | null,
     private readonly teamFunctions: AntFunction[],
+    private readonly singleBattleArgs?: BattleArgs,
+    private readonly singleBattleSeed?: number,
   ) {
     this.id = Date.now();
-    this.rng = getRNG(this.spec.seed);
-    this.teamFunctions = teamFunctions;
+    this.rng = getRNG(this.spec?.seed ?? 1);
   }
 
   public async run(pauseAfterTurns = -1): Promise<GameSummary | undefined> {
-    console.log('Running game', this.spec, pauseAfterTurns);
+    const _pauseAfterTurns = this.activeBattle?.isPaused
+      ? 1
+      : !this.activeBattle
+        ? pauseAfterTurns
+        : -1;
 
-    const battleSummaries: BattleSummary[] = [];
-    for (let i = 0; i < this.spec.numBattles && !this.stopRequested; i++) {
-      const battleSeed = this.rng();
-      if (battleSeed === 0) {
-        console.warn('Battle seed is 0, trying again');
-        i--;
-        continue;
-      }
-      const _pauseAfterTurns = this.activeBattle?.isPaused
-        ? 1
-        : !this.activeBattle
-          ? pauseAfterTurns
-          : -1;
-      this.activeBattle = new Battle(
-        this.spec,
-        this.pickRandomTeamsForBattle(),
-        battleSeed,
-        _pauseAfterTurns,
+    if (this.singleBattleArgs != null) {
+      console.log(
+        '(Re-)running single-battle game',
+        this.singleBattleArgs,
+        this.singleBattleSeed,
+        pauseAfterTurns,
       );
 
+      this.activeBattle = new Battle(
+        this.singleBattleArgs,
+        this.teamFunctions,
+        this.singleBattleSeed ?? 1,
+        _pauseAfterTurns,
+      );
       const battleSummary = await this.activeBattle.run();
       postMessage({ type: 'battle-summary', summary: battleSummary });
-      battleSummaries.push(battleSummary);
-    }
+      return {
+        seed: 1,
+        battles: [battleSummary],
+      };
+    } else if (this.spec != null) {
+      console.log('Running standard game', this.spec, pauseAfterTurns);
+      const battleSummaries: BattleSummary[] = [];
+      for (let i = 0; i < this.spec.numBattles && !this.stopRequested; i++) {
+        const battleSeed = this.rng();
+        if (battleSeed === 0) {
+          console.warn('Battle seed is 0, trying again');
+          i--;
+          continue;
+        }
+        const args = produceBattleArgs(this.spec, this.rng);
+        this.activeBattle = new Battle(
+          args,
+          this.pickRandomTeamsForBattle(),
+          battleSeed,
+          _pauseAfterTurns,
+        );
 
-    return {
-      seed: this.spec.seed,
-      battles: battleSummaries,
-    };
+        const battleSummary = await this.activeBattle.run();
+        postMessage({ type: 'battle-summary', summary: battleSummary });
+        battleSummaries.push(battleSummary);
+      }
+      return {
+        seed: this.spec.seed,
+        battles: battleSummaries,
+      };
+    }
   }
 
   // Note: Destructive on input array
@@ -92,6 +121,7 @@ export class Game {
   }
 
   pickRandomTeamsForBattle() {
+    if (this.spec == null) return this.teamFunctions;
     const teamFunctions = this.fisherYates([...this.teamFunctions]);
     if (this.spec.numBattleTeams <= 1 || this.spec.numBattleTeams >= this.teamFunctions.length) {
       return teamFunctions;

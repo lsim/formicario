@@ -1,6 +1,7 @@
 import type { GameSpec } from '@/GameSpec.ts';
 import type { BattleStatus, BattleSummary, GameSummary } from '@/GameSummary.ts';
-import type { AntData, AntDescriptor } from '@/Battle.ts';
+import type { AntData, AntDescriptor, BattleArgs } from '@/Battle.ts';
+import type { Team } from '@/Team.ts';
 
 export type WorkerMessageType =
   | 'run-game'
@@ -16,6 +17,7 @@ export type WorkerMessageType =
   | 'ant-info-request'
   | 'ant-info-reply'
   | 'skip-battle'
+  | 'run-battle'
   | 'error'
   | 'ok';
 
@@ -88,6 +90,14 @@ export interface SkipBattleMessage extends TypedMessage {
   type: 'skip-battle';
 }
 
+export interface RunBattleMessage extends TypedMessage {
+  type: 'run-battle';
+  args: BattleArgs;
+  teams: Team[];
+  seed: number;
+  pauseAfterTurns?: number;
+}
+
 export interface OkReply extends TypedMessage {
   type: 'ok';
 }
@@ -111,6 +121,7 @@ declare type CommandMap = {
   AntInfoRequestMessage: AntInfoRequestMessage;
   AntInfoReplyMessage: AntInfoReplyMessage;
   SkipBattleMessage: SkipBattleMessage;
+  RunBattleMessage: RunBattleMessage;
   OkReply: OkReply;
   ErrorReply: ErrorReply;
 };

@@ -4,6 +4,7 @@ import type {
   AntInfoRequestMessage,
   DebugReplyMessage,
   DebugRequestMessage,
+  RunBattleMessage,
   RunGameCommand,
   StepGameCommand,
   WorkerMessage,
@@ -24,22 +25,30 @@ let messageCount = 0;
 const pendingCommands = new Map<number, (message: WorkerMessage) => void>();
 
 worker.onmessage = (e) => {
-  if (e.data.type === 'battle-status') {
-    battleStatusSubject$.next(e.data.status);
-  } else if (e.data.type === 'game-summary') {
-    gameSummarySubject$.next(e.data.results);
-  } else if (e.data.type === 'battle-summary') {
-    battleSummarySubject$.next(e.data.summary);
-  } else {
-    if (e.data.type === 'debug-reply') debugAntsSubject$.next(e.data.ants);
-
-    const handler = pendingCommands.get(e.data.id);
-    if (handler) {
-      handler(e.data);
-      pendingCommands.delete(e.data.id);
+  try {
+    if (e.data.type === 'battle-status') {
+      battleStatusSubject$.next(e.data.status);
+    } else if (e.data.type === 'game-summary') {
+      console.debug('Emitting game summary', e.data.results);
+      gameSummarySubject$.next(e.data.results);
+      console.debug('Emitted game summary');
+    } else if (e.data.type === 'battle-summary') {
+      console.debug('Emitting battle summary', e.data.summary);
+      battleSummarySubject$.next(e.data.summary);
+      console.debug('Emitted battle summary');
     } else {
-      console.log('Worker sent unexpected message', e.data);
+      if (e.data.type === 'debug-reply') debugAntsSubject$.next(e.data.ants);
+
+      const handler = pendingCommands.get(e.data.id);
+      if (handler) {
+        handler(e.data);
+        pendingCommands.delete(e.data.id);
+      } else {
+        console.log('Worker sent unexpected message', e.data);
+      }
     }
+  } catch (e) {
+    console.error('Worker error', e);
   }
 };
 
@@ -64,6 +73,10 @@ async function stopGame() {
 
 async function skipBattle() {
   await queueMessage({ type: 'skip-battle' });
+}
+
+async function runBattle(message: Omit<RunBattleMessage, 'type' | 'id'>) {
+  await queueMessage({ ...message, type: 'run-battle' });
 }
 
 async function pauseGame() {
@@ -98,15 +111,16 @@ async function getTeamInfo(team: Team) {
 
 export function useWorker() {
   return {
-    battleStatusSubject$,
-    battleSummarySubject$,
-    debugAntsSubject$,
-    gameSummarySubject$,
+    battleStatuses$: battleStatusSubject$.asObservable(),
+    battleSummaries$: battleSummarySubject$.asObservable(),
+    debugAnts$: debugAntsSubject$.asObservable(),
+    gameSummaries$: gameSummarySubject$.asObservable(),
     getDebugAnts,
     getTeamInfo,
     pauseGame,
     resumeGame,
     skipBattle,
+    runBattle,
     startGame,
     stopGame,
     stepGame,

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { Battle, type AntFunction, type SquareData, type AntInfo } from '@/Battle.ts';
+import { Battle, type AntFunction, type SquareData, type AntInfo, type BattleArgs, produceBattleArgs } from '@/Battle.ts';
+import { getRNG, type RNGFunction } from '@/prng.ts';
 import type { GameSpec } from '@/GameSpec.ts';
 
 describe('Brain Array Synchronization', () => {
@@ -43,7 +44,9 @@ describe('Brain Array Synchronization', () => {
       return 0; // Don't move - just stay put to avoid infinite loops
     }) as AntFunction;
 
-    const battle = new Battle(spec, [testAnt], 12345);
+    const rng: RNGFunction = getRNG(12345);
+    const battleArgs: BattleArgs = produceBattleArgs(spec, rng);
+    const battle = new Battle(battleArgs, [testAnt], 12345);
 
     // Run just one turn to test brain consistency
     battle.doTurn();
@@ -103,7 +106,9 @@ describe('Brain Array Synchronization', () => {
       return 0; // Don't actually build base to avoid complexity
     }) as AntFunction;
 
-    const battle = new Battle(spec, [baseBuildingAnt], 54321);
+    const rng2: RNGFunction = getRNG(54321);
+    const battleArgs2: BattleArgs = produceBattleArgs(spec, rng2);
+    const battle = new Battle(battleArgs2, [baseBuildingAnt], 54321);
 
     // Artificially add food to the center square to prepare for base building scenario
     const centerSquare = battle.mapData(32, 32);

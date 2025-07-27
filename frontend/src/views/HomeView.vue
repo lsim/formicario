@@ -26,9 +26,7 @@ const subscription = gameStore.battleStreams$
   )
   .subscribe();
 
-const subscription2 = worker.gameSummarySubject$.subscribe(
-  (summary) => (gameSummary.value = summary),
-);
+const subscription2 = worker.gameSummaries$.subscribe((summary) => (gameSummary.value = summary));
 
 onBeforeUnmount(() => {
   subscription.unsubscribe();

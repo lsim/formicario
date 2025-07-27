@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { Battle, type AntFunction, type SquareData, type AntInfo } from '@/Battle.ts';
+import {
+  Battle,
+  type AntFunction,
+  type SquareData,
+  type AntInfo,
+  type BattleArgs,
+  produceBattleArgs,
+} from '@/Battle.ts';
 import type { GameSpec } from '@/GameSpec.ts';
+import { getRNG, type RNGFunction } from '@/prng.ts';
 
 describe('Brain Data Consistency During Ant Creation', () => {
   it('should provide all defined brains when new ants are created at bases', () => {
@@ -93,13 +101,15 @@ describe('Brain Data Consistency During Ant Creation', () => {
       numBattleTeams: 1,
     };
 
-    const battle = new Battle(gameSpec, [foodBringingAnt], 123);
+    const rng: RNGFunction = getRNG(42);
+    const battleArgs: BattleArgs = produceBattleArgs(gameSpec, rng);
+    const battle = new Battle(battleArgs, [foodBringingAnt], 123);
 
     // Place food one square down from the base for deterministic testing
-    const baseX = Math.floor(battle.args.mapWidth / 2);
-    const baseY = Math.floor(battle.args.mapHeight / 2);
+    const baseX = Math.floor(battle.testAccess().mapWidth / 2);
+    const baseY = Math.floor(battle.testAccess().mapHeight / 2);
     const foodX = baseX;
-    const foodY = (baseY + 1) % battle.args.mapHeight; // One square down from base
+    const foodY = (baseY + 1) % battle.testAccess().mapHeight; // One square down from base
 
     const foodSquare = battle['mapData'](foodX, foodY);
     foodSquare.numFood = 10; // Plenty of food for multiple ant creation cycles
@@ -215,7 +225,9 @@ describe('Brain Data Consistency During Ant Creation', () => {
       numBattleTeams: 1,
     };
 
-    const battle = new Battle(gameSpec, [coordinnatingAnt], 123);
+    const rng2: RNGFunction = getRNG(123);
+    const battleArgs2: BattleArgs = produceBattleArgs(gameSpec, rng2);
+    const battle = new Battle(battleArgs2, [coordinnatingAnt], 123);
 
     // Run battle to trigger the target scenario
     for (let turn = 0; turn < 25; turn++) {

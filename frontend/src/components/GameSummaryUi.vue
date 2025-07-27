@@ -12,9 +12,7 @@ const gameStore = useGameStore();
 
 const gameSummary = ref<GameSummary>();
 
-const subscription = worker.gameSummarySubject$.subscribe(
-  (summary) => (gameSummary.value = summary),
-);
+const subscription = worker.gameSummaries$.subscribe((summary) => (gameSummary.value = summary));
 
 const battleSummaryStats = ref<BattleSummaryStats[]>([]);
 

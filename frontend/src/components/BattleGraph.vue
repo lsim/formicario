@@ -15,7 +15,7 @@ import {
 
 import { type BattleStats } from '@/composables/stats.ts';
 import { onBeforeUnmount, shallowRef, useTemplateRef, watch } from 'vue';
-import { map, Subscription, switchAll } from 'rxjs';
+import { map, Subscription, switchAll, tap } from 'rxjs';
 import { useGameStore } from '@/stores/game.ts';
 import StatPropChooser from '@/components/StatPropChooser.vue';
 
@@ -90,27 +90,21 @@ function chartDataFromStats(stats?: BattleStats) {
 let subscription: Subscription | null = null;
 watch(
   () => [props.isLive, props.battleStats],
-  ([newIsLive, newBattleStats]) => {
+  (newArr) => {
+    const [newIsLive, newBattleStats] = newArr || [];
+    subscription?.unsubscribe();
+    subscription = null;
     if (newIsLive) {
-      let lastBattleSeed = 0;
-      subscription?.unsubscribe();
       subscription = gameStore.battleStreams$
         .pipe(
+          // Clear chart when new battle starts
+          tap(() => clearChart()),
           map(([, , stats]) => stats),
           switchAll(),
-          // When status from a new battle is received, clear the chart. The new battle will have a new seed.
+          tap((stats) => (chartData.value = chartDataFromStats(stats))),
         )
-        .subscribe((stats) => {
-          if (stats.seed !== lastBattleSeed) {
-            // Clear chart when new battle is received
-            clearChart();
-            lastBattleSeed = stats.seed;
-          }
-          chartData.value = chartDataFromStats(stats);
-        });
+        .subscribe();
     } else if (newBattleStats) {
-      subscription?.unsubscribe();
-      subscription = null;
       chartData.value = chartDataFromStats(newBattleStats as BattleStats);
     }
   },

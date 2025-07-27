@@ -1,5 +1,15 @@
 import type { BattleSummary, TeamStatus } from '@/GameSummary.ts';
-import { type Observable, scan, share, throttleTime, withLatestFrom } from 'rxjs';
+import {
+  endWith,
+  filter,
+  type Observable,
+  repeat,
+  scan,
+  share,
+  takeUntil,
+  throttleTime,
+  withLatestFrom,
+} from 'rxjs';
 import { useWorker } from '@/workers/WorkerDispatcher.ts';
 
 export type TeamStat = keyof Omit<TeamStatus, 'name' | 'color'>;
@@ -49,15 +59,15 @@ export function useStats() {
   const worker = useWorker();
 
   function aggregateBattleStats(throttle = 100) {
-    return worker.battleStatusSubject$.pipe(
+    return worker.battleStatuses$.pipe(
       throttleTime(throttle, undefined, { leading: true, trailing: true }),
-      // Accumulate stats for each 200 turns
+      takeUntil(worker.battleSummaries$),
+      endWith(null), // Signal end of battle to reset stats aggregation
+      repeat(),
       scan(
         (acc, status) => {
+          if (!status) return { turn: [], teams: {}, seed: 0 };
           // Accumulate stats for each team - reset when the battle status seed changes (new battle)
-          if (status.seed !== acc.seed) {
-            acc = { turn: [], teams: {}, seed: status.seed };
-          }
           acc.turn.push(status.turns);
           acc.seed = status.seed;
           for (const team of status.teams) {
@@ -72,19 +82,19 @@ export function useStats() {
         },
         { turn: [], teams: {}, seed: 0 } as BattleStats,
       ),
+      filter((stats) => stats.turn.length > 0),
     );
   }
 
   // The stats aggregation is expensive, so we share the stream to avoid redundant aggregation
   const sharedBattleStats$ = aggregateBattleStats().pipe(share());
 
-  const expandedBattleSummaries$: Observable<BattleSummaryStats> =
-    worker.battleSummarySubject$.pipe(
-      withLatestFrom(sharedBattleStats$, (summary, stats) => ({ summary, stats })),
-    );
+  const expandedBattleSummaries$: Observable<BattleSummaryStats> = worker.battleSummaries$.pipe(
+    withLatestFrom(sharedBattleStats$, (summary, stats) => ({ summary, stats })),
+  );
 
   return {
-    aggregatedBattleStats: sharedBattleStats$,
+    aggregatedBattleStats$: sharedBattleStats$,
     expandedBattleSummaries$,
   };
 }

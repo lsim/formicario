@@ -6,28 +6,63 @@ import { useGameStore } from '@/stores/game.ts';
 import BattleBars from '@/components/BattleBars.vue';
 import BattleArgs from '@/components/BattleArgs.vue';
 import BattleGraph from '@/components/BattleGraph.vue';
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, ref } from 'vue';
 import BattleRender from '@/components/BattleRender.vue';
+import { faPlay, faStepForward } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { useTeamStore } from '@/stores/teams.ts';
+import type { Team } from '@/Team.ts';
 
 const gameStore = useGameStore();
+const teamStore = useTeamStore();
 
 const isLive = computed(() => {
-  return gameStore.gameRunning;
+  return gameStore.gameRunning || gameStore.battleReplaying;
 });
 
 const summaryStats = computed(() => gameStore.selectedBattleSummaryStats);
+
+function runBattle(startPaused = false) {
+  const battle = summaryStats.value?.summary;
+  if (!battle) return;
+  const teamNames = battle.teams.map((t) => t.name);
+  // const teams: Team[] = teamStore.allTeams.filter((t) => teamNames.includes(t.name));
+  const teams = teamNames.map((n) => teamStore.allTeams.find((t) => t.name === n) as Team);
+  gameStore.runBattle(battle.args, teams, battle.seed, startPaused ? 1 : -1);
+}
 
 const activeTab = ref<'graph' | 'bars' | 'params' | 'debugger'>('graph');
 
 const activeTabComputed = computed(() =>
   !gameStore.gameRunning && activeTab.value === 'debugger' ? 'graph' : activeTab.value,
 );
+
+onBeforeUnmount(() => {
+  gameStore.stop();
+});
 </script>
 
 <template>
   <nav class="panel is-primary">
-    <div class="panel-heading">Battle</div>
-    <battle-feed class="panel-block battle-feed" v-if="gameStore.liveFeed" />
+    <div class="panel-heading">
+      Battle
+      <span class="is-pulled-right" v-if="summaryStats && !isLive">
+        <span class="field">
+          <button class="button is-small is-success">
+            <span class="icon"><font-awesome-icon :icon="faPlay" @click="runBattle()" /></span>
+          </button>
+        </span>
+        &nbsp;
+        <span class="field">
+          <button class="button is-small is-info">
+            <span class="icon"
+              ><font-awesome-icon :icon="faStepForward" @click="runBattle(true)"
+            /></span>
+          </button>
+        </span>
+      </span>
+    </div>
+    <battle-feed class="panel-block battle-feed" v-if="isLive && gameStore.liveFeed" />
     <battle-render
       class="panel-block battle-render"
       :summary="summaryStats?.summary"

@@ -116,7 +116,6 @@ export type BattleContinuation = {
 };
 
 export class Battle {
-  args: BattleArgs;
   teams: TeamData[];
   // An array of squares, each with a linked list of ants on that square
   map: SquareData[] = [];
@@ -152,14 +151,13 @@ export class Battle {
   }
 
   constructor(
-    spec: GameSpec,
+    private args: BattleArgs,
     antFunctions: AntFunction[],
     private seed: number,
     private pauseAfterTurns = -1,
   ) {
-    console.log('Battle seed', seed);
+    console.log('Battle created', args, antFunctions, seed, pauseAfterTurns);
     this.rng = getRNG(seed);
-    this.args = produceBattleArgs(spec, this.rng);
     this.teams = antFunctions.map((func) => {
       const descriptor = func();
       const team = { func, ...descriptor };
@@ -1134,6 +1132,10 @@ export class Battle {
     return {
       createAnt: this.createAnt.bind(this),
       addAntToSquareList: this.addAntToSquareList.bind(this),
+      mapWidth: this.args.mapWidth,
+      mapHeight: this.args.mapHeight,
+      startAnts: this.args.startAnts,
+      timeOutTurn: this.args.timeOutTurn,
     };
   }
 }
