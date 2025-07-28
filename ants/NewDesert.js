@@ -3,7 +3,6 @@ function NewDesert(squareData, antInfo) {
   if (!squareData) {
     return {
       brainTemplate: {
-        randseed: 1,
         carryingFood: 0,
         rang: 0,
         turn: 0,
@@ -133,13 +132,13 @@ function NewDesert(squareData, antInfo) {
   const mem = antInfo.brains[0];
 
   function getRand() {
-    mem.randseed = mem.randseed * 1103515245 + 12345;
-    return (mem.randseed >> 16) & 65535;
+    mem.random = mem.random * 1103515245 + 12345;
+    return (mem.random >> 16) & 65535;
   }
 
   function getRandMax(max) {
-    mem.randseed = mem.randseed * 1103515245 + 12345;
-    return (((mem.randseed >> 16) * max + (((mem.randseed & 65535) * max) >> 16)) >> 16);
+    mem.random = mem.random * 1103515245 + 12345;
+    return (((mem.random >> 16) * max + (((mem.random & 65535) * max) >> 16)) >> 16);
   }
 
   function morphToRookie(brain) {
@@ -226,7 +225,7 @@ function NewDesert(squareData, antInfo) {
       mem.rang = SURRENDER;
       return null;
     }
-    
+
     for (let i = 0; i < squareData[0].numAnts; i++) {
       if (antInfo.brains[i].rang === KNOWLEDGE_QUEEN) {
         queen.pQueen.kQueen[antInfo.brains[i].kQueen.index] = antInfo.brains[i];
@@ -295,19 +294,19 @@ function NewDesert(squareData, antInfo) {
     // Add new report to heap
     const newDist = baseDist(mem.reporter.report.pos);
     let i = ++queen.pQueen.reportCount;
-    
+
     while (i > 1) {
       const parentIdx = (i >> 1) - 1;
       const parentReport = queen.pQueen.kQueen[parentIdx >> 5].kQueen.report[parentIdx & 31];
       if (newDist >= baseDist(parentReport.pos)) break;
-      
+
       const currentReport = queen.pQueen.kQueen[((i - 1) >> 5)].kQueen.report[(i - 1) & 31];
       currentReport.pos = parentReport.pos;
       currentReport.amount = parentReport.amount;
       currentReport.isFood = parentReport.isFood;
       i >>= 1;
     }
-    
+
     const finalReport = queen.pQueen.kQueen[((i - 1) >> 5)].kQueen.report[(i - 1) & 31];
     finalReport.pos = mem.reporter.report.pos;
     finalReport.amount = mem.reporter.report.amount;
@@ -338,44 +337,44 @@ function NewDesert(squareData, antInfo) {
         queen.pQueen.htQueen.htQueen.hashTable[
           queen.pQueen.htQueen.htQueen.hashTableIndex & (HASH_TABLE_SIZE - 1)
         ] = hashFunction(report.pos);
-        
+
         // Move last element to top and re-heapify
         const lastReport = queen.pQueen.kQueen[((queen.pQueen.reportCount - 1) >> 5)].kQueen.report[(queen.pQueen.reportCount - 1) & 31];
         queen.pQueen.reportCount--;
-        
+
         let i = 1;
         const reportCount = queen.pQueen.reportCount;
         const dist = baseDist(lastReport.pos);
-        
+
         while ((i << 1) <= reportCount) {
           let leftChild = i << 1;
           let rightChild = leftChild + 1;
           let smallest = i;
-          
+
           const leftReport = queen.pQueen.kQueen[((leftChild - 1) >> 5)].kQueen.report[(leftChild - 1) & 31];
           if (leftChild <= reportCount && dist > baseDist(leftReport.pos)) {
             smallest = leftChild;
           }
-          
+
           if (rightChild <= reportCount) {
             const rightReport = queen.pQueen.kQueen[((rightChild - 1) >> 5)].kQueen.report[(rightChild - 1) & 31];
             if (dist > baseDist(rightReport.pos)) {
               smallest = rightChild;
             }
           }
-          
+
           if (smallest === i) break;
-          
+
           const currentReport = queen.pQueen.kQueen[((i - 1) >> 5)].kQueen.report[(i - 1) & 31];
           const smallestReport = queen.pQueen.kQueen[((smallest - 1) >> 5)].kQueen.report[(smallest - 1) & 31];
-          
+
           currentReport.pos = smallestReport.pos;
           currentReport.amount = smallestReport.amount;
           currentReport.isFood = smallestReport.isFood;
-          
+
           i = smallest;
         }
-        
+
         const finalReport = queen.pQueen.kQueen[((i - 1) >> 5)].kQueen.report[(i - 1) & 31];
         finalReport.pos = lastReport.pos;
         finalReport.amount = lastReport.amount;
@@ -449,14 +448,14 @@ function NewDesert(squareData, antInfo) {
       mem.pQueen.kQueenCount = 1;
       mem.pQueen.reportCount = 0;
       mem.pQueen.radius = INITIAL_RADIUS;
-      
+
       antInfo.brains[1].rang = HASH_TABLE_QUEEN;
       antInfo.brains[2].rang = KNOWLEDGE_QUEEN;
       antInfo.brains[2].kQueen.index = 0;
 
       for (let i = 3; i < squareData[0].numAnts; i++) {
         antInfo.brains[i].rang = COLLECTOR;
-        assignAntToPosOnRhombe(antInfo.brains[i], INITIAL_RADIUS, 
+        assignAntToPosOnRhombe(antInfo.brains[i], INITIAL_RADIUS,
           ((i * INITIAL_RADIUS) << 2) / squareData[0].numAnts | 0);
       }
       return primaryQueen();
@@ -514,7 +513,7 @@ function NewDesert(squareData, antInfo) {
         return rookie();
       } else {
         if (mem.collector.receivedReport && (squareData[0].numFood < squareData[0].numAnts)) {
-          initGotoDest(mem, 
+          initGotoDest(mem,
             sign(mem.pos.x) * getRandMax(abs(mem.pos.x)),
             sign(mem.pos.y) * getRandMax(abs(mem.pos.y)));
         }
@@ -523,13 +522,13 @@ function NewDesert(squareData, antInfo) {
     }
 
     if (mem.carryingFood) return gotoDest(mem);
-    
+
     const foodDepot = tjekForNewFoodDepot();
     if (foodDepot) return foodDepot;
-    
+
     const nearFood = tjekForNearFoodSurplus();
     if (nearFood) return nearFood;
-    
+
     return gotoDest(mem);
   }
 
