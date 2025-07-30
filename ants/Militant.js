@@ -15,8 +15,7 @@ function Militant(squareData, antInfo) {
         cycles: 0,
         octant_food: 0,
         pos0: 0,
-        food: 0,
-        stuffing: [0, 0, 0, 0]
+        food: 0
       },
       name: 'Militant',
       color: '#ff0000'
@@ -89,7 +88,9 @@ function Militant(squareData, antInfo) {
 
   function rnd(num) {
     var n = 0;
-    n += mem.stuffing[0] + (mem.stuffing[1] << 8) + mem.stuffing[2] + (mem.stuffing[3] << 8);
+    // Use the random property instead of stuffing array
+    // The random property contains a large random number that we can use directly
+    n += mem.random;
     for (var i = 1; i < 5; i++) {
       n += squareData[i].numFood + squareData[i].numAnts;
     }

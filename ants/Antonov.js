@@ -1,4 +1,4 @@
-function adamAnt(squares, antInfo) {
+function antonov(squares, antInfo) {
   // Return ant descriptor when called without arguments
   const ROLE_CHIEF = 1;
   const ROLE_EXPLORER = 2;
