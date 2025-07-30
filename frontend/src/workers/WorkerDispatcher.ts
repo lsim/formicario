@@ -104,7 +104,7 @@ async function getTeamInfo(team: Team) {
   const reply = (await queueMessage<AntInfoRequestMessage>({
     type: 'ant-info-request',
     teamCode: team.code,
-    teamName: team.name,
+    teamId: team.id,
   })) as AntInfoReplyMessage;
   return reply.info;
 }

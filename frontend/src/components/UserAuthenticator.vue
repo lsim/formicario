@@ -64,24 +64,28 @@ async function resetPassword() {
   try {
     const result = await apiClient.resetPassword(password.value);
     if (result) {
-      toast.show('Password updated successfully. You may now close this window.', 'success', 10000);
+      toast.show(
+        'Password updated successfully. You may now close this window.',
+        'is-success',
+        10000,
+      );
       state.value = 'login';
       return;
     }
   } catch (e) {
     console.error('Failed to update password', e);
   }
-  toast.show('Failed to update password. Please try again.', 'error', 10000);
+  toast.show('Failed to update password. Please try again.', 'is-danger', 10000);
 }
 
 async function sendRecoveryEmail() {
   try {
     await apiClient.sendRecoveryEmail(email.value);
     state.value = 'login';
-    toast.show('Recovery email sent. Please check your inbox.', 'info', 10000);
+    toast.show('Recovery email sent. Please check your inbox.', 'is-info', 10000);
   } catch (e) {
     console.error('Failed to send recovery email', e);
-    toast.show('Failed to send recovery email. Please try again.', 'error', 10000);
+    toast.show('Failed to send recovery email. Please try again.', 'is-danger', 10000);
   }
 }
 </script>

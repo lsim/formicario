@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterView, useRoute } from 'vue-router';
+import MessageToaster from '@/components/MessageToaster.vue';
 
 const route = useRoute();
 </script>
@@ -16,6 +17,7 @@ const route = useRoute();
           </div>
         </nav>
       </div>
+      <message-toaster />
       <div class="hero-body">
         <p class="title">Formicario</p>
       </div>
@@ -23,18 +25,18 @@ const route = useRoute();
         <nav class="tabs is-boxed">
           <div class="container">
             <ul>
-              <li :class="{ 'is-active': route.path === '/' }">
+              <li :class="{ 'is-active': route.name === 'home' }">
                 <router-link to="/">Battle</router-link>
               </li>
-              <li :class="{ 'is-active': route.path === '/edit' }">
-                <router-link to="/edit">Edit</router-link>
+              <li :class="{ 'is-active': route.name === 'edit' || route.name === 'editTeam' }">
+                <router-link to="/edit">Create</router-link>
               </li>
             </ul>
           </div>
         </nav>
       </div>
     </section>
-    <section class="section">
+    <section class="top-level section">
       <RouterView />
     </section>
   </div>
@@ -42,6 +44,7 @@ const route = useRoute();
 
 <style scoped lang="scss">
 #root {
+  height: 100vh;
   .hero {
     background-image: url('@/assets/battle.png');
     // Rotate the background image slowly
@@ -54,6 +57,9 @@ const route = useRoute();
         background-position: 100% 100%;
       }
     }
+  }
+  .top-level {
+    height: 100%;
   }
 }
 

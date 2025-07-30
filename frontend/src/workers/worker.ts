@@ -4,8 +4,8 @@ import { type AntFunction } from '@/Battle.ts';
 
 let activeGame: Game | undefined;
 
-function getAntFunctions(teams: { name: string; code: string }[]): {
-  name: string;
+function getAntFunctions(teams: { id: string; code: string }[]): {
+  id: string;
   func?: AntFunction;
   error?: string;
   line?: number;
@@ -14,12 +14,12 @@ function getAntFunctions(teams: { name: string; code: string }[]): {
   return teams.map((team) => {
     try {
       return {
-        name: team.name,
-        func: instantiateParticipant(team.code, team.name),
+        id: team.id,
+        func: instantiateParticipant(team.code, team.id),
       };
     } catch (error) {
       return {
-        name: team.name,
+        id: team.id,
         line: (error as { lineNumber: number }).lineNumber,
         column: (error as { column: number }).column,
         error: (error as { message: string }).message,
@@ -40,13 +40,13 @@ onmessage = async (e) => {
         postMessage({
           type: 'error',
           id: command.id,
-          error: failedAntFunctions.map((f) => `${f.name}: ${f.error}\n${f.line}:${f.column}`),
+          error: failedAntFunctions.map((f) => `${f.id}: ${f.error}\n${f.line}:${f.column}`),
         });
         return;
       }
       activeGame = new Game(
         command.game,
-        teamFunctions.map((f) => f.func).filter((f) => !!f),
+        teamFunctions.filter((f) => f && f.func && f.id).map((f) => ({ id: f.id!, func: f.func! })),
       );
       const p = activeGame.run(command.pauseAfterTurns);
       postMessage({ type: 'ok', id: command.id });
@@ -71,13 +71,13 @@ onmessage = async (e) => {
         postMessage({
           type: 'error',
           id: command.id,
-          error: failedAntFunctions.map((f) => `${f.name}: ${f.error}\n${f.line}:${f.column}`),
+          error: failedAntFunctions.map((f) => `${f.id}: ${f.error}\n${f.line}:${f.column}`),
         });
         return;
       }
       activeGame = new Game(
         null,
-        teamFunctions.map((f) => f.func).filter((f) => !!f),
+        teamFunctions.filter((f) => f && f.func && f.id).map((f) => ({ id: f.id!, func: f.func! })),
         command.args,
         command.seed,
       );
@@ -96,7 +96,7 @@ onmessage = async (e) => {
       postMessage({ type: 'ok', id: command.id });
     } else if (command?.type === 'ant-info-request') {
       try {
-        const func = instantiateParticipant(command.teamCode, command.teamName);
+        const func = instantiateParticipant(command.teamCode, command.teamId);
         const descriptor = func();
         postMessage({ type: 'ant-info-reply', info: descriptor, id: command.id });
       } catch (error) {

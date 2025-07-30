@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { blacklist, type Team } from '@/Team.ts';
 import type { GameSpec } from '@/GameSpec.ts';
 import { instantiateParticipant } from '@/Game.ts';
-import { Battle, type BattleArgs, produceBattleArgs } from '@/Battle.ts';
+import { type AntBrain, Battle, type BattleArgs, produceBattleArgs } from '@/Battle.ts';
 import { getRNG, type RNGFunction } from '@/prng.ts';
 
 function loadTeams() {
@@ -13,8 +13,8 @@ function loadTeams() {
   const teams: Team[] = [];
   for (const [key, value] of Object.entries(rawImport)) {
     const code = value.default;
-    const name = key.replace(/^\.\.\/ants\/(.+)\.js$/, '$1');
-    const teamInfo: Team = { name, code };
+    const id = key.replace(/^\.\.\/ants\/(.+)\.js$/, '$1');
+    const teamInfo: Team = { id, code };
     teams.push(teamInfo);
   }
   return teams;
@@ -24,16 +24,16 @@ const whiteList: string[] = [];
 
 describe('Ant test-bench', () => {
   for (const team of loadTeams()) {
-    if (team.name === 'FormAnt') continue; // Manually found to work but doesn't pass the test
+    if (team.id === 'FormAnt') continue; // Manually found to work but doesn't pass the test
 
-    if (whiteList.length > 0 && !whiteList.includes(team.name)) {
-      console.log(`Skipping non-whitelisted ${team.name}`);
+    if (whiteList.length > 0 && !whiteList.includes(team.id)) {
+      console.log(`Skipping non-whitelisted ${team.id}`);
       continue;
-    } else if (blacklist.includes(team.name)) {
-      console.log(`Skipping blacklisted ${team.name}`);
+    } else if (blacklist.includes(team.id)) {
+      console.log(`Skipping blacklisted ${team.id}`);
       continue;
     }
-    it(`${team.name} should find food in 100 turns`, async () => {
+    it(`${team.id} should find food in 100 turns`, async () => {
       const gameSpec: GameSpec = {
         statusInterval: -1,
         halfTimePercent: 60,
@@ -52,7 +52,7 @@ describe('Ant test-bench', () => {
         numBattleTeams: 15,
       };
 
-      const antFunction = instantiateParticipant(team.code, team.name);
+      const antFunction = instantiateParticipant(team.code, team.id);
       expect(antFunction).toBeDefined();
 
       const seeds = [1, 2, 3, 4, 5];
@@ -71,6 +71,18 @@ describe('Ant test-bench', () => {
       }
       console.log(`${team.name} has ${bestResult} born`);
       expect(bestResult).toBeGreaterThan(30);
+    });
+
+    it(`${team.name} should have a valid brain template`, () => {
+      const antFunction = instantiateParticipant(team.code, team.id);
+      const descriptor = antFunction();
+      expect(descriptor.brainTemplate).toBeDefined();
+      expect(descriptor.brainTemplate).toBeTruthy();
+      const allowedBrainValueTypes = ['boolean', 'number'];
+      const template = descriptor.brainTemplate as AntBrain;
+      for (const key in template) {
+        expect(typeof template[key]).toBeOneOf(allowedBrainValueTypes);
+      }
     });
   }
 });

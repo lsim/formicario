@@ -17,7 +17,7 @@ whenever(enter, () => gameStore.start());
 
 whenever(shift_space, () => gameStore.step(stepSize.value));
 
-whenever(escape, stop);
+whenever(escape, () => gameStore.stop());
 
 const running = computed(() => gameStore.gameRunning || gameStore.battleReplaying);
 

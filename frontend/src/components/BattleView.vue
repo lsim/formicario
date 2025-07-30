@@ -25,9 +25,8 @@ const summaryStats = computed(() => gameStore.selectedBattleSummaryStats);
 function runBattle(startPaused = false) {
   const battle = summaryStats.value?.summary;
   if (!battle) return;
-  const teamNames = battle.teams.map((t) => t.name);
-  // const teams: Team[] = teamStore.allTeams.filter((t) => teamNames.includes(t.name));
-  const teams = teamNames.map((n) => teamStore.allTeams.find((t) => t.name === n) as Team);
+  const teamIds = battle.teams.map((t) => t.id);
+  const teams = teamIds.map((n) => teamStore.allTeams.find((t) => t.id === n) as Team);
   gameStore.runBattle(battle.args, teams, battle.seed, startPaused ? 1 : -1);
 }
 

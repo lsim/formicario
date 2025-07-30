@@ -30,9 +30,9 @@ function auditParticipant(teamCode: string) {
 
 const safeEval = createRestrictedEval();
 
-export function instantiateParticipant(teamCode: string, teamName: string) {
+export function instantiateParticipant(teamCode: string, teamId: string) {
   auditParticipant(teamCode);
-  return safeEval(teamCode, teamName) as AntFunction;
+  return safeEval(teamCode, teamId) as AntFunction;
 }
 
 export class Game {
@@ -42,7 +42,7 @@ export class Game {
 
   constructor(
     private spec: GameSpec | null,
-    private readonly teamFunctions: AntFunction[],
+    private readonly teamFunctions: { id: string; func: AntFunction }[],
     private readonly singleBattleArgs?: BattleArgs,
     private readonly singleBattleSeed?: number,
   ) {

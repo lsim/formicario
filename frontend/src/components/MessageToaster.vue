@@ -8,14 +8,24 @@ const toast = useToast();
 <template>
   <div class="toast-container">
     <transition-group>
-      <div class="toast" :class="t.type" v-for="t in toast.activeToasts.value" :key="t.id">
+      <div
+        class="toast message"
+        :class="t.type === 'celebrate' ? 'is-success' : t.type"
+        v-for="t in toast.activeToasts.value"
+        :key="t.id"
+      >
+        <div v-if="t.title" class="message-header">
+          <p>{{ t.title || '!!!' }}</p>
+        </div>
         <confetti-explosion
           v-if="t.type === 'celebrate'"
           style="display: contents; position: absolute; right: 0"
           :duration="t.duration - 500"
           :stage-height="1500"
         />
-        {{ t.message }}
+        <div class="message-body">
+          {{ t.message }}
+        </div>
       </div>
     </transition-group>
   </div>
@@ -41,11 +51,11 @@ const toast = useToast();
 
   .toast {
     width: 20em;
-    padding: 1em;
-    margin: 0.5em;
-    border-radius: 5px;
-    pointer-events: auto;
-    border: 2px solid rgba(white, 0.3);
+    //padding: 1em;
+    //margin: 0.5em;
+    //border-radius: 5px;
+    //pointer-events: auto;
+    //border: 2px solid rgba(white, 0.3);
     &.celebrate {
       @include colorize(purple);
       animation: colorFade 2s ease-in-out;
@@ -61,18 +71,18 @@ const toast = useToast();
         }
       }
     }
-    &.success {
-      @include colorize(green);
-    }
-    &.info {
-      @include colorize(blue);
-    }
-    &.warning {
-      @include colorize(orange);
-    }
-    &.error {
-      @include colorize(red);
-    }
+    //&.success {
+    //  @include colorize(green);
+    //}
+    //&.info {
+    //  @include colorize(blue);
+    //}
+    //&.warning {
+    //  @include colorize(orange);
+    //}
+    //&.error {
+    //  @include colorize(red);
+    //}
     color: white;
 
     &:hover {

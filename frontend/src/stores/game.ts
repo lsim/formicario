@@ -73,7 +73,7 @@ export const useGameStore = defineStore('game', () => {
     const message = {
       game: {
         ...gameSpec,
-        teams: [...battleTeams.map((t) => ({ name: t.name, code: t.code }))],
+        teams: [...battleTeams.map((t) => ({ id: t.id, code: t.code }))],
         seed: gameSpec.seed,
         statusInterval: !liveFeed.value ? 100 : gameSpec.statusInterval,
         numBattles: gameSpec.numBattles,

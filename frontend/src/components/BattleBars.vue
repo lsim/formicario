@@ -5,9 +5,11 @@ import { map, type Subscription, switchAll } from 'rxjs';
 import type { BattleStats } from '@/composables/stats.ts';
 import { useGameStore } from '@/stores/game.ts';
 import StatPropChooser from '@/components/StatPropChooser.vue';
+import { useTeamStore } from '@/stores/teams.ts';
 
 // Number typed properties of TeamStatus
 const game = useGameStore();
+const teamStore = useTeamStore();
 
 const props = withDefaults(
   defineProps<{
@@ -24,7 +26,14 @@ const liveTeams = ref<TeamStatus[]>([]);
 const turn = ref<number>();
 const tps = ref<number>();
 
-const teams = computed(() => props.battleSummary?.teams || liveTeams.value);
+const teams = computed(() => {
+  // Look up the teams in the teamStore
+  const participatingTeamStatuses = props.battleSummary?.teams || liveTeams.value;
+  return participatingTeamStatuses.map((t) => {
+    const teamFromStore = teamStore.allTeams.find((t) => t.id === t.id);
+    return { ...t, name: teamFromStore?.name };
+  });
+});
 
 let subscription: Subscription | null = null;
 watch(
@@ -75,6 +84,7 @@ const sortedBars = computed(() => {
         width: barWidth(team),
         value: team[game.selectedStatusProperty],
         color: team.color,
+        id: team.id,
         name: team.name,
       };
     })

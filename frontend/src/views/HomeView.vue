@@ -7,7 +7,6 @@ import GameControls from '@/components/GameControls.vue';
 import { useGameStore } from '@/stores/game.ts';
 import { type BattleSummaryStats } from '@/composables/stats.ts';
 import { useWorker } from '@/workers/WorkerDispatcher.ts';
-import Toaster from '@/components/MessageToaster.vue';
 import GameSummaryUi from '@/components/GameSummaryUi.vue';
 import BattleView from '@/components/BattleView.vue';
 
@@ -44,7 +43,6 @@ onBeforeUnmount(() => {
       'game-running': gameStore.gameRunning,
     }"
   >
-    <toaster />
     <Teleport to="#navbarMenu">
       <game-controls />
     </Teleport>

@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { Battle, type AntFunction, type SquareData, type AntInfo, type BattleArgs, produceBattleArgs } from '@/Battle.ts';
+import {
+  Battle,
+  type AntFunction,
+  type SquareData,
+  type AntInfo,
+  type BattleArgs,
+  produceBattleArgs,
+} from '@/Battle.ts';
 import { getRNG, type RNGFunction } from '@/prng.ts';
 import type { GameSpec } from '@/GameSpec.ts';
 
@@ -18,7 +25,7 @@ describe('Brain Array Synchronization', () => {
       timeOutTurn: 100, // Short timeout
       winPercent: 50,
       statusInterval: 10,
-      teams: [{ name: 'TestAnt', code: 'function() {}' }],
+      teams: [{ id: 'TestAnt', code: 'function() {}' }],
       seed: 12345,
       numBattles: 1,
       numBattleTeams: 1,
@@ -76,7 +83,7 @@ describe('Brain Array Synchronization', () => {
       timeOutTurn: 100,
       winPercent: 50,
       statusInterval: 10,
-      teams: [{ name: 'BaseBuildingAnt', code: 'function() {}' }],
+      teams: [{ id: 'BaseBuildingAnt', code: 'function() {}' }],
       seed: 54321,
       numBattles: 1,
       numBattleTeams: 1,

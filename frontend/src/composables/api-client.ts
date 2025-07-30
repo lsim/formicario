@@ -152,7 +152,7 @@ class ApiClient {
       .text();
     if (!response.value || response.value.status !== 201) {
       console.error(`Register failed (${response.value?.status}): ${response.value?.statusText}`);
-      this.toast.show('Registration failed', 'error');
+      this.toast.show('Registration failed', 'is-danger');
       return;
     }
 
@@ -161,7 +161,7 @@ class ApiClient {
       this.userName.value = username;
       this.loginResolver.value?.();
     }
-    this.toast.show(`Registration successful. Welcome aboard, ${username}!`, 'success');
+    this.toast.show(`Registration successful. Welcome aboard, ${username}!`, 'is-success');
     return !!data.value;
   }
 
@@ -170,7 +170,7 @@ class ApiClient {
       .post({ username, password })
       .text();
     if (statusCode.value !== 200) {
-      this.toast.show('Login failed', 'error');
+      this.toast.show('Login failed', 'is-danger');
       console.error(`Login failed (${statusCode.value}): ${response.value?.statusText}`);
       return false;
     }
@@ -179,12 +179,12 @@ class ApiClient {
       this.userName.value = username;
       this.loginResolver.value?.();
     }
-    this.toast.show(`Login successful. Welcome back, ${username}!`, 'success');
+    this.toast.show(`Login successful. Welcome back, ${username}!`, 'is-success');
     return !!data.value;
   }
 
   async sendRecoveryEmail(email: string) {
-    this.toast.show('Sending recovery email...', 'info');
+    this.toast.show('Sending recovery email...', 'is-info');
     const url = new URL(
       window.location.protocol + window.location.host + import.meta.env.BASE_URL + '/',
     );
@@ -219,7 +219,7 @@ class ApiClient {
     this.email.value = '';
     this.loginResolver.value = null;
     this.loginPromise.value = null;
-    this.toast.show('Logged out. See you soon!', 'info');
+    this.toast.show('Logged out. See you soon!', 'is-info');
   }
 
   async getPublications() {
@@ -228,7 +228,7 @@ class ApiClient {
       console.error(
         `Failed to fetch publications (${response.value?.status}): ${response.value?.statusText}`,
       );
-      this.toast.show('Failed to fetch publications', 'error');
+      this.toast.show('Failed to fetch publications', 'is-danger');
       return [];
     }
     return data.value;
@@ -240,7 +240,7 @@ class ApiClient {
       console.error(
         `Failed to fetch publication (${response.value?.status}): ${response.value?.statusText}`,
       );
-      this.toast.show('Failed to fetch the contents of the publication', 'error');
+      this.toast.show('Failed to fetch the contents of the publication', 'is-danger');
       return null;
     }
     return antPublicationFromApiObject(data.value);
@@ -254,10 +254,10 @@ class ApiClient {
       console.error(
         `Failed to update publication (${response.value?.status}): ${response.value?.statusText}`,
       );
-      this.toast.show('Failed to update publication', 'error');
+      this.toast.show('Failed to update publication', 'is-danger');
       return null;
     }
-    this.toast.show('Publication updated successfully', 'info');
+    this.toast.show('Publication updated successfully', 'is-info');
     return data.value;
   }
 
@@ -276,14 +276,14 @@ class ApiClient {
       timestamp,
     };
 
-    const { data, response } = await this.fetch('publications', team.backendId || '')
+    const { data, response } = await this.fetch('publications', team.id || '')
       .post(publication)
       .text();
     if (!data.value || (response.value?.status !== 201 && response.value?.status !== 200)) {
       console.error(
         `Failed to publish team (${response.value?.status}): ${response.value?.statusText}`,
       );
-      this.toast.show('Failed to publish team', 'error');
+      this.toast.show('Failed to publish team', 'is-danger');
       return null;
     }
 
@@ -297,10 +297,10 @@ class ApiClient {
       console.error(
         `Failed to unpublish team (${response.value?.status}): ${response.value?.statusText}`,
       );
-      this.toast.show('Failed to unpublish team', 'error');
+      this.toast.show('Failed to unpublish team', 'is-danger');
       return null;
     }
-    this.toast.show('Team unpublished successfully', 'info');
+    this.toast.show('Team unpublished successfully', 'is-info');
     return data.value;
   }
 }

@@ -1,6 +1,6 @@
 import { ref } from 'vue';
 
-export type ToastType = 'celebrate' | 'success' | 'error' | 'info' | 'warning';
+export type ToastType = 'celebrate' | 'is-success' | 'is-danger' | 'is-info' | 'is-warning';
 
 export class Toast {
   constructor(
@@ -8,15 +8,16 @@ export class Toast {
     public message: string,
     public type: ToastType,
     public duration: number = 3000,
+    public title?: string,
   ) {}
 }
 
 const activeToasts = ref<Toast[]>([]);
 
 export default function useToast() {
-  function show(message: string, type: ToastType, duration: number = 3000) {
+  function show(message: string, type: ToastType, duration: number = 3000, title: string = '') {
     const id = crypto.randomUUID();
-    const toast = new Toast(id, message, type, duration);
+    const toast = new Toast(id, message, type, duration, title);
     activeToasts.value.push(toast);
 
     setTimeout(() => {

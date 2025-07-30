@@ -13,6 +13,16 @@ const router = createRouter({
       path: '/edit',
       name: 'edit',
       component: () => import('../views/EditView.vue'),
+      props: true,
+      // Nested route for editing a team by id
+      children: [
+        {
+          path: ':id',
+          name: 'editTeam',
+          component: () => import('../views/EditView.vue'),
+          props: true,
+        },
+      ],
     },
   ],
 });

@@ -39,6 +39,15 @@ export function produceBattleArgs(spec: GameSpec, rng: RNGFunction) {
   };
 }
 
+// TODO: We need to prevent ants from adding dynamic properties to ants' brains
+// function pruneBrainProperties(brain: AntBrain, template: AntBrain) {
+//   for (const key in brain) {
+//     if (template[key] === undefined) {
+//       delete brain[key];
+//     }
+//   }
+// }
+
 function determineParameter(min: number, max: number, rng: RNGFunction): number {
   return min + rng(max - min + 1);
 }
@@ -105,7 +114,7 @@ export type AntDescriptor = {
   name: string;
   brainTemplate: object;
   description?: string;
-  backendId?: string;
+  id: string;
 };
 
 export type AntFunction = (() => AntDescriptor) & ((map: SquareData[], antInfo: AntInfo) => number);
@@ -152,15 +161,15 @@ export class Battle {
 
   constructor(
     private args: BattleArgs,
-    antFunctions: AntFunction[],
+    antFunctions: { id: string; func: AntFunction }[],
     private seed: number,
     private pauseAfterTurns = -1,
   ) {
     console.log('Battle created', args, antFunctions, seed, pauseAfterTurns);
     this.rng = getRNG(seed);
-    this.teams = antFunctions.map((func) => {
-      const descriptor = func();
-      const team = { func, ...descriptor };
+    this.teams = antFunctions.map((antFunc) => {
+      const descriptor = antFunc.func();
+      const team = { ...antFunc, ...descriptor };
       return this.resetTeam(team);
     });
 
@@ -431,7 +440,7 @@ export class Battle {
 
   getTeamSummary(team: TeamData) {
     return {
-      name: team.name,
+      id: team.id,
       color: team.color,
       numBorn: team.numBorn,
       numAnts: team.numAnts,
@@ -560,19 +569,19 @@ export class Battle {
     // Find the winning team
     const baseValue = BASE_VALUE;
     let maxTeamValue = 0;
-    let winnerName = 'Draw';
+    let winnerId = 'Draw';
 
     for (const team of this.teams) {
       const teamValue = team.numAnts + baseValue * team.numBases;
       if (teamValue > maxTeamValue) {
         maxTeamValue = teamValue;
-        winnerName = team.name;
+        winnerId = team.id;
       }
     }
 
     return {
       startTime: this.startTime,
-      winner: winnerName,
+      winner: winnerId,
       teams: this.teams.map((t) => this.getTeamSummary(t)),
       turns: this.currentTurn,
       args: this.args,

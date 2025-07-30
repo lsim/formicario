@@ -6,9 +6,11 @@ import Color from 'color';
 import { useGameStore } from '@/stores/game.ts';
 import { map, switchAll, tap } from 'rxjs';
 import type { BattleSummaryStats } from '@/composables/stats.ts';
+import { useTeamStore } from '@/stores/teams.ts';
 
 const worker = useWorker();
 const gameStore = useGameStore();
+const teamStore = useTeamStore();
 
 const gameSummary = ref<GameSummary>();
 
@@ -36,7 +38,7 @@ onBeforeUnmount(() => {
 });
 
 function winnerStyle(battle: BattleSummary) {
-  const winnerTeam = battle.teams.find((t) => t.name === battle.winner);
+  const winnerTeam = battle.teams.find((t) => t.id === battle.winner);
   if (!winnerTeam) return {};
   const c = new Color(winnerTeam.color);
   return {
@@ -93,11 +95,11 @@ watch(
               <td>{{ idx + 1 }}</td>
               <td>
                 <span class="button is-static" :style="winnerStyle(battle)">{{
-                  battle.winner
+                  teamStore.teamName(battle.winner)
                 }}</span>
               </td>
               <td>{{ battle.turns }}</td>
-              <td>{{ battle.teams.map((t) => t.name).join(', ') }}</td>
+              <td>{{ battle.teams.map((t) => teamStore.teamName(t.id)).join(', ') }}</td>
               <td>{{ battle.args.mapWidth }}</td>
               <td>{{ battle.args.mapHeight }}</td>
               <td>{{ battle.seed }}</td>

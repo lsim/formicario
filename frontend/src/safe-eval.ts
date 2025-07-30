@@ -50,11 +50,11 @@ function buildScope(allowedGlobals: Record<string, unknown> = {}) {
 // Expects code that declares a function
 export function createRestrictedEval(
   allowedGlobals: Record<string, unknown> = {},
-): (code: string, teamName: string) => AntFunction {
+): (code: string, teamId: string) => AntFunction {
   // We return an eval function where the scope is limited to the allowed globals
-  return function restrictedEval(fnCode: string, teamName: string) {
+  return function restrictedEval(fnCode: string, teamId: string) {
     function log(...args: unknown[]) {
-      console.log(`${teamName} says`, ...args);
+      console.log(`${teamId} says`, ...args);
     }
 
     // Create an isolated scope by shadowing the prohibited globals with function arguments of the same name

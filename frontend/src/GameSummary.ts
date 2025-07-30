@@ -9,7 +9,7 @@ export type SquareStatus = {
 };
 
 export type TeamStatus = {
-  name: string;
+  id: string;
   color: string;
   numBorn: number;
   numAnts: number;
@@ -39,6 +39,7 @@ export type BattleStatus = BattleInfo & {
 
 export type BattleSummary = BattleInfo & {
   startTime: number;
+  // The id of the winning team
   winner: string;
   turns: number;
   duration: number;
