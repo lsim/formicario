@@ -53,7 +53,7 @@ describe('Brain Array Synchronization', () => {
 
     const rng: RNGFunction = getRNG(12345);
     const battleArgs: BattleArgs = produceBattleArgs(spec, rng);
-    const battle = new Battle(battleArgs, [testAnt], 12345);
+    const battle = new Battle(battleArgs, [{ id: 'TestAnt', func: testAnt }], 12345);
 
     // Run just one turn to test brain consistency
     battle.doTurn();
@@ -115,7 +115,7 @@ describe('Brain Array Synchronization', () => {
 
     const rng2: RNGFunction = getRNG(54321);
     const battleArgs2: BattleArgs = produceBattleArgs(spec, rng2);
-    const battle = new Battle(battleArgs2, [baseBuildingAnt], 54321);
+    const battle = new Battle(battleArgs2, [{ id: 'TestAnt', func: baseBuildingAnt }], 54321);
 
     // Artificially add food to the center square to prepare for base building scenario
     const centerSquare = battle.mapData(32, 32);

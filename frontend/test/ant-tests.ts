@@ -61,7 +61,7 @@ describe('Ant test-bench', () => {
       for (const seed of seeds) {
         const rng: RNGFunction = getRNG(seed);
         const battleArgs: BattleArgs = produceBattleArgs(gameSpec, rng);
-        const battle = new Battle(battleArgs, [antFunction], seed);
+        const battle = new Battle(battleArgs, [{ id: team.id, func: antFunction }], seed);
 
         const result = await battle.run();
         if (result.teams[0].numBorn > bestResult) {
@@ -69,11 +69,11 @@ describe('Ant test-bench', () => {
         }
         if (bestResult > 30) break;
       }
-      console.log(`${team.name} has ${bestResult} born`);
+      console.log(`${team.id} has ${bestResult} born`);
       expect(bestResult).toBeGreaterThan(30);
     });
 
-    it(`${team.name} should have a valid brain template`, () => {
+    it(`${team.id} should have a valid brain template`, () => {
       const antFunction = instantiateParticipant(team.code, team.id);
       const descriptor = antFunction();
       expect(descriptor.brainTemplate).toBeDefined();
