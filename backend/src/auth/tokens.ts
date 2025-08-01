@@ -134,7 +134,7 @@ async function sendRecoveryEmail(email: string, redirectHost: string) {
   if (!redirectHost) return Err('Redirect host is required', 400);
 
   const recoveryToken = await createJWT({ email}, '15m');
-  const link = `${redirectHost}#/password-reset/${recoveryToken}`;
+  const link = `${redirectHost}password-reset/${recoveryToken}`;
   // Slow down to prevent abuse
   await new Promise(resolve => setTimeout(resolve, 3000));
   await sendMessage(email, 'Password recovery', `<a href="${link}">Click here to reset your password</a>`);
@@ -142,11 +142,22 @@ async function sendRecoveryEmail(email: string, redirectHost: string) {
 }
 
 async function resetPassword(newPassword: string, user: User) {
-  console.debug('Reset password', !!newPassword, user.username)
   const passwordDigest = await digestPassword(newPassword);
   const newUser = new User(user.username, passwordDigest, user.userId, user.email);
-  const userKey = userByIdKey(user.userId);
-  await kv.set(userKey, newUser);
+
+  // Update all three keys where the user is stored
+  const userNameKey = userByNameKey(user.username);
+  const userIdKey = userByIdKey(user.userId);
+  const userEmailKey = userByEmailKey(user.email);
+
+  // Use atomic transaction to ensure consistency
+  await kv
+    .atomic()
+    .set(userNameKey, newUser)
+    .set(userIdKey, newUser)
+    .set(userEmailKey, newUser)
+    .commit();
+
   // Log in user as a courtesy
   const token = await createJWT({ userId: user.userId });
   return Ok(token);
