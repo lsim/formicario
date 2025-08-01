@@ -3,11 +3,12 @@ import { ref, useTemplateRef, computed, watch } from 'vue';
 import useApiClient from '@/composables/api-client.ts';
 
 import useToast from '@/composables/toast.ts';
+import { faEnvelope, faPassport, faUser } from '@fortawesome/free-solid-svg-icons';
 
 const toast = useToast();
 
 const props = defineProps<{
-  initialState?: 'register' | 'login' | 'recover' | 'password-reset';
+  token?: string;
 }>();
 
 const username = ref('');
@@ -15,8 +16,18 @@ const password = ref('');
 const passwordConfirm = ref('');
 const email = ref('');
 
-const state = ref<'register' | 'login' | 'recover' | 'password-reset'>(
-  props.initialState || 'login',
+const isPasswordReset = computed(() => !!props.token);
+
+const state = ref<'register' | 'login' | 'recover' | 'password-reset'>('login');
+
+watch(
+  isPasswordReset,
+  (newVal) => {
+    if (newVal) {
+      state.value = 'password-reset';
+    }
+  },
+  { immediate: true },
 );
 
 const mailInput = useTemplateRef('mail-input');
@@ -47,35 +58,40 @@ const headerText = computed(() => {
 
 const visibleNavButtons = computed(() => {
   return {
-    register: state.value === 'login',
-    login: state.value === 'register',
+    register: state.value === 'login' || state.value === 'recover',
+    login: state.value === 'register' || state.value === 'recover',
     recover: state.value === 'login' || state.value === 'register',
   };
 });
 
-const mailValid = ref(false);
-watch(mailInput, () => {
-  mailValid.value = mailInput.value?.checkValidity() ?? false;
-});
+const mailValid = ref(true);
+watch(
+  () => email.value,
+  () => {
+    mailValid.value = !email.value || (mailInput.value?.checkValidity() ?? false);
+  },
+);
 
 const apiClient = useApiClient();
 
 async function resetPassword() {
+  if (!props.token) return;
   try {
-    const result = await apiClient.resetPassword(password.value);
+    const result = await apiClient.resetPassword(password.value, props.token);
     if (result) {
-      toast.show(
-        'Password updated successfully. You may now close this window.',
-        'is-success',
-        10000,
-      );
-      state.value = 'login';
+      toast.show('Password updated successfully. This tab will now close.', 'is-success', 10000);
+      setTimeout(() => window.close(), 3000);
       return;
     }
   } catch (e) {
     console.error('Failed to update password', e);
   }
-  toast.show('Failed to update password. Please try again.', 'is-danger', 10000);
+  toast.show(
+    'Failed to update password. Please try again. This tab will now close.',
+    'is-danger',
+    10000,
+  );
+  setTimeout(() => window.close(), 3000);
 }
 
 async function sendRecoveryEmail() {
@@ -91,103 +107,130 @@ async function sendRecoveryEmail() {
 </script>
 
 <template>
-  <form class="authenticator">
-    <nav>
-      <ul>
-        <li>
-          <h2>{{ headerText }}</h2>
-        </li>
-      </ul>
-      <ul>
-        <li v-show="visibleNavButtons.register">
-          <button type="button" @click.prevent="state = 'register'">Register</button>
-        </li>
-        <li v-show="visibleNavButtons.login">
-          <button type="button" @click.prevent="state = 'login'">Login</button>
-        </li>
-        <li v-show="visibleNavButtons.recover">
-          <button type="button" @click.prevent="state = 'recover'">Forgot my password</button>
-        </li>
-      </ul>
-    </nav>
-    <div class="field" v-show="fieldShown.username">
-      <label for="username">Username</label>
-      <input
-        id="username"
-        v-model="username"
-        type="text"
-        placeholder="Username"
-        autocomplete="username"
-      />
+  <form class="panel is-primary">
+    <div class="panel-heading">
+      <h2 class="panel-title">{{ headerText }}</h2>
     </div>
-    <div class="field" v-show="fieldShown.password">
-      <label for="password">Password</label>
-      <input
-        id="password"
-        v-model="password"
-        type="password"
-        placeholder="Password"
-        :autocomplete="state === 'register' ? 'new-password' : 'current-password'"
-      />
+    <p class="panel-tabs">
+      <a
+        :class="{ 'is-active': state === 'register' }"
+        @click.prevent="state = 'register'"
+        v-show="visibleNavButtons.register"
+        >Register</a
+      >
+      <a
+        :class="{ 'is-active': state === 'login' }"
+        @click.prevent="state = 'login'"
+        v-show="visibleNavButtons.login"
+        >Login</a
+      >
+      <a
+        :class="{ 'is-active': state === 'recover' }"
+        @click.prevent="state = 'recover'"
+        v-show="visibleNavButtons.recover"
+        >Recover</a
+      >
+    </p>
+    <div class="panel-block" v-show="fieldShown.username">
+      <div class="control has-icons-left">
+        <input
+          id="username"
+          class="input"
+          v-model="username"
+          type="text"
+          placeholder="Username"
+          autocomplete="username"
+        />
+        <span class="icon is-small is-left">
+          <font-awesome-icon :icon="faUser" />
+        </span>
+      </div>
     </div>
-    <div class="field" v-show="fieldShown.passwordConfirm">
-      <label for="passwordConfirm">Confirm password</label>
-      <input
-        id="passwordConfirm"
-        v-model="passwordConfirm"
-        type="password"
-        placeholder="Confirm password"
-        autocomplete="repeat-password"
-      />
+    <div class="panel-block" v-show="fieldShown.password">
+      <div class="control has-icons-left">
+        <input
+          id="password"
+          class="input"
+          v-model="password"
+          type="password"
+          placeholder="Password"
+          autocomplete="current-password"
+        />
+        <span class="icon is-small is-left">
+          <font-awesome-icon :icon="faPassport" />
+        </span>
+      </div>
     </div>
-    <!-- email -->
-    <div class="field" v-show="fieldShown.email">
-      <label for="email">Email (for account recovery)</label>
-      <input
-        id="email"
-        v-model="email"
-        ref="mail-input"
-        type="email"
-        placeholder="Your email here"
-        autocomplete="email"
-      />
+    <div class="panel-block" v-show="fieldShown.passwordConfirm">
+      <div class="control has-icons-left">
+        <input
+          id="passwordConfirm"
+          class="input"
+          v-model="passwordConfirm"
+          type="password"
+          placeholder="Confirm password"
+          autocomplete="current-password"
+        />
+        <span class="icon is-small is-left">
+          <font-awesome-icon :icon="faPassport" />
+        </span>
+      </div>
     </div>
-    <button
-      v-if="state === 'register'"
-      type="submit"
-      :disabled="!password || password != passwordConfirm"
-      @click.prevent.stop="apiClient.register(username, password, email)"
-      @submit.prevent.stop="apiClient.register(username, password, email)"
-    >
-      Register
-    </button>
-    <button
-      v-else-if="state === 'login'"
-      type="submit"
-      :disabled="!username || !password"
-      @click.prevent.stop="apiClient.login(username, password)"
-      @submit.prevent.stop="apiClient.login(username, password)"
-    >
-      Login
-    </button>
-    <button
-      v-else-if="state === 'password-reset'"
-      type="submit"
-      :disabled="!password || password != passwordConfirm"
-      @click.prevent.stop="resetPassword()"
-      @submit.prevent.stop="resetPassword()"
-    >
-      Update password
-    </button>
-    <button
-      v-else
-      type="submit"
-      :disabled="!email || !mailValid"
-      @click.prevent.stop="sendRecoveryEmail"
-      @submit.prevent.stop="sendRecoveryEmail"
-    >
-      Send recovery email
-    </button>
+    <div class="panel-block" v-show="fieldShown.email">
+      <div class="control has-icons-left">
+        <input
+          id="email"
+          class="input"
+          :class="{ 'is-danger': !mailValid }"
+          v-model="email"
+          type="email"
+          placeholder="Email"
+          autocomplete="email"
+          ref="mail-input"
+          title="For account recovery only"
+        />
+        <span class="icon is-small is-left">
+          <font-awesome-icon :icon="faEnvelope" />
+        </span>
+        <p class="help is-danger" v-show="!mailValid">Please enter a valid email address</p>
+      </div>
+    </div>
+    <div class="panel-block">
+      <button
+        v-if="state === 'register'"
+        type="submit"
+        @click.prevent.stop="() => apiClient.register(username, password, email)"
+        @submit.prevent.stop="() => apiClient.register(username, password, email)"
+        class="button is-primary"
+      >
+        Register
+      </button>
+      <button
+        v-if="state === 'login'"
+        type="submit"
+        @click.prevent.stop="() => apiClient.login(username, password)"
+        @submit.prevent.stop="() => apiClient.login(username, password)"
+        class="button is-primary"
+      >
+        Login
+      </button>
+      <button
+        v-if="state === 'recover'"
+        type="submit"
+        @click.prevent.stop="sendRecoveryEmail"
+        class="button is-primary"
+      >
+        Send recovery email
+      </button>
+      <button
+        v-if="state === 'password-reset'"
+        type="submit"
+        @click.prevent.stop="resetPassword()"
+        class="button is-primary"
+      >
+        Reset password
+      </button>
+    </div>
   </form>
 </template>
 
@@ -199,5 +242,9 @@ async function sendRecoveryEmail() {
   :invalid {
     background-color: #ffe0e0;
   }
+}
+
+.panel-tabs {
+  justify-content: end;
 }
 </style>

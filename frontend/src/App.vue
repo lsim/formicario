@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import { RouterView, useRoute } from 'vue-router';
 import MessageToaster from '@/components/MessageToaster.vue';
+import AuthenticationModal from '@/components/AuthenticationModal.vue';
+import { computed } from 'vue';
+import useApiClient from '@/composables/api-client.ts';
 
 const route = useRoute();
+const apiClient = useApiClient();
+const isPasswordReset = computed(() => route.name === 'password-reset');
 </script>
 
 <template>
   <div id="root" class="article">
+    <authentication-modal />
     <section class="hero is-small">
       <div class="hero-head">
         <nav class="navbar">
@@ -22,7 +28,7 @@ const route = useRoute();
         <p class="title">Formicario</p>
       </div>
       <div class="hero-foot">
-        <nav class="tabs is-boxed">
+        <nav class="tabs is-boxed" v-show="!isPasswordReset">
           <div class="container">
             <ul>
               <li :class="{ 'is-active': route.name === 'home' }">
@@ -30,6 +36,13 @@ const route = useRoute();
               </li>
               <li :class="{ 'is-active': route.name === 'edit' || route.name === 'editTeam' }">
                 <router-link to="/edit">Create</router-link>
+              </li>
+            </ul>
+          </div>
+          <div class="container is-pulled-right">
+            <ul>
+              <li v-if="apiClient.token.value">
+                <a @click="apiClient.logout">Log out</a>
               </li>
             </ul>
           </div>

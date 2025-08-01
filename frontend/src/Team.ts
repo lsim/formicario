@@ -9,6 +9,7 @@ export type Team = {
   owner?: string;
   status?: 'ok' | 'error';
   lastChanged?: number;
+  description?: string;
 };
 
 export const blacklist = [

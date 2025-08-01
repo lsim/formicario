@@ -24,6 +24,12 @@ const router = createRouter({
         },
       ],
     },
+    {
+      path: '/password-reset/:token',
+      name: 'password-reset',
+      component: () => import('../views/PasswordReset.vue'),
+      props: true,
+    },
   ],
 });
 

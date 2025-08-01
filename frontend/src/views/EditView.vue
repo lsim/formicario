@@ -10,11 +10,13 @@ import { useWorker } from '@/workers/WorkerDispatcher.ts';
 import { debouncedWatch } from '@vueuse/core';
 import useToast from '@/composables/toast.ts';
 import TeamList from '@/components/TeamList.vue';
+import useApiClient from '@/composables/api-client.ts';
 
 const teamStore = useTeamStore();
 const router = useRouter();
 const worker = useWorker();
 const toast = useToast();
+const apiClient = useApiClient();
 
 const props = defineProps<{
   id?: string;
@@ -183,6 +185,17 @@ function teamSelected(team: Team) {
   parsedName.value = '';
 }
 
+async function publish() {
+  await apiClient.publishTeam({
+    color: team.value.color,
+    name: team.value.name,
+    brainTemplate: team.value.brainTemplate,
+    description: team.value.description,
+    id: team.value.id,
+    code: team.value.code,
+  });
+}
+
 const codeMirrorOptions = {
   lineWrapping: true,
 };
@@ -232,6 +245,11 @@ const codeMirrorOptions = {
             <input type="checkbox" v-model="showMyTeamsOnly" />
             My teams only
           </label>
+          <div class="panel-block">
+            <button class="button is-primary is-outlined is-fullwidth" @click="publish()">
+              Publish {{ team.name }}
+            </button>
+          </div>
         </div>
       </div>
     </div>

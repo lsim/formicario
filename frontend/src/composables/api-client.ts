@@ -1,8 +1,8 @@
 import { createFetch, useLocalStorage, useWebSocket, type UseWebSocketReturn } from '@vueuse/core';
 import { ref, watch } from 'vue';
-import type { AntDescriptor } from '@/Battle.ts';
 import useToast from '@/composables/toast.ts';
 import useBusy from '@/composables/busy.ts';
+import type { Team } from '@/Team.ts';
 
 export interface PublicationMeta {
   name: string;
@@ -78,7 +78,7 @@ class ApiClient {
         console.warn('Fetch error', ctx.response?.status, ctx.response?.statusText);
         if (!ctx.response) return ctx;
         if (ctx.response.status === 401) {
-          await this.loginUser();
+          await this.startUserLogin();
           return await ctx.execute();
         }
         console.error(`Fetch error: ${ctx.response.status} ${ctx.error.message}`);
@@ -119,7 +119,7 @@ class ApiClient {
     });
   }
 
-  async loginUser() {
+  async startUserLogin() {
     console.debug('loginUser');
     this.token.value = '';
     this.userName.value = '';
@@ -199,7 +199,8 @@ class ApiClient {
     return !!data.value;
   }
 
-  async resetPassword(password: string) {
+  async resetPassword(password: string, token: string) {
+    this.token.value = token;
     const { data, statusCode, response } = await this.fetch('auth/reset').post({ password }).text();
     if (statusCode.value !== 200) {
       console.error(`Reset password failed (${statusCode.value}): ${response.value?.statusText}`);
@@ -214,6 +215,7 @@ class ApiClient {
   }
 
   logout() {
+    if (!this.token.value) return;
     this.token.value = '';
     this.userName.value = '';
     this.email.value = '';
@@ -261,19 +263,19 @@ class ApiClient {
     return data.value;
   }
 
-  // TODO: Add a digest to the team code, so we can track changes
+  // TODO: Add a digest to the team code, so we can track changes. May as well do this in the backend
   // crypto.subtle
   //   .digest('SHA-256', new TextEncoder().encode(teamCode))
   //   .then((x) => console.log('SHA-256', x));
 
   // Returns the backend id of the publication
-  async publishTeam(team: AntDescriptor, code: string, timestamp: number): Promise<string | null> {
+  async publishTeam(team: Team): Promise<string | null> {
     const publication: Omit<AntPublication, 'id'> = {
-      code: code,
-      color: team.color,
-      description: team.description,
-      name: team.name,
-      timestamp,
+      code: team.code,
+      color: team.color || 'magenta',
+      description: team.description || '',
+      name: team.name || '',
+      timestamp: Date.now(),
     };
 
     const { data, response } = await this.fetch('publications', team.id || '')
