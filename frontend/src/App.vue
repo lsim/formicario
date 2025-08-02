@@ -4,7 +4,7 @@ import MessageToaster from '@/components/MessageToaster.vue';
 import AuthenticationModal from '@/components/AuthenticationModal.vue';
 import { computed } from 'vue';
 import useApiClient from '@/composables/api-client.ts';
-import { faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
+import { faSignOutAlt, faUser } from '@fortawesome/free-solid-svg-icons';
 
 const route = useRoute();
 const apiClient = useApiClient();
@@ -22,15 +22,30 @@ const isPasswordReset = computed(() => route.name === 'password-reset');
               <div class="navbar-end" id="navbarMenu"></div>
               <div class="navbar-end">
                 <div class="navbar-item">
-                  <a
-                    class="button is-info is-outlined"
-                    @click="apiClient.logout"
-                    v-if="apiClient.token.value"
-                  >
-                    <span class="icon">
-                      <font-awesome-icon :icon="faSignOutAlt" />
-                    </span>
-                  </a>
+                  <div class="field has-addons">
+                    <div class="control">
+                      <span class="button is-static">
+                        <span class="icon">
+                          <font-awesome-icon :icon="faUser" />
+                        </span>
+                        <span>
+                          {{ apiClient.userName.value }}
+                        </span>
+                      </span>
+                    </div>
+                    <div class="control">
+                      <a
+                        class="button is-primary"
+                        @click="apiClient.logout"
+                        v-if="apiClient.token.value"
+                        title="Log out"
+                      >
+                        <span class="icon">
+                          <font-awesome-icon :icon="faSignOutAlt" />
+                        </span>
+                      </a>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
