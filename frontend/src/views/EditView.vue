@@ -103,6 +103,7 @@ watch(
           firstChangeWatcher = watch(
             () => parsedName.value,
             (newName) => {
+              if (!newName) return;
               try {
                 team.value.id = crypto.randomUUID();
                 team.value.name = newName;
