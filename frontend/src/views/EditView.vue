@@ -30,8 +30,9 @@ function ant(squareData, antInfo) {
       name: 'MyCleverName',
       color: '#FF0000',
       brainTemplate: {
-        // Things your ant can remember go here
+        // Things your ants should remember go here
       },
+      description: '',
     };
   }
 
