@@ -68,7 +68,6 @@ onBeforeUnmount(() => {
         />
       </Transition>
     </div>
-    <!--    <authenticator />-->
   </div>
 </template>
 

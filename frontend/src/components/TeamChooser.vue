@@ -62,7 +62,7 @@ function toggleTeam(team: Team) {
 
 <style scoped lang="scss">
 .all-teams {
-  max-height: 25vh;
+  max-height: 35vh;
   overflow: auto;
 }
 

@@ -240,8 +240,10 @@ nav.panel {
   height: 8em;
   overflow: hidden;
   transition: height 0.5s ease;
+  // Chrome only feature: Transitioning to auto size
   interpolate-size: allow-keywords;
-  &:hover {
+  &:hover,
+  &:has(:focus) {
     height: auto;
   }
 }

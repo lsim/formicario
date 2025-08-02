@@ -53,18 +53,6 @@ const team = ref<Team>({
 
 const showingBuiltIn = computed(() => teamStore.isBuiltIn(team.value));
 
-const listBuiltIns = ref(true);
-const showMyTeamsOnly = ref(false);
-
-const listedTeams = computed(() => {
-  return teamStore.allTeams.filter((t) => {
-    if (showMyTeamsOnly.value) {
-      return t.id === team.value.id;
-    }
-    return listBuiltIns.value || !teamStore.isBuiltIn(t);
-  });
-});
-
 // React to the team id changing
 watch(
   () => props.id,
@@ -233,19 +221,13 @@ const codeMirrorOptions = {
             </span>
           </p>
           <div class="panel-block">
-            <button class="button is-primary is-outlined is-fullwidth">New team</button>
+            <router-link to="/edit" class="button is-primary is-outlined is-fullwidth"
+              >New team</router-link
+            >
           </div>
-          <div class="panel-block">
-            <team-list @team-selected="teamSelected" class="team-list" :teams="listedTeams" />
+          <div class="panel-block team-selection">
+            <team-list @team-selected="teamSelected" class="team-list" />
           </div>
-          <label class="panel-block">
-            <input type="checkbox" v-model="listBuiltIns" />
-            Show built-ins
-          </label>
-          <label class="panel-block">
-            <input type="checkbox" v-model="showMyTeamsOnly" />
-            My teams only
-          </label>
           <div class="panel-block">
             <button class="button is-primary is-outlined is-fullwidth" @click="publish()">
               Publish team
@@ -265,8 +247,17 @@ const codeMirrorOptions = {
     width: 12em;
     position: sticky;
     top: 1em;
-    .team-list {
-      height: 30vh;
+    .team-selection {
+      &:hover,
+      &:has(:focus) {
+        .team-list {
+          height: 30vh;
+        }
+      }
+      .team-list {
+        height: 2.5em;
+        transition: height 0.3s ease;
+      }
     }
   }
 }
