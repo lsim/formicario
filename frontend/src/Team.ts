@@ -1,16 +1,23 @@
-export type Team = {
+// This is the data we extract by calling the AntFunction without arguments
+export type TeamExtract = {
   // The name that comes from the declaration object returned by the AntFunction. Missing if the team has not yet produced a declaration.
-  name?: string;
-  code: string;
-  // The id of the team. Either an uuid or the file name of the built-in team
-  id: string;
-  color?: string;
+  name: string;
+  color: string;
   brainTemplate?: object;
-  owner?: string;
-  status?: 'ok' | 'error';
-  lastChanged?: number;
   description?: string;
 };
+
+export type Team = TeamExtract & {
+  // The id of the team. Either an uuid or the file name of the built-in team
+  id: string;
+  // Username of the team author. If not set, the team was created without an active login. Publish with local user as author
+  authorName?: string;
+  status?: 'ok' | 'error';
+  lastChanged?: number;
+  code?: string;
+};
+
+export type TeamWithCode = Team & { code: string };
 
 export const blacklist = [
   'CognizAnt', // Not implemented yet

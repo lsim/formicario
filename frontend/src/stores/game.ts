@@ -13,7 +13,7 @@ import {
 import type { BattleStatus } from '@/GameSummary.ts';
 import { filter, finalize, Observable, ReplaySubject, take, timeout } from 'rxjs';
 import type { BattleArgs } from '@/Battle.ts';
-import type { Team } from '@/Team.ts';
+import type { TeamWithCode } from '@/Team.ts';
 
 export const useGameStore = defineStore('game', () => {
   const worker = useWorker();
@@ -67,8 +67,9 @@ export const useGameStore = defineStore('game', () => {
 
   async function start(pauseAfterTurns = -1) {
     selectedBattleSummaryStats.value = null;
+    // Select battle teams among local and built-in teams
     const battleTeams =
-      teamStore.battleTeams.length === 0 ? teamStore.allTeams : teamStore.battleTeams;
+      teamStore.battleTeams.length === 0 ? teamStore.localTeams : teamStore.battleTeams;
     if (gameRunning.value || battleReplaying.value) return;
     const message = {
       game: {
@@ -128,7 +129,7 @@ export const useGameStore = defineStore('game', () => {
 
   async function runBattle(
     args: BattleArgs,
-    teams: Team[],
+    teams: TeamWithCode[],
     seed: number,
     pauseAfterTurns: number = -1,
   ) {

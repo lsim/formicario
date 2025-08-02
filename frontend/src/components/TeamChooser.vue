@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useTeamStore } from '@/stores/teams.ts';
 
-import Color from 'color';
 import type { Team } from '@/Team.ts';
 import TeamList from '@/components/TeamList.vue';
 
@@ -9,11 +8,6 @@ const teamStore = useTeamStore();
 
 function unselectTeam(team: Team) {
   teamStore.unselectForBattle(team);
-}
-
-function contrastingColor(color: string) {
-  const c = new Color(color);
-  return c.contrast(Color('white')) > c.contrast(Color('black')) ? 'white' : 'black';
 }
 
 function toggleTeam(team: Team) {
@@ -45,7 +39,7 @@ function toggleTeam(team: Team) {
                   type="button"
                   :style="{
                     backgroundColor: team.color,
-                    color: contrastingColor(team.color ?? '#000'),
+                    color: teamStore.contrastingColor(team.color ?? '#000'),
                   }"
                   style="width: 100%"
                 >

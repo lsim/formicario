@@ -4,9 +4,20 @@ import { blacklist, type Team } from '@/Team.ts';
 import { useWorker } from '@/workers/WorkerDispatcher.ts';
 import { useStorage } from '@vueuse/core';
 import Color from 'color';
+import useApiClient, { type BackendPublication } from '@/composables/api-client.ts';
+import useToast from '@/composables/toast.ts';
+
+export declare type TeamMeta = {
+  name: string;
+  color: string;
+  id: string;
+  authorName?: string;
+};
 
 export const useTeamStore = defineStore('team', () => {
   const worker = useWorker();
+  const apiClient = useApiClient();
+  const toast = useToast();
 
   const teamStorage = useStorage<Record<string, Team>>('teamsById', {});
 
@@ -21,9 +32,16 @@ export const useTeamStore = defineStore('team', () => {
     for (const [key, value] of Object.entries(rawImport)) {
       const code = value.default;
       const id = key.replace(/^\.\.\/ants\/(.+)\.js$/, '$1');
-      const teamInfo: Team = { id, code, color: '', brainTemplate: {}, owner: 'built-in' };
+      const teamInfo: Team = {
+        id,
+        code,
+        color: '',
+        brainTemplate: {},
+        authorName: 'built-in',
+        name: id,
+      };
       try {
-        const moreInfo = await worker.getTeamInfo(teamInfo);
+        const moreInfo = await worker.getTeamInfo({ ...teamInfo, code });
         if (moreInfo.color) teamInfo.color = moreInfo.color;
         if (moreInfo.name) teamInfo.name = moreInfo.name;
         if (moreInfo.brainTemplate) teamInfo.brainTemplate = moreInfo.brainTemplate;
@@ -38,20 +56,44 @@ export const useTeamStore = defineStore('team', () => {
   }
 
   const builtinTeams = ref<Team[]>([]);
-  const builtInsReady = loadBuiltinTeams().then(
-    (teams) => (builtinTeams.value = teams.filter((t) => !blacklist.includes(t.id))),
-  );
+  const teamsLoaded = Promise.all([
+    loadBuiltinTeams().then(
+      (teams) => (builtinTeams.value = teams.filter((t) => !blacklist.includes(t.id))),
+    ),
+    apiClient.loadPublications(),
+  ]);
 
-  const allTeams = computed(() => [
+  const remoteTeams = apiClient.backendPublications;
+
+  const localTeams = computed(() => [
     ...builtinTeams.value,
     ...Object.keys(teamStorage.value).map((id) => teamStorage.value[id]),
   ]);
 
   const battleTeams = ref<Team[]>([]);
 
-  function selectForBattle(team: Team) {
+  const allTeamMetas = computed(() => {
+    const map = new Map<string, TeamMeta>();
+    remoteTeams.value.forEach(({ name, color, id, authorName }) => {
+      map.set(id, { name, color, id, authorName });
+    });
+    localTeams.value.forEach(({ name, color, id, authorName }) => {
+      map.set(id, { name, color, id, authorName, ...(map.get(id) || {}) });
+    });
+    return Array.from(map.values());
+  });
+
+  async function selectForBattle(team: Team) {
     if (battleTeams.value.some((t) => t.name === team.name)) return;
-    battleTeams.value = [...battleTeams.value, team];
+    if (team.code) battleTeams.value = [...battleTeams.value, team];
+    else {
+      const remoteTeam = await apiClient.getFullPublication(team.id);
+      if (remoteTeam) {
+        battleTeams.value = [...battleTeams.value, { ...team, ...remoteTeam }];
+      } else {
+        toast.show('Could not find code for team', 'is-danger');
+      }
+    }
   }
 
   function unselectForBattle(team: Team) {
@@ -59,9 +101,7 @@ export const useTeamStore = defineStore('team', () => {
   }
 
   function isNameTakenByOther(name: string, id: string) {
-    return Object.keys(teamStorage.value).some(
-      (k) => teamStorage.value[k].name === name && k !== id,
-    );
+    return localTeams.value.some((t) => t.name === name && t.id !== id);
   }
 
   function renameTeam(id: string, name: string) {
@@ -70,13 +110,21 @@ export const useTeamStore = defineStore('team', () => {
     teamStorage.value[id].name = name;
   }
 
-  function isBuiltIn(team: Team) {
-    return team.owner === 'built-in';
+  function isBuiltIn(team: { authorName: string }) {
+    return team.authorName === 'built-in';
+  }
+
+  function isOwnedByUser(team: Team | BackendPublication) {
+    return !team.authorName || team.authorName === apiClient.userName.value;
   }
 
   function contrastingColor(color: string) {
     const c = new Color(color);
     return c.contrast(Color('white')) > c.contrast(Color('black')) ? 'white' : 'black';
+  }
+
+  function invertedColor(color: string) {
+    return new Color(color).rotate(180).hex();
   }
 
   function saveTeam(team: Team) {
@@ -93,20 +141,36 @@ export const useTeamStore = defineStore('team', () => {
   }
 
   function teamName(teamId: string) {
-    return allTeams.value.find((t) => t.id === teamId)?.name || '';
+    return localTeams.value.find((t) => t.id === teamId)?.name || '';
+  }
+
+  async function deleteTeam(id: string) {
+    const team = localTeams.value.find((t) => t.id === id);
+    if (!team || !isOwnedByUser(team)) return;
+    if (teamStorage.value[id]) delete teamStorage.value[id];
+    try {
+      await apiClient.unpublishTeam(id);
+    } catch (e) {
+      console.warn('Failed to unpublish team', e);
+    }
   }
 
   return {
-    allTeams,
+    localTeams,
+    remoteTeams,
+    allTeamMetas,
     battleTeams,
     selectForBattle,
     unselectForBattle,
     saveTeam,
     loadTeam,
+    deleteTeam,
     renameTeam,
     teamName,
     isBuiltIn,
-    builtInsReady,
+    isOwnedByUser,
+    teamsLoaded,
     contrastingColor,
+    invertedColor,
   };
 });

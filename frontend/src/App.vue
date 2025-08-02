@@ -4,6 +4,7 @@ import MessageToaster from '@/components/MessageToaster.vue';
 import AuthenticationModal from '@/components/AuthenticationModal.vue';
 import { computed } from 'vue';
 import useApiClient from '@/composables/api-client.ts';
+import { faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 
 const route = useRoute();
 const apiClient = useApiClient();
@@ -19,6 +20,19 @@ const isPasswordReset = computed(() => route.name === 'password-reset');
           <div class="container">
             <div class="navbar-menu">
               <div class="navbar-end" id="navbarMenu"></div>
+              <div class="navbar-end">
+                <div class="navbar-item">
+                  <a
+                    class="button is-info is-outlined"
+                    @click="apiClient.logout"
+                    v-if="apiClient.token.value"
+                  >
+                    <span class="icon">
+                      <font-awesome-icon :icon="faSignOutAlt" />
+                    </span>
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
         </nav>
@@ -36,13 +50,6 @@ const isPasswordReset = computed(() => route.name === 'password-reset');
               </li>
               <li :class="{ 'is-active': route.name === 'edit' || route.name === 'editTeam' }">
                 <router-link to="/edit">Create</router-link>
-              </li>
-            </ul>
-          </div>
-          <div class="container is-pulled-right">
-            <ul>
-              <li v-if="apiClient.token.value">
-                <a @click="apiClient.logout">Log out</a>
               </li>
             </ul>
           </div>

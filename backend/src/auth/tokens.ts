@@ -134,7 +134,7 @@ async function sendRecoveryEmail(email: string, redirectHost: string) {
   if (!redirectHost) return Err('Redirect host is required', 400);
 
   const recoveryToken = await createJWT({ email}, '15m');
-  const link = `${redirectHost}password-reset/${recoveryToken}`;
+  const link = `${redirectHost}#/password-reset/${recoveryToken}`;
   // Slow down to prevent abuse
   await new Promise(resolve => setTimeout(resolve, 3000));
   await sendMessage(email, 'Password recovery', `<a href="${link}">Click here to reset your password</a>`);

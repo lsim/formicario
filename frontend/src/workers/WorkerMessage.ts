@@ -1,7 +1,7 @@
 import type { GameSpec } from '@/GameSpec.ts';
 import type { BattleStatus, BattleSummary, GameSummary } from '@/GameSummary.ts';
 import type { AntData, AntDescriptor, BattleArgs } from '@/Battle.ts';
-import type { Team } from '@/Team.ts';
+import type { TeamWithCode } from '@/Team.ts';
 
 export type WorkerMessageType =
   | 'run-game'
@@ -93,7 +93,7 @@ export interface SkipBattleMessage extends TypedMessage {
 export interface RunBattleMessage extends TypedMessage {
   type: 'run-battle';
   args: BattleArgs;
-  teams: Team[];
+  teams: TeamWithCode[];
   seed: number;
   pauseAfterTurns?: number;
 }

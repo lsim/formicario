@@ -57,7 +57,7 @@ async function storePublication(
   const publicationId = id || crypto.randomUUID();
 
   if (!name) return Err('No publication name', 400);
-  if (!code) return Err('No publication data', 400);
+  if (!code) return Err('No publication code', 400);
   if (!timestamp) return Err('No publication timestamp', 400);
 
   const compressedCode = await zip(code);

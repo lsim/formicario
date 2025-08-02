@@ -11,10 +11,13 @@ import BattleRender from '@/components/BattleRender.vue';
 import { faPlay, faStepForward } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { useTeamStore } from '@/stores/teams.ts';
-import type { Team } from '@/Team.ts';
+import useApiClient from '@/composables/api-client.ts';
+import type { TeamWithCode } from '@/Team.ts';
 
 const gameStore = useGameStore();
 const teamStore = useTeamStore();
+
+const apiClient = useApiClient();
 
 const isLive = computed(() => {
   return gameStore.gameRunning || gameStore.battleReplaying;
@@ -22,11 +25,22 @@ const isLive = computed(() => {
 
 const summaryStats = computed(() => gameStore.selectedBattleSummaryStats);
 
-function runBattle(startPaused = false) {
+async function runBattle(startPaused = false) {
   const battle = summaryStats.value?.summary;
   if (!battle) return;
   const teamIds = battle.teams.map((t) => t.id);
-  const teams = teamIds.map((n) => teamStore.allTeams.find((t) => t.id === n) as Team);
+  const teams = (await Promise.all(
+    teamIds
+      .map(async (n) => {
+        const localTeam = teamStore.localTeams.find((t) => t.id === n);
+        if (localTeam) return localTeam;
+        const remoteTeam = teamStore.remoteTeams.find((t) => t.id === n);
+        if (remoteTeam) return await apiClient.getFullPublication(remoteTeam.id);
+        console.warn('Team not found for battle', n);
+        return null;
+      })
+      .filter((t) => !!t),
+  )) as TeamWithCode[];
   gameStore.runBattle(battle.args, teams, battle.seed, startPaused ? 1 : -1);
 }
 

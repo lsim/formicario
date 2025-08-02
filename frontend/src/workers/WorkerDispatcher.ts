@@ -12,7 +12,7 @@ import type {
 import { ReplaySubject, Subject } from 'rxjs';
 import type { BattleStatus, BattleSummary, GameSummary } from '@/GameSummary.ts';
 import type { AntData } from '@/Battle.ts';
-import type { Team } from '@/Team.ts';
+import type { TeamWithCode } from '@/Team.ts';
 import { deepUnref } from 'vue-deepunref';
 
 const battleStatusSubject$ = new Subject<BattleStatus>();
@@ -100,7 +100,7 @@ async function getDebugAnts(x?: number, y?: number) {
   return reply.ants;
 }
 
-async function getTeamInfo(team: Team) {
+async function getTeamInfo(team: TeamWithCode) {
   const reply = (await queueMessage<AntInfoRequestMessage>({
     type: 'ant-info-request',
     teamCode: team.code,

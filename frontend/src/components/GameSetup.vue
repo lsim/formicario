@@ -28,7 +28,7 @@ const activeTab: Ref<'teams' | 'intervals' | 'winning' | 'other' | 'ui'> = ref('
       <a :class="{ 'is-active': activeTab === 'other' }" @click="activeTab = 'other'">Other</a>
     </p>
     <div class="panel-block" v-if="activeTab === 'teams'">
-      <team-chooser @update:teams="teamStore.battleTeams = $event" class="team-chooser" />
+      <team-chooser class="team-chooser" />
     </div>
 
     <template v-if="activeTab === 'intervals'">

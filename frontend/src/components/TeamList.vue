@@ -18,14 +18,22 @@ const listBuiltIns = ref(true);
 const showMyTeamsOnly = ref(false);
 
 const filteredTeams = computed(() => {
-  return teamStore.allTeams.filter(
-    (team) =>
-      (!showMyTeamsOnly.value || team.owner === apiClient.userName.value) &&
-      (listBuiltIns.value || !teamStore.isBuiltIn(team)) &&
-      (filter.value.length < 2 ||
-        !team.name ||
-        team.name.toLowerCase().includes(filter.value.toLowerCase())),
-  );
+  return teamStore.allTeamMetas
+    .filter((team) => {
+      if (showMyTeamsOnly.value) {
+        return !team.authorName || team.authorName === apiClient.userName.value;
+      }
+      if (!listBuiltIns.value) {
+        return !team.authorName || !teamStore.isBuiltIn({ authorName: team.authorName });
+      }
+      return true;
+    })
+    .filter((team) => team.name.toLowerCase().includes(filter.value.toLowerCase()))
+    .sort((a, b) => {
+      if (a.name < b.name) return -1;
+      if (a.name > b.name) return 1;
+      return 0;
+    });
 });
 
 const filterInput = useTemplateRef('filterInput');
@@ -45,9 +53,12 @@ const selectionBools = computed<Record<string, boolean>>(() => {
   );
 });
 
-function emitSelection(team: Team) {
+function emitSelection(team: { id: string }) {
   filter.value = '';
-  emits('teamSelected', team);
+  const teamToEmit =
+    teamStore.localTeams.find((t) => t.id === team.id) ||
+    teamStore.remoteTeams.find((t) => t.id === team.id)!;
+  emits('teamSelected', teamToEmit);
 }
 
 function focusFilter() {
@@ -58,7 +69,14 @@ function focusFilter() {
 <template>
   <div class="root field" @mouseenter="focusFilter">
     <div class="filter block control has-icons-left has-icons-right">
-      <input class="input" type="text" v-model="filter" placeholder="Teams" ref="filterInput" />
+      <input
+        class="input"
+        type="text"
+        v-model="filter"
+        placeholder="Teams"
+        ref="filterInput"
+        autofocus
+      />
       <span class="icon is-small is-left">
         <font-awesome-icon :icon="faFilter" />
       </span>

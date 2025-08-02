@@ -2,32 +2,31 @@ import { createFetch, useLocalStorage, useWebSocket, type UseWebSocketReturn } f
 import { ref, watch } from 'vue';
 import useToast from '@/composables/toast.ts';
 import useBusy from '@/composables/busy.ts';
-import type { Team } from '@/Team.ts';
+import type { TeamWithCode } from '@/Team.ts';
 
-export interface PublicationMeta {
+export interface BackendPublication {
   name: string;
+  code: string;
   color: string;
   timestamp: number;
-  authorId?: string;
-  authorName?: string;
-  description?: string;
+  authorId: string;
+  authorName: string;
+  description: string;
   id: string;
 }
 
-interface AntPublication extends PublicationMeta {
-  code: string;
-}
-
-function antPublicationFromApiObject(obj: Record<keyof AntPublication, string>): AntPublication {
+function antPublicationFromApiObject(
+  obj: Record<keyof BackendPublication, string>,
+): BackendPublication {
   return {
     id: obj.id,
     name: obj.name,
     color: obj.color,
     timestamp: parseFloat(obj.timestamp),
     description: obj.description,
-    code: obj.code,
-    authorId: obj.authorId,
+    code: obj.code || '',
     authorName: obj.authorName,
+    authorId: obj.authorId,
   };
 }
 
@@ -47,7 +46,7 @@ class ApiClient {
   public readonly userName = useLocalStorage('userName', '');
   public readonly email = useLocalStorage('email', '');
   private ws: UseWebSocketReturn<object> | null = null;
-  public readonly backendPublications = ref<PublicationMeta[]>([]);
+  public readonly backendPublications = ref<BackendPublication[]>([]);
   // Show the login dialog when this promise is set
   public readonly loginPromise = ref<Promise<void> | null>(null);
   public readonly loginResolver = ref<(() => void) | null>(null);
@@ -217,7 +216,6 @@ class ApiClient {
   logout() {
     if (!this.token.value) return;
     this.token.value = '';
-    this.userName.value = '';
     this.email.value = '';
     this.loginResolver.value = null;
     this.loginPromise.value = null;
@@ -225,7 +223,7 @@ class ApiClient {
   }
 
   async getPublications() {
-    const { data, response } = await this.fetch<PublicationMeta[]>('publications').get().json();
+    const { data, response } = await this.fetch<BackendPublication[]>('publications').get().json();
     if (!data.value || response.value?.status !== 200) {
       console.error(
         `Failed to fetch publications (${response.value?.status}): ${response.value?.statusText}`,
@@ -233,23 +231,28 @@ class ApiClient {
       this.toast.show('Failed to fetch publications', 'is-danger');
       return [];
     }
+    for (const p of data.value) {
+      p.code = p.code || '';
+    }
     return data.value;
   }
 
   async getFullPublication(id: string) {
-    const { data, response } = await this.fetch<PublicationMeta>('publications', id).get().json();
+    const { data, response } = await this.fetch<BackendPublication>('publications', id)
+      .get()
+      .json();
     if (!data.value || response.value?.status !== 200) {
       console.error(
         `Failed to fetch publication (${response.value?.status}): ${response.value?.statusText}`,
       );
       this.toast.show('Failed to fetch the contents of the publication', 'is-danger');
-      return null;
+      throw Error('Failed to fetch the contents of the publication');
     }
     return antPublicationFromApiObject(data.value);
   }
 
   async patchPublication(id: string, description: string) {
-    const { data, response } = await this.fetch<PublicationMeta>('publications', id)
+    const { data, response } = await this.fetch<BackendPublication>('publications', id)
       .patch({ description, timestamp: Date.now() })
       .text();
     if (!data.value || response.value?.status !== 200) {
@@ -269,13 +272,15 @@ class ApiClient {
   //   .then((x) => console.log('SHA-256', x));
 
   // Returns the backend id of the publication
-  async publishTeam(team: Team): Promise<string | null> {
-    const publication: Omit<AntPublication, 'id'> = {
+  async publishTeam(team: TeamWithCode): Promise<string | null> {
+    const publication: Omit<BackendPublication, 'id'> = {
       code: team.code,
       color: team.color || 'magenta',
       description: team.description || '',
       name: team.name || '',
       timestamp: Date.now(),
+      authorName: this.userName.value,
+      authorId: '',
     };
 
     const { data, response } = await this.fetch('publications', team.id || '')

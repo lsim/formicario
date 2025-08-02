@@ -1,20 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { blacklist, type Team } from '@/Team.ts';
+import { blacklist, type TeamWithCode } from '@/Team.ts';
 import type { GameSpec } from '@/GameSpec.ts';
 import { instantiateParticipant } from '@/Game.ts';
 import { type AntBrain, Battle, type BattleArgs, produceBattleArgs } from '@/Battle.ts';
 import { getRNG, type RNGFunction } from '@/prng.ts';
 
-function loadTeams() {
+function loadTeams(): TeamWithCode[] {
   const rawImport = import.meta.glob('@ants/*.js', { eager: true, query: '?raw' }) as Record<
     string,
     { default: string }
   >;
-  const teams: Team[] = [];
+  const teams: TeamWithCode[] = [];
   for (const [key, value] of Object.entries(rawImport)) {
     const code = value.default;
     const id = key.replace(/^\.\.\/ants\/(.+)\.js$/, '$1');
-    const teamInfo: Team = { id, code };
+    const teamInfo = { id, code, name: id, color: '', authorName: 'built-in' };
     teams.push(teamInfo);
   }
   return teams;
