@@ -15,7 +15,7 @@ export class Toast {
 const activeToasts = ref<Toast[]>([]);
 
 export default function useToast() {
-  function show(message: string, type: ToastType, duration: number = 3000, title: string = '') {
+  function show(message: string, type: ToastType, duration: number = 5000, title: string = '') {
     const id = crypto.randomUUID();
     const toast = new Toast(id, message, type, duration, title);
     activeToasts.value.push(toast);

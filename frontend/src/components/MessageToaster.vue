@@ -52,10 +52,10 @@ const toast = useToast();
   .toast {
     width: 20em;
     //padding: 1em;
-    //margin: 0.5em;
+    margin: 0.5em;
     //border-radius: 5px;
     //pointer-events: auto;
-    //border: 2px solid rgba(white, 0.3);
+    border: 2px solid rgba(white, 0.3);
     &.celebrate {
       @include colorize(purple);
       animation: colorFade 2s ease-in-out;
@@ -71,18 +71,6 @@ const toast = useToast();
         }
       }
     }
-    //&.success {
-    //  @include colorize(green);
-    //}
-    //&.info {
-    //  @include colorize(blue);
-    //}
-    //&.warning {
-    //  @include colorize(orange);
-    //}
-    //&.error {
-    //  @include colorize(red);
-    //}
     color: white;
 
     &:hover {

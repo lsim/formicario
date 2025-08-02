@@ -74,7 +74,21 @@ describe('safeEval', () => {
   });
 
   it('should produce a viable ant function', async () => {
-    const source = (await import('../../ants/reluctAnt.js?raw')).default;
+    const source = `
+      function antBrain(squareData, antInfo) {
+        if (!squareData) {
+          return {
+            name: 'MyAwesomeName',
+            color: '#232323',
+            brainTemplate: {}
+          }
+        }
+
+        // All your awesome logic here
+
+        return antInfo.brains[0].random % 5;
+      }
+      `;
     const antFunc = safeEval(source, 'fooTeam');
     expect(typeof antFunc).toBe('function');
     const antDescriptor = antFunc(); // Leave empty to get the descriptor
@@ -83,16 +97,16 @@ describe('safeEval', () => {
     const antState: AntInfo = {
       brains: [{ random: 0 }],
     };
-    expect(antFunc([], antState)).toBe(1);
+    expect(antFunc([], antState)).toBe(0);
 
     const antState2: AntInfo = {
       brains: [{ random: 2 }],
     };
 
-    expect(antFunc([], antState2)).toBe(3);
+    expect(antFunc([], antState2)).toBe(2);
 
     const antState3: AntInfo = {
-      brains: [{ random: 3 }],
+      brains: [{ random: 14 }],
     };
 
     expect(antFunc([], antState3)).toBe(4);

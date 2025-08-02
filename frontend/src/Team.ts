@@ -22,7 +22,6 @@ export type TeamWithCode = Team & { code: string };
 export const blacklist = [
   'CognizAnt', // Not implemented yet
   'ElephAnt', // Doesn't look like it is worth restoring
-  'reluctAnt', // Is just a template
   'BlackHole', // Is more of a POC than a real ant
   'Rambo', // Not worth restoring
   'Servant', // Not worth restoring

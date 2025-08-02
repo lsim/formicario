@@ -166,6 +166,15 @@ watch(
 
 const parsedName = ref('');
 
+function validateBrainTemplate(brainTemplate: Record<string, number | boolean | unknown>) {
+  for (const key in brainTemplate) {
+    const value = brainTemplate[key];
+    if (typeof value !== 'number' && typeof value !== 'boolean') {
+      throw Error(`Brain template property '${key}' is not a number or boolean`);
+    }
+  }
+}
+
 async function updateTeamFromCode() {
   try {
     if (!team.value.code) return;
@@ -181,7 +190,10 @@ async function updateTeamFromCode() {
       team.value.color = t.color;
       pickedColor.value = t.color;
     }
-    if (t.brainTemplate) team.value.brainTemplate = t.brainTemplate;
+    if (t.brainTemplate) {
+      validateBrainTemplate(t.brainTemplate as Record<string, number | boolean | unknown>);
+      team.value.brainTemplate = t.brainTemplate;
+    }
   } catch (error: unknown) {
     toast.show(String(error), 'is-danger');
   }
