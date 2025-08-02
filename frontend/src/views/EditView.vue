@@ -175,6 +175,15 @@ function validateBrainTemplate(brainTemplate: Record<string, number | boolean | 
   }
 }
 
+let warnTimeout: ReturnType<typeof setTimeout> | null = null;
+function warnDebounced(message: string) {
+  if (warnTimeout) clearTimeout(warnTimeout);
+  warnTimeout = setTimeout(() => {
+    toast.show(message, 'is-warning');
+    warnTimeout = null;
+  }, 20000);
+}
+
 async function updateTeamFromCode() {
   try {
     if (!team.value.code) return;
@@ -194,8 +203,10 @@ async function updateTeamFromCode() {
       validateBrainTemplate(t.brainTemplate as Record<string, number | boolean | unknown>);
       team.value.brainTemplate = t.brainTemplate;
     }
+    if (warnTimeout) clearTimeout(warnTimeout);
   } catch (error: unknown) {
-    toast.show(String(error), 'is-danger');
+    // Debounce so it doesn't spam the user while they're typing
+    warnDebounced(String(error));
   }
 }
 
