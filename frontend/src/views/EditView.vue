@@ -65,6 +65,9 @@ async function setupExistingTeam(id: string) {
   const localTeamForId = teamStore.localTeams.find((t) => t.id === id);
   if (localTeamForId) {
     team.value = localTeamForId;
+    if (!teamStore.isBuiltIn({ authorName: team.value.authorName || '' })) {
+      teamStore.currentlyEditing = id;
+    }
     return true;
   }
   console.log('No local team found with id', id);
@@ -76,6 +79,7 @@ async function setupExistingTeam(id: string) {
     } else {
       team.value = remoteTeamForId;
     }
+    teamStore.currentlyEditing = id;
     return true;
   }
   console.log('No remote team found with id', id);
@@ -89,7 +93,7 @@ function setupNewTeam(descriptor: AntDescriptor) {
     authorName: apiClient.userName.value,
     id: '',
   };
-  console.log('setupNewTeam', team.value);
+
   updateTeamFromCode().then(() => {
     // Set up the storage reactivity when the name is changed in the code
     firstChangeWatcher = watch(
@@ -131,7 +135,13 @@ watch(
           toast.show(`No team found with id ${newId}`, 'is-danger');
           await router.push(`/edit`);
           return;
-        } else if (teamInfo) setupNewTeam(teamInfo);
+        } else if (teamInfo) {
+          if (teamStore.currentlyEditing) {
+            await setupExistingTeam(teamStore.currentlyEditing);
+          } else {
+            setupNewTeam(teamInfo);
+          }
+        }
       } finally {
         updateTeamFromCode().then(() => {});
         if (!teamStore.isBuiltIn({ authorName: team.value.authorName || '' })) {
@@ -221,6 +231,8 @@ function watchCodeChanges() {
 
 function teamSelected(team: Team) {
   router.push(`/edit/${team.id}`);
+  if (!teamStore.isBuiltIn({ authorName: team.authorName || '' }))
+    teamStore.currentlyEditing = team.id;
   pickedColor.value = '';
   parsedName.value = '';
 }
@@ -271,6 +283,11 @@ async function deleteTeam() {
     toast.show('Team deletion aborted', 'is-warning');
     console.error('Failed to delete team', e);
   }
+}
+
+function createNewTeam() {
+  teamStore.currentlyEditing = '';
+  router.push('/edit');
 }
 
 const codeMirrorOptions = {
@@ -333,8 +350,8 @@ const codeMirrorOptions = {
             </button>
           </div>
           <div class="panel-block">
-            <router-link to="/edit" class="button is-primary is-outlined is-fullwidth"
-              >New team</router-link
+            <a @click="createNewTeam" class="button is-primary is-outlined is-fullwidth"
+              >New team</a
             >
           </div>
           <div class="panel-block team-selection">

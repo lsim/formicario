@@ -5,10 +5,27 @@ import AuthenticationModal from '@/components/AuthenticationModal.vue';
 import { computed } from 'vue';
 import useApiClient from '@/composables/api-client.ts';
 import { faSignOutAlt, faUser } from '@fortawesome/free-solid-svg-icons';
+import { useTeamStore } from '@/stores/teams.ts';
 
 const route = useRoute();
 const apiClient = useApiClient();
 const isPasswordReset = computed(() => route.name === 'password-reset');
+
+const teamStore = useTeamStore();
+
+const isEditingTeamName = computed(() => {
+  if (teamStore.currentlyEditing) {
+    return teamStore.localTeams.find((t) => t.id === teamStore.currentlyEditing)?.name;
+  }
+  return '';
+});
+
+const editTabTitle = computed(() => {
+  if (isEditingTeamName.value) {
+    return `Edit ${isEditingTeamName.value}`;
+  }
+  return 'Create';
+});
 </script>
 
 <template>
@@ -64,7 +81,7 @@ const isPasswordReset = computed(() => route.name === 'password-reset');
                 <router-link to="/">Battle</router-link>
               </li>
               <li :class="{ 'is-active': route.name === 'edit' || route.name === 'editTeam' }">
-                <router-link to="/edit">Create</router-link>
+                <router-link to="/edit">{{ editTabTitle }}</router-link>
               </li>
             </ul>
           </div>

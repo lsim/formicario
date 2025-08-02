@@ -21,6 +21,8 @@ export const useTeamStore = defineStore('team', () => {
 
   const teamStorage = useStorage<Record<string, Team>>('teamsById', {});
 
+  const currentlyEditing = useStorage<string>('currentlyEditing', '');
+
   async function loadBuiltinTeams() {
     const teams = [];
     // Built-in teams
@@ -172,5 +174,6 @@ export const useTeamStore = defineStore('team', () => {
     teamsLoaded,
     contrastingColor,
     invertedColor,
+    currentlyEditing,
   };
 });
