@@ -4,6 +4,10 @@ import { useTeamStore } from '@/stores/teams.ts';
 import { computed, ref, useTemplateRef } from 'vue';
 import type { Team } from '@/Team.ts';
 
+const props = defineProps<{
+  teams?: Team[];
+}>();
+
 const emits = defineEmits<{
   (e: 'teamSelected', team: Team): void;
 }>();
@@ -13,7 +17,7 @@ const teamStore = useTeamStore();
 const filter = ref('');
 
 const filteredTeams = computed(() => {
-  return teamStore.allTeams.filter(
+  return (props.teams || teamStore.allTeams).filter(
     (team) =>
       filter.value.length < 2 ||
       !team.name ||

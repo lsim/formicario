@@ -61,7 +61,7 @@ const listedTeams = computed(() => {
     if (showMyTeamsOnly.value) {
       return t.id === team.value.id;
     }
-    return listBuiltIns.value || teamStore.isBuiltIn(t);
+    return listBuiltIns.value || !teamStore.isBuiltIn(t);
   });
 });
 
@@ -235,7 +235,7 @@ const codeMirrorOptions = {
             <button class="button is-primary is-outlined is-fullwidth">New team</button>
           </div>
           <div class="panel-block">
-            <team-list @team-selected="teamSelected" class="team-list" />
+            <team-list @team-selected="teamSelected" class="team-list" :teams="listedTeams" />
           </div>
           <label class="panel-block">
             <input type="checkbox" v-model="listBuiltIns" />
@@ -247,7 +247,7 @@ const codeMirrorOptions = {
           </label>
           <div class="panel-block">
             <button class="button is-primary is-outlined is-fullwidth" @click="publish()">
-              Publish {{ team.name }}
+              Publish team
             </button>
           </div>
         </div>
@@ -279,5 +279,6 @@ const codeMirrorOptions = {
 <style lang="scss">
 .cm-editor {
   width: calc(100vw - 18em);
+  min-height: calc(100vh - 10em);
 }
 </style>
