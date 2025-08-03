@@ -77,10 +77,9 @@ watch(
               <th>Battle</th>
               <th>Winner</th>
               <th>Turns</th>
-              <th>Teams</th>
+              <th>Losers</th>
               <th>Width</th>
               <th>Height</th>
-              <th>Seed</th>
             </tr>
           </thead>
           <tbody>
@@ -99,10 +98,16 @@ watch(
                 }}</span>
               </td>
               <td>{{ battle.turns }}</td>
-              <td>{{ battle.teams.map((t) => teamStore.teamName(t.id)).join(', ') }}</td>
+              <td>
+                {{
+                  battle.teams
+                    .filter((t) => t.id !== battle.winner)
+                    .map((t) => teamStore.teamName(t.id))
+                    .join(', ')
+                }}
+              </td>
               <td>{{ battle.args.mapWidth }}</td>
               <td>{{ battle.args.mapHeight }}</td>
-              <td>{{ battle.seed }}</td>
             </tr>
           </tbody>
         </table>
@@ -114,5 +119,12 @@ watch(
 <style scoped lang="scss">
 .table td {
   cursor: pointer;
+}
+
+.table tr {
+  &.is-selected {
+    background-color: var(--bulma-primary-dark);
+    color: var(--bulma-primary-light);
+  }
 }
 </style>

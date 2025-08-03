@@ -51,13 +51,11 @@ watch(
     <label class="label">{{ props.label }}</label>
     <div class="field has-addons">
       <div class="control">
-        <input class="input" type="range" v-model="lowerString" :min="props.min" :max="props.max" />
-      </div>
-      <div class="control">
-        <a class="button is-static interval-summary">[ {{ lowerString }} ; {{ upperString }} ]</a>
-      </div>
-      <div class="control">
-        <input class="input" type="range" v-model="upperString" :min="props.min" :max="props.max" />
+        <a class="button is-static">
+          <input type="range" v-model="lowerString" :min="props.min" :max="props.max" />
+          <span class="interval-summary">[ {{ lowerString }} ; {{ upperString }} ]</span>
+          <input type="range" v-model="upperString" :min="props.min" :max="props.max" />
+        </a>
       </div>
     </div>
   </div>

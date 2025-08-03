@@ -2,18 +2,30 @@
 import TeamChooser from '@/components/TeamChooser.vue';
 import { useTeamStore } from '@/stores/teams.ts';
 import { useGameStore } from '@/stores/game.ts';
-import { ref, type Ref } from 'vue';
+import { ref, type Ref, watch } from 'vue';
 import IntervalInput from '@/components/IntervalInput.vue';
 
 const teamStore = useTeamStore();
 const gameStore = useGameStore();
 
 const activeTab: Ref<'teams' | 'intervals' | 'winning' | 'other' | 'ui'> = ref('teams');
+
+const expanded = ref(true);
+
+watch(
+  () => gameStore.gameRunning,
+  () => {
+    // Collapse when a game has started or ended
+    expanded.value = false;
+  },
+);
 </script>
 
 <template>
-  <nav class="panel is-primary">
-    <div class="panel-heading">Next game</div>
+  <div class="panel is-primary" :class="{ expanded }">
+    <div class="panel-heading" @click="expanded = !expanded">
+      Next game {{ expanded ? '▼' : '▲' }}
+    </div>
     <p class="panel-tabs">
       <a :class="{ 'is-active': activeTab === 'teams' }" @click="activeTab = 'teams'"
         >Teams ({{ teamStore.battleTeams.length }})</a
@@ -232,18 +244,21 @@ const activeTab: Ref<'teams' | 'intervals' | 'winning' | 'other' | 'ui'> = ref('
         </div>
       </div>
     </template>
-  </nav>
+  </div>
 </template>
 
 <style scoped lang="scss">
-nav.panel {
+.panel-heading {
+  cursor: pointer;
+  pointer-events: all;
+}
+div.panel {
   height: 8em;
   overflow: hidden;
-  transition: height 0.5s ease;
+  transition: all 0.5s ease-in-out;
   // Chrome only feature: Transitioning to auto size
   interpolate-size: allow-keywords;
-  &:hover,
-  &:has(:focus) {
+  &.expanded {
     height: auto;
   }
 }

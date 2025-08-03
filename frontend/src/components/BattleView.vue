@@ -74,16 +74,14 @@ onBeforeUnmount(() => {
       Battle - turn {{ currentTurn }} - {{ currentTps }} tps
       <span class="is-pulled-right" v-if="summaryStats && !isLive">
         <span class="field">
-          <button class="button is-small is-success">
-            <span class="icon"><font-awesome-icon :icon="faPlay" @click="runBattle()" /></span>
+          <button class="button is-small is-success" @click="runBattle()">
+            <span class="icon"><font-awesome-icon :icon="faPlay" /></span>
           </button>
         </span>
         &nbsp;
         <span class="field">
-          <button class="button is-small is-info">
-            <span class="icon"
-              ><font-awesome-icon :icon="faStepForward" @click="runBattle(true)"
-            /></span>
+          <button class="button is-small is-info" @click="runBattle(true)">
+            <span class="icon"><font-awesome-icon :icon="faStepForward" /></span>
           </button>
         </span>
       </span>

@@ -2,7 +2,7 @@
 
 ## Battle
 
-- Add slider for speeding up/slowing down the battle. Default to low value, so it is easy to see what is going on
+- Add support for multiple workers running battles in parallel, so a game can be computed faster across multiple cores 
 
 ## Editor
 

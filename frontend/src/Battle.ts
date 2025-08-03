@@ -561,7 +561,7 @@ export class Battle {
       if (this.speed >= 100 && this.currentTurn % 20 === 0) {
         await new Promise((resolve) => setTimeout(resolve, 20));
       } else if (this.speed < 100) {
-        await new Promise((resolve) => setTimeout(resolve, 1000 / this.speed));
+        await new Promise((resolve) => setTimeout(resolve, 600 / (this.speed || 1)));
       }
     } while (!terminated);
     this.isTerminated = true;

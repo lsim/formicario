@@ -15,7 +15,7 @@ watch(
 );
 
 function decreaseSpeed() {
-  speedString.value = Math.max(parseInt(speedString.value) - 10, 0).toString();
+  speedString.value = Math.max(parseInt(speedString.value) - 10, 1).toString();
 }
 
 function increaseSpeed() {
@@ -31,7 +31,7 @@ function increaseSpeed() {
           <span class="icon" @click="decreaseSpeed">
             <font-awesome-icon :icon="faFrog" />
           </span>
-          <input type="range" min="0" max="100" v-model="speedString" class="the-slider" />
+          <input type="range" min="1" max="100" v-model="speedString" class="the-slider" />
           <span class="icon" @click="increaseSpeed">
             <font-awesome-icon :icon="faTruckFast" />
           </span>

@@ -32,91 +32,54 @@ onBeforeUnmount(() => {
   subscription.unsubscribe();
   subscription2.unsubscribe();
 });
-
-// TODO: parallelize separate battles to a configurable number of separate workers
 </script>
 
 <template>
-  <div
-    class="container is-max-tablet"
-    :class="{
-      'split-screen': gameStore.selectedBattleSummaryStats != null,
-      'game-running': gameStore.gameRunning,
-    }"
-  >
+  <div class="container">
     <Teleport to="#navbarMenu">
       <game-controls />
       <speed-gauge />
     </Teleport>
-    <div class="game-setup">
-      <game-setup />
-      <game-summary-ui />
-    </div>
-    <div class="box" v-if="gameStore.lastError.length">
-      <h3>Last error</h3>
-      <div
-        class="notification is-danger is-family-code"
-        v-for="error in gameStore.lastError"
-        :key="error"
-      >
-        <pre>{{ error }}</pre>
+    <div class="fixed-grid has-2-cols">
+      <div class="grid">
+        <div class="cell">
+          <game-setup />
+        </div>
+        <Transition name="from-the-right">
+          <div
+            class="cell is-row-span-2 is-col-start-2"
+            v-if="gameStore.selectedBattleSummaryStats != null || gameStore.gameRunning"
+          >
+            <battle-view />
+          </div>
+        </Transition>
+        <div class="cell is-row-span-2 is-col-start-1">
+          <game-summary-ui />
+        </div>
+        <div class="cell" v-if="gameStore.lastError.length">
+          <h3>Last error</h3>
+          <div
+            class="notification is-danger is-family-code"
+            v-for="error in gameStore.lastError"
+            :key="error"
+          >
+            <pre>{{ error }}</pre>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="battle-info">
-      <Transition name="battle-feed">
-        <battle-view
-          class="battle-view"
-          v-if="gameStore.selectedBattleSummaryStats != null || gameStore.gameRunning"
-        />
-      </Transition>
     </div>
   </div>
 </template>
 
-<style scoped lang="scss">
-.battle-feed-enter-active,
-.battle-feed-leave-active {
-  transition: all 0.2s ease;
+<style lang="scss">
+.from-the-right-enter-active,
+.from-the-right-leave-active {
+  transition: all 0.3s ease-in-out;
 }
-.battle-feed-enter-from,
-.battle-feed-leave-to {
+
+.from-the-right-enter-from,
+.from-the-right-leave-to {
+  transform: translateX(100vw);
   opacity: 0;
-  transform: translateX(-1em);
-}
-
-// slide game setup out of view to the left when game is running
-.game-setup {
-  width: 100%;
-  position: absolute;
-  transition:
-    transform 0.5s ease,
-    opacity 0.5s ease;
-}
-
-.battle-info {
-  width: 100%;
-  position: absolute;
-  transition: transform 0.5s ease;
-  transform: translateX(200%);
-}
-
-.game-running {
-  .game-setup {
-    transform: translateX(-200%);
-    opacity: 0;
-  }
-  .battle-info {
-    transform: translateX(0);
-  }
-}
-
-.split-screen {
-  .game-setup {
-    transform: translateX(-51%);
-  }
-
-  .battle-info {
-    transform: translateX(51%);
-  }
 }
 </style>

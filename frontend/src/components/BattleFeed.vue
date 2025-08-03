@@ -121,28 +121,30 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="battle-feed">
-    <canvas
-      ref="canvas"
-      :width="mapWidth"
-      :height="mapHeight"
-      :style="{ zoom: canvasDefaultZoom }"
-      @click.exact="magnifierPinned = false"
-      @click.ctrl.exact="getAntData"
-      @click.meta.exact="getAntData"
-      @click.ctrl.right.capture.prevent="magnifierPinned = true"
-      @click.meta.right.capture.prevent="magnifierPinned = true"
-      title="[Ctrl] or [Cmd] for magnifier, click to view brain, right click to pin"
-    >
-    </canvas>
-    <ant-magnifier
-      v-if="magActive"
-      class="magnifier"
-      :back-buffer="backBuffer"
-      :zoom-level="5"
-      :center-x="magX / canvasDefaultZoom"
-      :center-y="magY / canvasDefaultZoom"
-      :style="{ left: `${magX}px`, top: `${magY}px` }"
-    />
+    <div class="canvas-container">
+      <canvas
+        ref="canvas"
+        :width="mapWidth"
+        :height="mapHeight"
+        :style="{ zoom: canvasDefaultZoom }"
+        @click.exact="magnifierPinned = false"
+        @click.ctrl.exact="getAntData"
+        @click.meta.exact="getAntData"
+        @click.ctrl.right.capture.prevent="magnifierPinned = true"
+        @click.meta.right.capture.prevent="magnifierPinned = true"
+        title="[Ctrl] or [Cmd] for magnifier, click to view brain, right click to pin"
+      >
+      </canvas>
+      <ant-magnifier
+        v-if="magActive"
+        class="magnifier"
+        :back-buffer="backBuffer"
+        :zoom-level="5"
+        :center-x="magX / canvasDefaultZoom"
+        :center-y="magY / canvasDefaultZoom"
+        :style="{ left: `${magX}px`, top: `${magY}px` }"
+      />
+    </div>
   </div>
 </template>
 
@@ -151,7 +153,9 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  position: relative;
+  .canvas-container {
+    position: relative;
+  }
 }
 canvas {
   background-color: black;

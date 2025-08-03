@@ -3,6 +3,7 @@ import { useTeamStore } from '@/stores/teams.ts';
 
 import type { Team } from '@/Team.ts';
 import TeamList from '@/components/TeamList.vue';
+import { faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 
 const teamStore = useTeamStore();
 
@@ -20,34 +21,34 @@ function toggleTeam(team: Team) {
 </script>
 
 <template>
-  <div class="control">
+  <div class="control team-chooser">
     <label class="label">Choose pool of teams</label>
     <div class="columns">
-      <div class="column is-one-quarter all-teams">
+      <div class="column is-half all-teams">
         <team-list @team-selected="toggleTeam" />
       </div>
-      <div class="column is-three-quarters">
-        <div class="control" v-if="teamStore.battleTeams.length > 0">
-          <div class="no-scroll-bars grid">
-            <TransitionGroup name="selected-teams">
-              <div class="cell" v-for="team in teamStore.battleTeams" :key="team.id">
-                <button
-                  class="button"
-                  @click.exact="unselectTeam(team)"
-                  @click.ctrl="teamStore.battleTeams = [team]"
-                  @click.meta="teamStore.battleTeams = [team]"
-                  type="button"
-                  :style="{
-                    backgroundColor: team.color,
-                    color: teamStore.contrastingColor(team.color ?? '#000'),
-                  }"
-                  style="width: 100%"
-                >
-                  {{ team.name }}
-                </button>
-              </div>
-            </TransitionGroup>
-          </div>
+      <div class="column is-half no-scroll-bars">
+        <div class="panel selected-teams">
+          <TransitionGroup name="selected-teams">
+            <a
+              class="panel-block"
+              v-for="team in teamStore.battleTeams"
+              :key="team.id"
+              @click.exact="unselectTeam(team)"
+              @click.ctrl="teamStore.battleTeams = [team]"
+              @click.meta="teamStore.battleTeams = [team]"
+              :style="{
+                boxShadow: `0 0 5px ${team.color}`,
+              }"
+            >
+              <span class="icon">
+                <font-awesome-icon :icon="faCheckCircle" />
+              </span>
+              <span>
+                {{ team.name }}
+              </span>
+            </a>
+          </TransitionGroup>
         </div>
       </div>
     </div>
@@ -55,15 +56,24 @@ function toggleTeam(team: Team) {
 </template>
 
 <style scoped lang="scss">
-.all-teams {
-  max-height: 35vh;
+.team-chooser .column {
+  height: 20em;
   overflow: auto;
 }
 
-// Hide scrollbars
+.panel.selected-teams {
+  $border-radius: var(--bulma-panel-radius);
+  :first-child {
+    border-top-left-radius: $border-radius;
+    border-top-right-radius: $border-radius;
+  }
+  border-top-left-radius: $border-radius;
+  border-top-right-radius: $border-radius;
+}
+
 .all-teams,
-.grid {
-  button {
+.panel {
+  a {
     &.selected-teams-enter-active,
     &.selected-teams-leave-active {
       transition: all 0.2s ease;
