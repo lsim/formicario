@@ -13,6 +13,14 @@ watch(
     gameStore.speed = parseInt(newSpeed, 10);
   },
 );
+
+function decreaseSpeed() {
+  speedString.value = Math.max(parseInt(speedString.value) - 10, 0).toString();
+}
+
+function increaseSpeed() {
+  speedString.value = Math.min(parseInt(speedString.value) + 10, 100).toString();
+}
 </script>
 
 <template>
@@ -20,11 +28,11 @@ watch(
     <div class="field has-addons">
       <div class="control">
         <a class="button is-static is-medium">
-          <span class="icon">
+          <span class="icon" @click="decreaseSpeed">
             <font-awesome-icon :icon="faFrog" />
           </span>
           <input type="range" min="0" max="100" v-model="speedString" class="the-slider" />
-          <span class="icon">
+          <span class="icon" @click="increaseSpeed">
             <font-awesome-icon :icon="faTruckFast" />
           </span>
         </a>
@@ -35,6 +43,11 @@ watch(
 
 <style scoped lang="scss">
 .the-slider {
+  pointer-events: all;
+}
+
+.button span {
+  cursor: pointer;
   pointer-events: all;
 }
 </style>
