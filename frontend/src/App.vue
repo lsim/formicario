@@ -123,4 +123,10 @@ p {
 .tabs {
   background-color: rgba(grey, 0.5);
 }
+
+#navbarMenu {
+  background-color: rgba(white, 0.2);
+  border-bottom-left-radius: 0.5em;
+  border-bottom-right-radius: 0.5em;
+}
 </style>

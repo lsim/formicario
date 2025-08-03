@@ -25,60 +25,60 @@ const stepSize = ref(1);
 </script>
 
 <template>
-  <div class="navbar-item">
-    <button
-      class="button is-medium is-success"
-      type="button"
-      @click="() => gameStore.start()"
-      :disabled="running"
-      :class="{ 'is-loading': running }"
-      title="[Enter]"
-    >
-      <span class="icon" v-if="!running">
-        <font-awesome-icon :icon="faPlay" />
-      </span>
-      <template v-else> &nbsp; &nbsp; </template>
-    </button>
-  </div>
-  <div class="navbar-item">
-    <button
-      class="button is-medium is-danger"
-      type="button"
-      @click="gameStore.stop"
-      title="[Escape]"
-      :disabled="!running"
-    >
-      <span class="icon"><font-awesome-icon :icon="faStop" /></span>
-    </button>
-  </div>
-  <div class="navbar-item">
-    <button
-      class="button is-medium is-info"
-      type="button"
-      @click="gameStore.skipBattle"
-      :disabled="!running"
-    >
-      <span class="icon">
-        <font-awesome-icon :icon="faFastForward" />
-      </span>
-    </button>
-  </div>
-  <div class="navbar-item" v-show="!gameStore.gamePaused && running">
-    <button class="button is-medium is-info" type="button" @click="gameStore.pause">
-      <span class="icon">
-        <font-awesome-icon :icon="faPause" />
-      </span>
-    </button>
-  </div>
-  <div class="navbar-item" v-show="gameStore.gamePaused && running">
-    <button class="button is-medium is-info" type="button" @click="gameStore.resume">
-      <span class="icon">
-        <font-awesome-icon :icon="faPlay" />
-      </span>
-    </button>
-  </div>
-  <div class="navbar-item">
+  <div class="navbar-item has-addons">
     <div class="field has-addons">
+      <div class="control">
+        <button
+          class="button is-medium is-success"
+          type="button"
+          @click="() => gameStore.start()"
+          :disabled="running"
+          :class="{ 'is-loading': running }"
+          title="[Enter]"
+        >
+          <span class="icon" v-if="!running">
+            <font-awesome-icon :icon="faPlay" />
+          </span>
+          <template v-else> &nbsp; &nbsp; </template>
+        </button>
+      </div>
+      <div class="control">
+        <button
+          class="button is-medium is-danger"
+          type="button"
+          @click="gameStore.stop"
+          title="[Escape]"
+          :disabled="!running"
+        >
+          <span class="icon"><font-awesome-icon :icon="faStop" /></span>
+        </button>
+      </div>
+      <div class="control">
+        <button
+          class="button is-medium is-info"
+          type="button"
+          @click="gameStore.skipBattle"
+          :disabled="!running"
+        >
+          <span class="icon">
+            <font-awesome-icon :icon="faFastForward" />
+          </span>
+        </button>
+      </div>
+      <div class="control" v-show="!gameStore.gamePaused && running">
+        <button class="button is-medium is-info" type="button" @click="gameStore.pause">
+          <span class="icon">
+            <font-awesome-icon :icon="faPause" />
+          </span>
+        </button>
+      </div>
+      <div class="control" v-show="gameStore.gamePaused && running">
+        <button class="button is-medium is-info" type="button" @click="gameStore.resume">
+          <span class="icon">
+            <font-awesome-icon :icon="faPlay" />
+          </span>
+        </button>
+      </div>
       <div class="control">
         <button
           class="button is-medium is-info"
