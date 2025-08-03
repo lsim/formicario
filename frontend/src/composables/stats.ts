@@ -12,7 +12,7 @@ import {
 } from 'rxjs';
 import { useWorker } from '@/workers/WorkerDispatcher.ts';
 
-export type TeamStat = keyof Omit<TeamStatus, 'id' | 'color'>;
+export type TeamStat = keyof TeamStatus['numbers'];
 
 type TeamStats = {
   teamColor: string;
@@ -75,7 +75,7 @@ export function useStats() {
               acc.teams[team.id] = emptyTeamStats(team.color);
             }
             for (const stat of Object.keys(acc.teams[team.id].stats) as TeamStat[]) {
-              acc.teams[team.id].stats[stat].push(team[stat]);
+              acc.teams[team.id].stats[stat].push(team.numbers[stat]);
             }
           }
           return acc;

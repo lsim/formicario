@@ -34,7 +34,7 @@ function Humanist(squareData, antInfo) {
   const mem = antInfo.brains[0];
 
   function rnd() {
-    mem.rnd = (mem.rnd * 3 + mem.id);
+    mem.rnd = (mem.rnd * 3 + mem.id) & 0x7FFFFFFF >> 0;
     return mem.rnd;
   }
 
@@ -208,6 +208,6 @@ function Humanist(squareData, antInfo) {
   // Update position
   mem.px += RX[dir];
   mem.py += RY[dir];
-  
+
   return dir;
 }

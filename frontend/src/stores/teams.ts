@@ -21,7 +21,7 @@ export const useTeamStore = defineStore('team', () => {
 
   const teamStorage = useStorage<Record<string, Team>>('teamsById', {});
 
-  const currentlyEditing = useStorage<string>('currentlyEditing', '');
+  const currentlyEditing = useStorage<string>('currentlyEditing', '', sessionStorage);
 
   async function loadBuiltinTeams() {
     const teams = [];

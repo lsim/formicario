@@ -22,7 +22,7 @@ const isEditingTeamName = computed(() => {
 
 const editTabTitle = computed(() => {
   if (isEditingTeamName.value) {
-    return `Edit ${isEditingTeamName.value}`;
+    return `Edit '${isEditingTeamName.value}'`;
   }
   return 'Create';
 });

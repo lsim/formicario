@@ -70,11 +70,11 @@ onBeforeUnmount(() => {
 });
 
 const maxForSelectedProperty = computed(() => {
-  return Math.max(...teams.value.map((t) => t[game.selectedStatusProperty] as number));
+  return Math.max(...teams.value.map((t) => t.numbers[game.selectedStatusProperty]));
 });
 
 function barWidth(team: TeamStatus) {
-  return (team[game.selectedStatusProperty] as number) / maxForSelectedProperty.value;
+  return team.numbers[game.selectedStatusProperty] / (maxForSelectedProperty.value || 1);
 }
 
 // A computed property with value and color for each team, ordered by the value
@@ -83,7 +83,7 @@ const sortedBars = computed(() => {
     .map((team) => {
       return {
         width: barWidth(team),
-        value: team[game.selectedStatusProperty],
+        value: team.numbers[game.selectedStatusProperty],
         color: team.color,
         id: team.id,
         name: team.name,

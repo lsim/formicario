@@ -64,8 +64,8 @@ describe('Ant test-bench', () => {
         const battle = new Battle(battleArgs, [{ id: team.id, func: antFunction }], seed);
 
         const result = await battle.run();
-        if (result.teams[0].numBorn > bestResult) {
-          bestResult = result.teams[0].numBorn;
+        if (result.teams[0].numbers.numBorn > bestResult) {
+          bestResult = result.teams[0].numbers.numBorn;
         }
         if (bestResult > 30) break;
       }

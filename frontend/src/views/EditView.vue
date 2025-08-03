@@ -13,6 +13,7 @@ import TeamList from '@/components/TeamList.vue';
 import useApiClient from '@/composables/api-client.ts';
 import type { AntDescriptor } from '@/Battle.ts';
 import ModalWrapper from '@/components/ModalWrapper.vue';
+import { faCloudArrowUp, faPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
 
 const teamStore = useTeamStore();
 const router = useRouter();
@@ -137,7 +138,8 @@ watch(
           return;
         } else if (teamInfo) {
           if (teamStore.currentlyEditing) {
-            await setupExistingTeam(teamStore.currentlyEditing);
+            await router.push(`/edit/${teamStore.currentlyEditing}`);
+            return;
           } else {
             setupNewTeam(teamInfo);
           }
@@ -350,9 +352,12 @@ const codeMirrorOptions = {
             </button>
           </div>
           <div class="panel-block">
-            <a @click="createNewTeam" class="button is-primary is-outlined is-fullwidth"
-              >New team</a
-            >
+            <button @click="createNewTeam" class="button is-primary is-outlined is-fullwidth">
+              <span class="icon is-small is-justify-content-left">
+                <font-awesome-icon :icon="faPlus" />
+              </span>
+              <span>New team</span>
+            </button>
           </div>
           <div class="panel-block team-selection">
             <team-list @team-selected="teamSelected" class="team-list" />
@@ -363,16 +368,22 @@ const codeMirrorOptions = {
               @click="publishTeam()"
               :disabled="!!team.id && !teamStore.isOwnedByUser(team)"
             >
-              Publish team
+              <span class="icon is-small is-justify-content-left">
+                <font-awesome-icon :icon="faCloudArrowUp" />
+              </span>
+              <span>Publish team</span>
             </button>
           </div>
           <div class="panel-block">
             <button
-              class="button is-primary is-outlined is-fullwidth"
+              class="button is-danger is-outlined is-fullwidth"
               @click="deleteTeam"
               :disabled="!!team.id && !teamStore.isOwnedByUser(team)"
             >
-              Delete team
+              <span class="icon is-small is-justify-content-left">
+                <font-awesome-icon :icon="faTrash" />
+              </span>
+              <span>Delete team</span>
             </button>
           </div>
         </div>

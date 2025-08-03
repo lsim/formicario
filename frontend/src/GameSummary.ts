@@ -1,4 +1,4 @@
-import type { BattleArgs } from '@/Battle.ts';
+import type { AntData, BattleArgs } from '@/Battle.ts';
 
 export type SquareStatus = {
   index: number;
@@ -11,18 +11,21 @@ export type SquareStatus = {
 export type TeamStatus = {
   id: string;
   color: string;
-  numBorn: number;
-  numAnts: number;
-  numBases: number;
-  basesBuilt: number;
-  kill: number;
-  killed: number;
-  dieAge: number;
-  squareOwn: number;
-  foodOwn: number;
-  foodTouch: number;
-  foodKnown: number;
-  timeUsed: number;
+  error?: { team: number; reason: string; ant: Omit<AntData, 'mapNext' | 'mapPrev'> };
+  numbers: {
+    numBorn: number;
+    numAnts: number;
+    numBases: number;
+    basesBuilt: number;
+    kill: number;
+    killed: number;
+    dieAge: number;
+    squareOwn: number;
+    foodOwn: number;
+    foodTouch: number;
+    foodKnown: number;
+    timeUsed: number;
+  };
 };
 
 export type BattleInfo = {
