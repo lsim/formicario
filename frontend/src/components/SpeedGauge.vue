@@ -5,7 +5,7 @@ import { ref, watch } from 'vue';
 
 const gameStore = useGameStore();
 
-const speedString = ref('50');
+const speedString = ref(gameStore.speed.toString());
 
 watch(
   () => speedString.value,

@@ -14,7 +14,7 @@ import type { BattleStatus } from '@/GameSummary.ts';
 import { filter, finalize, Observable, ReplaySubject, take, timeout } from 'rxjs';
 import type { BattleArgs } from '@/Battle.ts';
 import type { TeamWithCode } from '@/Team.ts';
-import { watchDebounced } from '@vueuse/core';
+import { useStorage, watchDebounced } from '@vueuse/core';
 
 export const useGameStore = defineStore('game', () => {
   const worker = useWorker();
@@ -65,7 +65,7 @@ export const useGameStore = defineStore('game', () => {
   const lastError = ref<string[]>([]);
   const liveFeed = ref(true);
   const selectedBattleSummaryStats = ref<BattleSummaryStats | null>(null);
-  const speed = ref(50);
+  const speed = useStorage('speed', 50, sessionStorage);
 
   async function start(pauseAfterTurns = -1) {
     selectedBattleSummaryStats.value = null;
@@ -116,12 +116,12 @@ export const useGameStore = defineStore('game', () => {
     gamePaused.value = false;
   }
 
-  async function step(numTurns = -1) {
+  async function step() {
     gamePaused.value = true;
     if (!gameRunning.value && !battleReplaying.value) {
-      await start(numTurns);
+      await start(speed.value);
     } else {
-      await worker.stepGame(numTurns);
+      await worker.stepGame(speed.value);
     }
   }
 

@@ -89,11 +89,12 @@ export class Game {
           continue;
         }
         const args = produceBattleArgs(this.spec, this.rng);
+        const startNextPaused = this.activeBattle?.isPaused;
         this.activeBattle = new Battle(
           args,
           this.pickRandomTeamsForBattle(),
           battleSeed,
-          _pauseAfterTurns,
+          startNextPaused ? 1 : -1,
         );
         this.activeBattle.setSpeed(this.speed);
 

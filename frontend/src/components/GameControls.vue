@@ -7,7 +7,7 @@ import {
   faStop,
 } from '@fortawesome/free-solid-svg-icons';
 
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { useMagicKeys, whenever } from '@vueuse/core';
 import { useGameStore } from '@/stores/game.ts';
 const { enter, shift_space, escape } = useMagicKeys();
@@ -15,13 +15,11 @@ const gameStore = useGameStore();
 
 whenever(enter, () => gameStore.start());
 
-whenever(shift_space, () => gameStore.step(stepSize.value));
+whenever(shift_space, () => gameStore.step());
 
 whenever(escape, () => gameStore.stop());
 
 const running = computed(() => gameStore.gameRunning || gameStore.battleReplaying);
-
-const stepSize = ref(1);
 </script>
 
 <template>
@@ -83,7 +81,7 @@ const stepSize = ref(1);
         <button
           class="button is-medium is-info"
           type="button"
-          @click="() => gameStore.step(stepSize)"
+          @click="() => gameStore.step()"
           :disabled="running && !gameStore.gamePaused"
           title="[Shift + Space]"
         >
@@ -91,9 +89,6 @@ const stepSize = ref(1);
             <font-awesome-icon :icon="faStepForward" />
           </span>
         </button>
-      </div>
-      <div class="control">
-        <input class="step-size input is-medium" type="number" v-model="stepSize" />
       </div>
     </div>
   </div>
