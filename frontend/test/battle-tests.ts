@@ -1581,11 +1581,7 @@ describe('Battle tests', () => {
       // Add to destination linked list
       movingAnt.mapPrev = destSquare.lastAnt;
       movingAnt.mapNext = undefined;
-      if (destSquare.lastAnt) {
-        (destSquare.lastAnt as AntData).mapNext = movingAnt;
-      } else {
-        destSquare.firstAnt = movingAnt;
-      }
+      destSquare.firstAnt = movingAnt;
       destSquare.lastAnt = movingAnt;
       destSquare.numAnts = 1;
 
