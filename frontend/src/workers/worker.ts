@@ -82,6 +82,7 @@ onmessage = async (e) => {
         command.args,
         command.seed,
       );
+      activeGame.setSpeed(command.speed);
       const p = activeGame.run(command.pauseAfterTurns);
       postMessage({ type: 'ok', id: command.id });
       await p;

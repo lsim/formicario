@@ -97,6 +97,7 @@ export interface RunBattleMessage extends TypedMessage {
   args: BattleArgs;
   teams: TeamWithCode[];
   seed: number;
+  speed: number;
   pauseAfterTurns?: number;
 }
 

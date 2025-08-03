@@ -72,6 +72,7 @@ export class Game {
         this.singleBattleSeed ?? 1,
         _pauseAfterTurns,
       );
+      this.activeBattle.setSpeed(this.speed);
       const battleSummary = await this.activeBattle.run();
       postMessage({ type: 'battle-summary', summary: battleSummary });
       return {

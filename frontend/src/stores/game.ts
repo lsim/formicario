@@ -78,6 +78,7 @@ export const useGameStore = defineStore('game', () => {
         ...gameSpec,
         teams: [...battleTeams.map((t) => ({ id: t.id, code: t.code }))],
         seed: gameSpec.seed,
+        speed: speed.value,
         statusInterval: !liveFeed.value ? 100 : gameSpec.statusInterval,
         numBattles: gameSpec.numBattles,
       },
@@ -154,6 +155,7 @@ export const useGameStore = defineStore('game', () => {
       args,
       teams,
       seed,
+      speed: speed.value,
       pauseAfterTurns,
     });
     console.debug('Rerun started');

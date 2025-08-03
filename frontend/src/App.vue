@@ -36,7 +36,7 @@ const editTabTitle = computed(() => {
         <nav class="navbar">
           <div class="container">
             <div class="navbar-menu">
-              <div class="navbar-end" id="navbarMenu"></div>
+              <div class="navbar-end"></div>
               <div class="navbar-end">
                 <div class="navbar-item">
                   <div class="field has-addons">
@@ -88,8 +88,11 @@ const editTabTitle = computed(() => {
         </nav>
       </div>
     </section>
-    <section class="top-level section">
-      <RouterView />
+    <section class="top-level">
+      <nav class="navbar is-justify-content-center">
+        <div id="navbarMenu" class="navbar"></div>
+      </nav>
+      <RouterView class="section" />
     </section>
   </div>
 </template>
@@ -122,11 +125,5 @@ p {
 
 .tabs {
   background-color: rgba(grey, 0.5);
-}
-
-#navbarMenu {
-  background-color: rgba(white, 0.2);
-  border-bottom-left-radius: 0.5em;
-  border-bottom-right-radius: 0.5em;
 }
 </style>

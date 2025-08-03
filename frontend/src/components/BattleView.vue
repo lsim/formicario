@@ -14,9 +14,12 @@ import { useTeamStore } from '@/stores/teams.ts';
 import useApiClient from '@/composables/api-client.ts';
 import type { TeamWithCode } from '@/Team.ts';
 import TeamDisqualifications from '@/components/TeamDisqualifications.vue';
+import { throttleTime } from 'rxjs';
+import { useWorker } from '@/workers/WorkerDispatcher.ts';
 
 const gameStore = useGameStore();
 const teamStore = useTeamStore();
+const worker = useWorker();
 
 const apiClient = useApiClient();
 
@@ -25,6 +28,14 @@ const isLive = computed(() => {
 });
 
 const summaryStats = computed(() => gameStore.selectedBattleSummaryStats);
+
+const currentTurn = ref(0);
+const currentTps = ref(0);
+
+const subscription = worker.battleStatuses$.pipe(throttleTime(100)).subscribe((status) => {
+  currentTurn.value = status.turns;
+  currentTps.value = status.turnsPerSecond >> 0;
+});
 
 async function runBattle(startPaused = false) {
   const battle = summaryStats.value?.summary;
@@ -53,13 +64,14 @@ const activeTabComputed = computed(() =>
 
 onBeforeUnmount(() => {
   gameStore.stop();
+  subscription?.unsubscribe();
 });
 </script>
 
 <template>
   <nav class="panel is-primary">
     <div class="panel-heading">
-      Battle
+      Battle - turn {{ currentTurn }} - {{ currentTps }} tps
       <span class="is-pulled-right" v-if="summaryStats && !isLive">
         <span class="field">
           <button class="button is-small is-success">
