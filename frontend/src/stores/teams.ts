@@ -143,7 +143,7 @@ export const useTeamStore = defineStore('team', () => {
   }
 
   function teamName(teamId: string) {
-    return localTeams.value.find((t) => t.id === teamId)?.name || '';
+    return allTeamMetas.value.find((t) => t.id === teamId)?.name || '';
   }
 
   async function deleteTeam(id: string) {

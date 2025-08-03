@@ -196,10 +196,11 @@ The TypeScript implementation preserves core concepts while modernizing the appr
 ## Development Commands
 
 Based on the project structure, key commands should be:
-- `npm run dev` - Start development server
-- `npm run build` - Production build
-- `npm run type-check` - TypeScript validation
-- `npm run lint` - Code quality checking
+- `yarn dev` - Start development server
+- `yarn build` - Production build
+- `yarn type-check` - TypeScript validation
+- `yarn lint` - Code quality checking
+- `yarn test` - Unit tests
 
 ## Performance Optimizations Implemented
 

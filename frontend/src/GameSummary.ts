@@ -1,4 +1,4 @@
-import type { AntData, BattleArgs } from '@/Battle.ts';
+import type { AntData, BattleArgs, SquareData } from '@/Battle.ts';
 
 export type SquareStatus = {
   index: number;
@@ -8,10 +8,18 @@ export type SquareStatus = {
   numFood: number;
 };
 
+export type TeamDisqualification = {
+  reason: string;
+  ant: Partial<AntData>;
+  turn: number;
+  teamId: string;
+  square: Partial<SquareData>;
+};
+
 export type TeamStatus = {
   id: string;
   color: string;
-  error?: { team: number; reason: string; ant: Omit<AntData, 'mapNext' | 'mapPrev'> };
+  disqualification?: TeamDisqualification;
   numbers: {
     numBorn: number;
     numAnts: number;

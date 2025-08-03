@@ -1,6 +1,12 @@
 import type { GameSpec } from '@/GameSpec.ts';
 import { getRNG, type RNGFunction } from '@/prng.ts';
-import type { BattleStatus, BattleSummary, SquareStatus, TeamStatus } from '@/GameSummary.ts';
+import type {
+  BattleStatus,
+  BattleSummary,
+  SquareStatus,
+  TeamDisqualification,
+  TeamStatus,
+} from '@/GameSummary.ts';
 
 // Constants from MyreKrig.h
 const NEW_BASE_ANTS = 25;
@@ -439,10 +445,11 @@ export class Battle {
   }
 
   getTeamSummary(team: TeamData, index: number): TeamStatus {
+    const disqualification = this.disqualifiedTeams.find((q) => q.teamIndex === index);
     return {
       id: team.id,
       color: team.color,
-      error: this.quarantinedTeams.find((q) => q.team === index),
+      disqualification,
       numbers: {
         numBorn: team.numBorn,
         numAnts: team.numAnts,
@@ -577,8 +584,8 @@ export class Battle {
     for (let i = 0; i < this.teams.length; i++) {
       const team = this.teams[i];
       const teamValue = team.numAnts + baseValue * team.numBases;
-      // Can't win if the team is quarantined
-      if (teamValue > maxTeamValue && !this.quarantinedTeams.some((q) => q.team === i + 1)) {
+      // Can't win if the team is disqualified
+      if (teamValue > maxTeamValue && !this.isTeamDisqualified(i + 1)) {
         maxTeamValue = teamValue;
         winnerId = team.id;
       }
@@ -596,20 +603,26 @@ export class Battle {
     };
   }
 
-  quarantinedTeams: { team: number; reason: string; ant: AntData }[] = [];
+  disqualifiedTeams: (TeamDisqualification & { teamIndex: number })[] = [];
+  isTeamDisqualified(teamIndex: number) {
+    return this.disqualifiedTeams.some((q) => q.teamIndex === teamIndex);
+  }
 
   // Squares that have been touched since the last status update
   touchedSquares: Set<number> = new Set();
 
-  quarantineTeam(team: number, reason: string, ant: AntData) {
-    if (this.quarantinedTeams.some((q) => q.team === team)) return;
-    this.quarantinedTeams.push({
-      team,
+  disqualifyTeam(teamIndex: number, reason: string, ant: AntData) {
+    if (this.isTeamDisqualified(teamIndex)) return;
+    this.disqualifiedTeams.push({
+      teamIndex,
+      teamId: this.teams[teamIndex - 1].id,
       reason,
       ant: { ...ant, mapNext: undefined, mapPrev: undefined },
+      square: { ...this.mapData(ant.xPos, ant.yPos), firstAnt: undefined, lastAnt: undefined },
+      turn: this.currentTurn,
     });
     console.error(
-      `Ant function error for team '${this.teams[team - 1].name}':`,
+      `Ant function error for team '${this.teams[teamIndex - 1].name}':`,
       '\nerror:',
       reason,
       '\nant:',
@@ -617,8 +630,8 @@ export class Battle {
       '\nsquare:',
       this.mapData(ant.xPos, ant.yPos),
     );
-    if (this.quarantinedTeams.length === this.teams.length) {
-      // All teams are quarantined, stop the battle
+    if (this.disqualifiedTeams.length >= this.teams.length - 1) {
+      // All teams are disqualified, stop the battle
       this.stop();
     }
   }
@@ -629,10 +642,7 @@ export class Battle {
 
     // Get all living ants that should act this turn
     const livingAnts = this.ants.filter(
-      (ant) =>
-        ant.alive &&
-        ant.nextTurn <= this.currentTurn &&
-        !this.quarantinedTeams.some((t) => t.team === ant.team),
+      (ant) => ant.alive && ant.nextTurn <= this.currentTurn && !this.isTeamDisqualified(ant.team),
     );
     let turnAnts = livingAnts.length;
 
@@ -651,7 +661,7 @@ export class Battle {
       antIndices[turnAnts - 1] = antIndex;
       turnAnts--;
       // Safety check: ant may have died during this turn
-      if (!ant.alive || this.quarantinedTeams.some((t) => t.team === ant.team)) {
+      if (!ant.alive || this.isTeamDisqualified(ant.team)) {
         continue;
       }
 
@@ -660,15 +670,15 @@ export class Battle {
         const action: number | unknown = this.runAnt(ant);
         // Do a quick sanity check on the return value, so we can help the author debug their code
         if (typeof action !== 'number') {
-          this.quarantineTeam(ant.team, 'Ant function returned non-number', ant);
+          this.disqualifyTeam(ant.team, 'Ant function returned non-number', ant);
         } else if (isNaN(action)) {
-          this.quarantineTeam(ant.team, 'Ant function returned NaN', ant);
+          this.disqualifyTeam(ant.team, 'Ant function returned NaN', ant);
         } else {
           this.doAction(ant, action);
         }
       } catch (error) {
         // Disable this ant
-        this.quarantineTeam(ant.team, String(error), ant);
+        this.disqualifyTeam(ant.team, String(error), ant);
       }
     }
 
@@ -1164,10 +1174,12 @@ export class Battle {
     return {
       createAnt: this.createAnt.bind(this),
       addAntToSquareList: this.addAntToSquareList.bind(this),
+      killAnt: this.killAnt.bind(this),
       mapWidth: this.args.mapWidth,
       mapHeight: this.args.mapHeight,
       startAnts: this.args.startAnts,
       timeOutTurn: this.args.timeOutTurn,
+      stopRequested: this.stopRequested,
     };
   }
 }

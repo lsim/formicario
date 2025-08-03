@@ -13,6 +13,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { useTeamStore } from '@/stores/teams.ts';
 import useApiClient from '@/composables/api-client.ts';
 import type { TeamWithCode } from '@/Team.ts';
+import TeamDisqualifications from '@/components/TeamDisqualifications.vue';
 
 const gameStore = useGameStore();
 const teamStore = useTeamStore();
@@ -44,7 +45,7 @@ async function runBattle(startPaused = false) {
   gameStore.runBattle(battle.args, teams, battle.seed, startPaused ? 1 : -1);
 }
 
-const activeTab = ref<'graph' | 'bars' | 'params' | 'debugger'>('graph');
+const activeTab = ref<'graph' | 'bars' | 'params' | 'debugger' | 'disqualifications'>('graph');
 
 const activeTabComputed = computed(() =>
   !gameStore.gameRunning && activeTab.value === 'debugger' ? 'graph' : activeTab.value,
@@ -96,6 +97,14 @@ onBeforeUnmount(() => {
         v-if="gameStore.gameRunning"
         >Debugger</a
       >
+      <a
+        :class="{ 'is-active': activeTabComputed === 'disqualifications' }"
+        @click="activeTab = 'disqualifications'"
+        v-if="!gameStore.gameRunning"
+        >Disqualifications ({{
+          summaryStats?.summary.teams.filter((t) => !!t.disqualification).length || 0
+        }})</a
+      >
     </p>
     <template v-if="activeTabComputed === 'graph'">
       <battle-graph
@@ -124,6 +133,13 @@ onBeforeUnmount(() => {
     </template>
     <template v-else-if="gameStore.gameRunning && activeTabComputed === 'debugger'">
       <ant-debugger class="panel-block ant-debugger" :is-live="isLive" />
+    </template>
+    <template v-else-if="activeTabComputed === 'disqualifications' && !isLive">
+      <team-disqualifications
+        class="panel-block disqualifications"
+        :is-live="isLive"
+        :team-statuses="summaryStats?.summary.teams"
+      />
     </template>
   </nav>
 </template>
