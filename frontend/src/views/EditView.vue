@@ -277,6 +277,7 @@ function confirm(message: string) {
 
 async function deleteTeam() {
   try {
+    teamStore.currentlyEditing = '';
     await confirm('Are you sure you want to delete this team?');
     await teamStore.deleteTeam(team.value.id);
     await router.push('/edit');
