@@ -45,7 +45,7 @@ const editTabTitle = computed(() => {
                         <span class="icon">
                           <font-awesome-icon :icon="faUser" />
                         </span>
-                        <span>
+                        <span v-if="apiClient.token.value">
                           {{ apiClient.userName.value }}
                         </span>
                       </span>
