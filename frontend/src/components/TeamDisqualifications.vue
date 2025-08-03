@@ -21,18 +21,30 @@ const disqualifiedTeams = computed(() => {
 </script>
 
 <template>
-  <div class="disqualifications">
-    <div v-for="d in disqualifiedTeams" :key="d.name">
-      <div class="team-name">{{ d.name }}</div>
-      <div class="team-reason">{{ d.disqualification.reason }}</div>
-      <div class="team-ant">
-        {{ JSON.stringify(d.disqualification.ant, null, 2) }}
-      </div>
-      <div class="square-data">
-        {{ JSON.stringify(d.disqualification.square, null, 2) }}
-      </div>
+  <template v-for="d in disqualifiedTeams" :key="d.name">
+    <p class="panel-heading">
+      <span class="team-name"> {{ d.name }} </span>:&nbsp;
+      <span class="team-reason"> "{{ d.disqualification.reason }}"</span>&nbsp;in turn&nbsp;
+      <span class="team-reason"> {{ d.disqualification.turn }}</span>
+    </p>
+    <div class="panel-block is-justify-content-center">The Ant</div>
+    <div class="panel-block">
+      <pre class="json">{{ JSON.stringify(d.disqualification.ant, null, 2) }}</pre>
     </div>
-  </div>
+    <div class="panel-block is-justify-content-center">The Square</div>
+    <div class="panel-block">
+      <pre class="json">{{ JSON.stringify(d.disqualification.square, null, 2) }}</pre>
+    </div>
+  </template>
 </template>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+.json {
+  width: 100%;
+}
+
+.panel-heading {
+  border-radius: 0;
+  background-color: var(--bulma-danger);
+}
+</style>
