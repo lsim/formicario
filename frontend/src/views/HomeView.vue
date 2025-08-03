@@ -9,6 +9,7 @@ import { type BattleSummaryStats } from '@/composables/stats.ts';
 import { useWorker } from '@/workers/WorkerDispatcher.ts';
 import GameSummaryUi from '@/components/GameSummaryUi.vue';
 import BattleView from '@/components/BattleView.vue';
+import SpeedGauge from '@/components/SpeedGauge.vue';
 
 const gameSummary = ref<GameSummary>();
 
@@ -45,6 +46,7 @@ onBeforeUnmount(() => {
   >
     <Teleport to="#navbarMenu">
       <game-controls />
+      <speed-gauge />
     </Teleport>
     <div class="game-setup">
       <game-setup />

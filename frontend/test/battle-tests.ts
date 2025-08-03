@@ -19,8 +19,10 @@ describe('Battle tests', () => {
   let simpleAnt: AntFunction;
   let aggressiveAnt: AntFunction;
   let rng: RNGFunction;
+  Battle.DEFAULT_SPEED = 100;
 
   beforeEach(() => {
+    vi.stubGlobal('console', { log: vi.fn(), debug: vi.fn(), error: vi.fn() });
     gameSpec = {
       statusInterval: 100,
       halfTimePercent: 60,
@@ -40,6 +42,7 @@ describe('Battle tests', () => {
     };
     rng = getRNG(42);
     battleArgs = produceBattleArgs(gameSpec, rng);
+    vi.useFakeTimers();
 
     // Simple ant that moves randomly
     simpleAnt = ((map?: SquareData[], antInfo?: AntInfo) => {
@@ -71,6 +74,7 @@ describe('Battle tests', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   describe('BattleArgs', () => {
@@ -113,7 +117,14 @@ describe('Battle tests', () => {
     });
 
     it('should initialize multiple teams with proper base separation', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }, { id: 'AggressiveAnt', func: aggressiveAnt }], 123);
+      const battle = new Battle(
+        battleArgs,
+        [
+          { id: 'SimpleAnt', func: simpleAnt },
+          { id: 'AggressiveAnt', func: aggressiveAnt },
+        ],
+        123,
+      );
 
       expect(battle.teams).toHaveLength(2);
       expect(battle.numBases).toBe(2);
@@ -133,7 +144,14 @@ describe('Battle tests', () => {
     });
 
     it('should create team shuffle tables', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }, { id: 'AggressiveAnt', func: aggressiveAnt }], 123);
+      const battle = new Battle(
+        battleArgs,
+        [
+          { id: 'SimpleAnt', func: simpleAnt },
+          { id: 'AggressiveAnt', func: aggressiveAnt },
+        ],
+        123,
+      );
 
       expect(battle.teamShuffleTables).toHaveLength(2);
       expect(battle.teamShuffleTables[0]).toHaveLength(3); // numTeams + 1
@@ -392,7 +410,14 @@ describe('Battle tests', () => {
 
     it('should calculate termination correctly for multiple teams', () => {
       const testBattleArgs = produceBattleArgs({ ...gameSpec, winPercent: 70 }, rng);
-      const battle = new Battle(testBattleArgs, [{ id: 'SimpleAnt', func: simpleAnt }, { id: 'AggressiveAnt', func: aggressiveAnt }], 123);
+      const battle = new Battle(
+        testBattleArgs,
+        [
+          { id: 'SimpleAnt', func: simpleAnt },
+          { id: 'AggressiveAnt', func: aggressiveAnt },
+        ],
+        123,
+      );
 
       // Test edge case: teams with zero values should not affect termination calculations
       // Team 1: 100 ants + 1 base = 175 total value
@@ -444,7 +469,14 @@ describe('Battle tests', () => {
 
   it('foobar', () => {
     const testBattleArgs = produceBattleArgs({ ...gameSpec, winPercent: 70 }, rng);
-    const battle = new Battle(testBattleArgs, [{ id: 'SimpleAnt', func: simpleAnt }, { id: 'AggressiveAnt', func: aggressiveAnt }], 123);
+    const battle = new Battle(
+      testBattleArgs,
+      [
+        { id: 'SimpleAnt', func: simpleAnt },
+        { id: 'AggressiveAnt', func: aggressiveAnt },
+      ],
+      123,
+    );
 
     battle.teams[0].numAnts = 10;
     battle.teams[0].numBases = 1;
@@ -459,6 +491,7 @@ describe('Battle tests', () => {
       // Use shorter timeout for test
       const testBattleArgs = produceBattleArgs({ ...gameSpec, timeOutTurn: 5 }, rng);
       const battle = new Battle(testBattleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123);
+      battle.setSpeed(100);
 
       const summary = await battle.run();
 
@@ -474,7 +507,14 @@ describe('Battle tests', () => {
 
     it('should handle multiple teams battle', async () => {
       const testBattleArgs = produceBattleArgs({ ...gameSpec, timeOutTurn: 10 }, rng);
-      const battle = new Battle(testBattleArgs, [{ id: 'SimpleAnt', func: simpleAnt }, { id: 'AggressiveAnt', func: aggressiveAnt }], 123);
+      const battle = new Battle(
+        testBattleArgs,
+        [
+          { id: 'SimpleAnt', func: simpleAnt },
+          { id: 'AggressiveAnt', func: aggressiveAnt },
+        ],
+        123,
+      );
 
       const summary = await battle.run();
 
@@ -515,7 +555,14 @@ describe('Battle tests', () => {
 
   describe('Team interactions', () => {
     it('should handle combat between teams', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }, { id: 'AggressiveAnt', func: aggressiveAnt }], 123);
+      const battle = new Battle(
+        battleArgs,
+        [
+          { id: 'SimpleAnt', func: simpleAnt },
+          { id: 'AggressiveAnt', func: aggressiveAnt },
+        ],
+        123,
+      );
 
       // Find ants from different teams
       const team1Ant = battle.ants.find((ant) => ant.team === 1)!;
@@ -576,7 +623,14 @@ describe('Battle tests', () => {
     });
 
     it('should handle base capture during combat', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }, { id: 'AggressiveAnt', func: aggressiveAnt }], 123);
+      const battle = new Battle(
+        battleArgs,
+        [
+          { id: 'SimpleAnt', func: simpleAnt },
+          { id: 'AggressiveAnt', func: aggressiveAnt },
+        ],
+        123,
+      );
 
       const team1Ant = battle.ants.find((ant) => ant.team === 1)!;
       const targetX = 20,
@@ -697,7 +751,14 @@ describe('Battle tests', () => {
 
     it('should handle termination by win percentage', () => {
       const testBattleArgs = produceBattleArgs({ ...gameSpec, winPercent: 50 }, rng);
-      const battle = new Battle(testBattleArgs, [{ id: 'SimpleAnt', func: simpleAnt }, { id: 'AggressiveAnt', func: aggressiveAnt }], 123);
+      const battle = new Battle(
+        testBattleArgs,
+        [
+          { id: 'SimpleAnt', func: simpleAnt },
+          { id: 'AggressiveAnt', func: aggressiveAnt },
+        ],
+        123,
+      );
 
       // Manually set up a scenario where team 1 has > 50% of total value
       battle.teams[0].numAnts = 100;
@@ -714,7 +775,14 @@ describe('Battle tests', () => {
         { ...gameSpec, halfTimeTurn: 10, halfTimePercent: 60 },
         rng,
       );
-      const battle = new Battle(testBattleArgs, [{ id: 'SimpleAnt', func: simpleAnt }, { id: 'AggressiveAnt', func: aggressiveAnt }], 123);
+      const battle = new Battle(
+        testBattleArgs,
+        [
+          { id: 'SimpleAnt', func: simpleAnt },
+          { id: 'AggressiveAnt', func: aggressiveAnt },
+        ],
+        123,
+      );
 
       // Set current turn past half-time
       battle.currentTurn = 15;
@@ -730,7 +798,14 @@ describe('Battle tests', () => {
     });
 
     it('should handle termination when only one team remains active', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }, { id: 'AggressiveAnt', func: aggressiveAnt }], 123);
+      const battle = new Battle(
+        battleArgs,
+        [
+          { id: 'SimpleAnt', func: simpleAnt },
+          { id: 'AggressiveAnt', func: aggressiveAnt },
+        ],
+        123,
+      );
 
       // Simulate one team being completely eliminated
       battle.teams[0].numAnts = 50;
@@ -758,7 +833,14 @@ describe('Battle tests', () => {
     });
 
     it('should track team statistics', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }, { id: 'AggressiveAnt', func: aggressiveAnt }], 123);
+      const battle = new Battle(
+        battleArgs,
+        [
+          { id: 'SimpleAnt', func: simpleAnt },
+          { id: 'AggressiveAnt', func: aggressiveAnt },
+        ],
+        123,
+      );
 
       expect(battle.teams[0].numAnts).toBeGreaterThan(0);
       expect(battle.teams[1].numAnts).toBeGreaterThan(0);
@@ -780,7 +862,14 @@ describe('Battle tests', () => {
     });
 
     it('should handle square ownership transfer when moving to enemy territory', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }, { id: 'AggressiveAnt', func: aggressiveAnt }], 123);
+      const battle = new Battle(
+        battleArgs,
+        [
+          { id: 'SimpleAnt', func: simpleAnt },
+          { id: 'AggressiveAnt', func: aggressiveAnt },
+        ],
+        123,
+      );
 
       const ant = battle.ants.find((a) => a.team === 1)!;
       const targetX = 60;
@@ -864,26 +953,26 @@ describe('Battle tests', () => {
     });
 
     it('should handle paused battle state correctly', async () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123);
+      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123, 1);
 
       // Set battle to start in paused state
-      battle.pause();
       const p = battle.run();
 
       expect(battle.currentTurn).toBe(1);
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
       // Run with single step should return undefined when paused
       battle.proceed({ type: 'takeSteps', steps: 1 });
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
-      expect(battle.currentTurn).toBe(2);
+      await vi.waitFor(() => {
+        expect(battle.currentTurn).toBe(2);
+      });
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
       battle.proceed({ type: 'takeSteps', steps: 10 });
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
-      expect(battle.currentTurn).toBe(12);
+      await vi.waitFor(() => {
+        expect(battle.currentTurn).toBe(12);
+      });
+
       battle.stop();
       await p;
     });
@@ -1050,7 +1139,7 @@ describe('Battle tests', () => {
       const rng1 = getRNG(12345);
       const battleArgs1 = produceBattleArgs(testSpec1, rng1);
       const battle1 = new Battle(battleArgs1, [{ id: 'SimpleAnt', func: simpleAnt }], 12345);
-      
+
       const rng2 = getRNG(54321);
       const battleArgs2 = produceBattleArgs(testSpec2, rng2);
       const battle2 = new Battle(battleArgs2, [{ id: 'SimpleAnt', func: simpleAnt }], 54321);
@@ -1361,7 +1450,14 @@ describe('Battle tests', () => {
     });
 
     it('should properly maintain linked lists during combat', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }, { id: 'AggressiveAnt', func: aggressiveAnt }], 123);
+      const battle = new Battle(
+        battleArgs,
+        [
+          { id: 'SimpleAnt', func: simpleAnt },
+          { id: 'AggressiveAnt', func: aggressiveAnt },
+        ],
+        123,
+      );
       const targetX = 15,
         targetY = 15;
       const targetSquare = battle.mapData(targetX, targetY);
@@ -1564,7 +1660,14 @@ describe('Battle tests', () => {
 
   describe('Base counting bug reproduction', () => {
     it('should reproduce the numBases bug when multiple ants move to same captured base', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }, { id: 'AggressiveAnt', func: aggressiveAnt }], 123);
+      const battle = new Battle(
+        battleArgs,
+        [
+          { id: 'SimpleAnt', func: simpleAnt },
+          { id: 'AggressiveAnt', func: aggressiveAnt },
+        ],
+        123,
+      );
 
       // Set up the scenario: Team 1 will capture Team 2's base, then multiple ants move to it
       const baseX = 30,
@@ -1666,7 +1769,14 @@ describe('Battle tests', () => {
     });
 
     it('should reproduce the numBases bug with defended enemy base', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }, { id: 'AggressiveAnt', func: aggressiveAnt }], 123);
+      const battle = new Battle(
+        battleArgs,
+        [
+          { id: 'SimpleAnt', func: simpleAnt },
+          { id: 'AggressiveAnt', func: aggressiveAnt },
+        ],
+        123,
+      );
 
       // Set up the scenario: Team 1 will capture Team 2's defended base, then multiple ants move to it
       const baseX = 30,
@@ -1785,7 +1895,14 @@ describe('Battle tests', () => {
     });
 
     it('should reveal the squareOwn counter bug in combat scenarios', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }, { id: 'AggressiveAnt', func: aggressiveAnt }], 123);
+      const battle = new Battle(
+        battleArgs,
+        [
+          { id: 'SimpleAnt', func: simpleAnt },
+          { id: 'AggressiveAnt', func: aggressiveAnt },
+        ],
+        123,
+      );
 
       // Set up combat scenario: Team 1 attacks Team 2 square with defenders
       const targetX = 40,
@@ -1881,7 +1998,14 @@ describe('Battle tests', () => {
     });
 
     it('should correctly handle squareOwn when multiple ants move to same square', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }, { id: 'AggressiveAnt', func: aggressiveAnt }], 123);
+      const battle = new Battle(
+        battleArgs,
+        [
+          { id: 'SimpleAnt', func: simpleAnt },
+          { id: 'AggressiveAnt', func: aggressiveAnt },
+        ],
+        123,
+      );
 
       // Set up a neutral square that Team 1 will occupy
       const targetX = 45,
@@ -1943,7 +2067,14 @@ describe('Battle tests', () => {
     });
 
     it('should correctly update squareOwn when claiming neutral territory', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }, { id: 'AggressiveAnt', func: aggressiveAnt }], 123);
+      const battle = new Battle(
+        battleArgs,
+        [
+          { id: 'SimpleAnt', func: simpleAnt },
+          { id: 'AggressiveAnt', func: aggressiveAnt },
+        ],
+        123,
+      );
 
       // Set up a neutral square
       const targetX = 50,
@@ -2005,7 +2136,14 @@ describe('Battle tests', () => {
         return 0; // Stay in place
       }) as AntFunction;
 
-      const battle = new Battle(battleArgs, [{ id: 'TestAnt', func: testAnt }, { id: 'AggressiveAnt', func: aggressiveAnt }], 123);
+      const battle = new Battle(
+        battleArgs,
+        [
+          { id: 'TestAnt', func: testAnt },
+          { id: 'AggressiveAnt', func: aggressiveAnt },
+        ],
+        123,
+      );
 
       // Set up the scenario according to C semantics
       const ant = battle.ants[0]; // Team 1 ant

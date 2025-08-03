@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { blacklist, type TeamWithCode } from '@/Team.ts';
 import type { GameSpec } from '@/GameSpec.ts';
 import { instantiateParticipant } from '@/Game.ts';
@@ -22,7 +22,17 @@ function loadTeams(): TeamWithCode[] {
 
 const whiteList: string[] = [];
 
+beforeEach(() => {
+  vi.stubGlobal('postMessage', () => {});
+  vi.stubGlobal('console', { log: vi.fn(), debug: vi.fn(), error: vi.fn() });
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe('Ant test-bench', () => {
+  Battle.DEFAULT_SPEED = 100;
   for (const team of loadTeams()) {
     if (team.id === 'FormAnt') continue; // Manually found to work but doesn't pass the test
 
@@ -45,7 +55,7 @@ describe('Ant test-bench', () => {
         newFoodSpace: [3, 3],
         seed: 12345,
         startAnts: [20, 20], // Start with enough ants for base building
-        timeOutTurn: 1000,
+        timeOutTurn: 100,
         teams: [team],
         winPercent: 70,
         numBattles: 1,

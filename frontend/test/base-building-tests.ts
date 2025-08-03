@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import {
   Battle,
   type AntFunction,
@@ -11,6 +11,12 @@ import type { GameSpec } from '@/GameSpec.ts';
 import { getRNG, type RNGFunction } from '@/prng.ts';
 
 describe('Base Building Brain Management', () => {
+  beforeEach(() => {
+    vi.stubGlobal('console', { log: vi.fn(), debug: vi.fn(), error: vi.fn() });
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
   it('should maintain consistent brain arrays during base building', () => {
     let errorCount = 0;
     let baseBuildingDetected = false;

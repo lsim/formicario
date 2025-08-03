@@ -14,6 +14,7 @@ import type { BattleStatus } from '@/GameSummary.ts';
 import { filter, finalize, Observable, ReplaySubject, take, timeout } from 'rxjs';
 import type { BattleArgs } from '@/Battle.ts';
 import type { TeamWithCode } from '@/Team.ts';
+import { watchDebounced } from '@vueuse/core';
 
 export const useGameStore = defineStore('game', () => {
   const worker = useWorker();
@@ -31,7 +32,7 @@ export const useGameStore = defineStore('game', () => {
     startAnts: [15, 40],
     timeOutTurn: 20000,
     winPercent: 75,
-    statusInterval: 20,
+    statusInterval: 100,
     numBattles: 3,
     seed: (Math.random() * 4294967295) >>> 0,
     teams: [],
@@ -64,6 +65,7 @@ export const useGameStore = defineStore('game', () => {
   const lastError = ref<string[]>([]);
   const liveFeed = ref(true);
   const selectedBattleSummaryStats = ref<BattleSummaryStats | null>(null);
+  const speed = ref(50);
 
   async function start(pauseAfterTurns = -1) {
     selectedBattleSummaryStats.value = null;
@@ -80,6 +82,7 @@ export const useGameStore = defineStore('game', () => {
         numBattles: gameSpec.numBattles,
       },
       pauseAfterTurns,
+      speed: speed.value,
     };
     gameRunning.value = true;
     battleStreams$.value.next([
@@ -156,6 +159,14 @@ export const useGameStore = defineStore('game', () => {
     console.debug('Rerun started');
   }
 
+  watchDebounced(
+    () => speed.value,
+    async (newSpeed) => {
+      await worker.setSpeed(newSpeed);
+    },
+    { debounce: 300 },
+  );
+
   return {
     gameSpec,
     gameRunning,
@@ -166,6 +177,7 @@ export const useGameStore = defineStore('game', () => {
     selectedStatusProperty,
     battleStreams$,
     selectedBattleSummaryStats,
+    speed,
 
     start,
     stop,

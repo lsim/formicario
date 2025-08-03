@@ -18,6 +18,7 @@ export type WorkerMessageType =
   | 'ant-info-reply'
   | 'skip-battle'
   | 'run-battle'
+  | 'set-speed'
   | 'error'
   | 'ok';
 
@@ -29,6 +30,7 @@ declare type TypedMessage = {
 export interface RunGameCommand extends TypedMessage {
   type: 'run-game';
   game: GameSpec;
+  speed: number;
   pauseAfterTurns?: number;
 }
 
@@ -98,6 +100,11 @@ export interface RunBattleMessage extends TypedMessage {
   pauseAfterTurns?: number;
 }
 
+export interface SetSpeedMessage extends TypedMessage {
+  type: 'set-speed';
+  speed: number;
+}
+
 export interface OkReply extends TypedMessage {
   type: 'ok';
 }
@@ -122,6 +129,7 @@ declare type CommandMap = {
   AntInfoReplyMessage: AntInfoReplyMessage;
   SkipBattleMessage: SkipBattleMessage;
   RunBattleMessage: RunBattleMessage;
+  SetSpeedMessage: SetSpeedMessage;
   OkReply: OkReply;
   ErrorReply: ErrorReply;
 };

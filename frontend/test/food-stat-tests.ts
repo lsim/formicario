@@ -19,6 +19,7 @@ describe('Food statistics tests', () => {
   let rng: RNGFunction;
 
   beforeEach(() => {
+    vi.stubGlobal('console', { log: vi.fn(), debug: vi.fn(), error: vi.fn() });
     gameSpec = {
       statusInterval: 100,
       halfTimePercent: 60,
@@ -434,7 +435,14 @@ describe('Food statistics tests', () => {
     });
 
     it('should test ant movement foodOwnTouch calls with combat', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }, { id: 'AggressiveAnt', func: aggressiveAnt }], 123);
+      const battle = new Battle(
+        battleArgs,
+        [
+          { id: 'SimpleAnt', func: simpleAnt },
+          { id: 'AggressiveAnt', func: aggressiveAnt },
+        ],
+        123,
+      );
 
       // Position two ants from different teams to trigger combat
       const ant1 = battle.ants[0]; // Team 1
@@ -504,7 +512,11 @@ describe('Food statistics tests', () => {
         return (brain.step % 4) + 1; // Move in directions 1,2,3,4 cyclically
       }) as AntFunction;
 
-      const battle = new Battle(battleArgs, [{ id: 'MovementOnlyAnt', func: movementOnlyAnt }], 123);
+      const battle = new Battle(
+        battleArgs,
+        [{ id: 'MovementOnlyAnt', func: movementOnlyAnt }],
+        123,
+      );
 
       console.log('Testing movement-only scenario (no base building)...');
 

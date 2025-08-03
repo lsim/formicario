@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import {
   Battle,
   type AntFunction,
@@ -11,6 +11,13 @@ import { getRNG, type RNGFunction } from '@/prng.ts';
 import type { GameSpec } from '@/GameSpec.ts';
 
 describe('Brain Array Synchronization', () => {
+  beforeEach(() => {
+    vi.stubGlobal('console', { log: vi.fn(), debug: vi.fn(), error: vi.fn() });
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('should maintain sync between square.numAnts and brain array length', () => {
     // Create a simple test scenario where ants die and brain arrays are collected
     const spec: GameSpec = {

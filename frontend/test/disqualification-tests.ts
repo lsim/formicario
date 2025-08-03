@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import {
   Battle,
   type AntFunction,
@@ -16,6 +16,7 @@ describe('Disqualification System', () => {
   let rng: RNGFunction;
 
   beforeEach(() => {
+    vi.stubGlobal('console', { log: vi.fn(), debug: vi.fn(), error: vi.fn() });
     gameSpec = {
       statusInterval: 100,
       halfTimePercent: 60,
@@ -35,6 +36,9 @@ describe('Disqualification System', () => {
     };
     rng = getRNG(42);
     battleArgs = produceBattleArgs(gameSpec, rng);
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('Non-number return value disqualification', () => {

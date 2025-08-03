@@ -48,6 +48,7 @@ onmessage = async (e) => {
         command.game,
         teamFunctions.filter((f) => f && f.func && f.id).map((f) => ({ id: f.id!, func: f.func! })),
       );
+      activeGame.setSpeed(command.speed);
       const p = activeGame.run(command.pauseAfterTurns);
       postMessage({ type: 'ok', id: command.id });
       const summary = await p;
@@ -105,6 +106,9 @@ onmessage = async (e) => {
     } else if (command?.type === 'debug-request') {
       const ants = activeGame?.activeBattle?.getAntsForDebug(command.x, command.y);
       postMessage({ type: 'debug-reply', ants, id: command.id });
+    } else if (command?.type === 'set-speed') {
+      activeGame?.setSpeed(command.speed);
+      postMessage({ type: 'ok', id: command.id });
     } else {
       console.error('Unknown command', command);
       postMessage({ type: 'error', error: 'Unexpected command: ' + command?.type, id: command.id });

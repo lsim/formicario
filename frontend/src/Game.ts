@@ -39,6 +39,7 @@ export class Game {
   public id = 0;
   activeBattle: Battle | null = null;
   rng: RNGFunction;
+  private speed = 50;
 
   constructor(
     private spec: GameSpec | null,
@@ -94,6 +95,7 @@ export class Game {
           battleSeed,
           _pauseAfterTurns,
         );
+        this.activeBattle.setSpeed(this.speed);
 
         const battleSummary = await this.activeBattle.run();
         postMessage({ type: 'battle-summary', summary: battleSummary });
@@ -148,5 +150,10 @@ export class Game {
     if (continuation.type === 'stop') {
       this.stopGame();
     }
+  }
+
+  public setSpeed(speed: number) {
+    this.speed = speed;
+    this.activeBattle?.setSpeed(speed);
   }
 }

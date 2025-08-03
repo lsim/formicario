@@ -6,6 +6,7 @@ import type {
   DebugRequestMessage,
   RunBattleMessage,
   RunGameCommand,
+  SetSpeedMessage,
   StepGameCommand,
   WorkerMessage,
 } from '@/workers/WorkerMessage.ts';
@@ -109,6 +110,10 @@ async function getTeamInfo(team: TeamWithCode) {
   return reply.info;
 }
 
+async function setSpeed(speed: number) {
+  await queueMessage<SetSpeedMessage>({ type: 'set-speed', speed });
+}
+
 export function useWorker() {
   return {
     battleStatuses$: battleStatusSubject$.asObservable(),
@@ -124,5 +129,6 @@ export function useWorker() {
     startGame,
     stopGame,
     stepGame,
+    setSpeed,
   };
 }

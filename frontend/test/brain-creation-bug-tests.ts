@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import {
   Battle,
   type AntFunction,
@@ -11,6 +11,12 @@ import type { GameSpec } from '@/GameSpec.ts';
 import { getRNG, type RNGFunction } from '@/prng.ts';
 
 describe('Brain Data Consistency During Ant Creation', () => {
+  beforeEach(() => {
+    vi.stubGlobal('console', { log: vi.fn(), debug: vi.fn(), error: vi.fn() });
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
   it('should provide all defined brains when new ants are created at bases', () => {
     // This test would have caught the original bug where undefined brains were passed to ant functions
     let undefinedBrainDetected = false;

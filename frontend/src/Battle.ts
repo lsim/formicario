@@ -1,5 +1,6 @@
 import type { GameSpec } from '@/GameSpec.ts';
 import { getRNG, type RNGFunction } from '@/prng.ts';
+import { throttle } from 'lodash';
 import type {
   BattleStatus,
   BattleSummary,
@@ -131,6 +132,8 @@ export type BattleContinuation = {
 };
 
 export class Battle {
+  static DEFAULT_SPEED = 50;
+  private isTerminated = false;
   teams: TeamData[];
   // An array of squares, each with a linked list of ants on that square
   map: SquareData[] = [];
@@ -160,6 +163,8 @@ export class Battle {
   private lastTpsUpdate = Date.now();
   private turnsAtLastUpdate = 0;
   turnsPerSecond = 0;
+  private speed = Battle.DEFAULT_SPEED;
+  private readonly emitThrottled;
 
   public get isPaused() {
     return this.paused;
@@ -189,8 +194,10 @@ export class Battle {
     this.currentTurn = 0;
 
     this.initializeBattle();
+    this.emitThrottled = throttle(() => this.emitStatus(), this.args.statusInterval, {
+      leading: true,
+    });
   }
-
   mapIndex(x: number, y: number) {
     return x + y * this.args.mapWidth;
   }
@@ -478,7 +485,7 @@ export class Battle {
   }
 
   emitStatus() {
-    if (this.touchedSquares.size === 0) return;
+    if (this.touchedSquares.size === 0 || this.isTerminated) return;
 
     // Update turns per second calculation
     const now = Date.now();
@@ -523,15 +530,8 @@ export class Battle {
       this.doTurn();
       if (stepsToTake > 0) stepsToTake--;
 
-      // Emit status for UI updates (equivalent to SysDrawMap() in C)
-      if (
-        this.args.statusInterval >= 0 &&
-        (stepsToTake === 0 ||
-          this.currentTurn === 1 ||
-          this.currentTurn % this.args.statusInterval === 0)
-      ) {
-        this.emitStatus();
-      }
+      // Emit status for UI updates (equivalent to SysDrawMap() in C).
+      this.emitThrottled();
 
       if (this.pauseAfterTurns > 0 && this.currentTurn === this.pauseAfterTurns) {
         this.pause();
@@ -558,17 +558,23 @@ export class Battle {
 
       // Allow for async operations and UI responsiveness
       // Yield control periodically for non-blocking execution
-      if (this.currentTurn % 20 === 0) {
+      if (this.speed >= 100 && this.currentTurn % 20 === 0) {
         await new Promise((resolve) => setTimeout(resolve, 20));
+      } else if (this.speed < 100) {
+        await new Promise((resolve) => setTimeout(resolve, 1000 / this.speed));
       }
     } while (!terminated);
-
+    this.isTerminated = true;
     return this.generateBattleSummary();
   }
 
   public stop() {
     this.stopRequested = true;
     this.proceed({ type: 'stop' });
+  }
+
+  public setSpeed(speed: number) {
+    this.speed = speed;
   }
 
   public pause() {
