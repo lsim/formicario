@@ -14,6 +14,7 @@ import useApiClient from '@/composables/api-client.ts';
 import type { AntDescriptor } from '@/Battle.ts';
 import ModalWrapper from '@/components/ModalWrapper.vue';
 import { faCloudArrowUp, faPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
+import TestBattleView from '@/components/TestBattleView.vue';
 
 const teamStore = useTeamStore();
 const router = useRouter();
@@ -368,6 +369,7 @@ const codeMirrorOptions = {
               class="button is-primary is-outlined is-fullwidth"
               @click="publishTeam()"
               :disabled="!!team.id && !teamStore.isOwnedByUser(team)"
+              title="Push to the cloud for others to enjoy!"
             >
               <span class="icon is-small is-justify-content-left">
                 <font-awesome-icon :icon="faCloudArrowUp" />
@@ -387,6 +389,7 @@ const codeMirrorOptions = {
               <span>Delete team</span>
             </button>
           </div>
+          <test-battle-view :code="team.code || ''" :color="team.color" />
         </div>
       </div>
     </div>
@@ -427,6 +430,6 @@ const codeMirrorOptions = {
 <style lang="scss">
 .cm-editor {
   width: calc(100vw - 18em);
-  min-height: calc(100vh - 10em);
+  height: calc(100vh - 10em);
 }
 </style>

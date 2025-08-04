@@ -38,7 +38,7 @@ onBeforeUnmount(() => {
   <div class="container">
     <Teleport to="#navbarMenu">
       <game-controls />
-      <speed-gauge />
+      <speed-gauge class="navbar-item" />
     </Teleport>
     <div class="fixed-grid has-2-cols">
       <div class="grid">

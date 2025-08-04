@@ -142,14 +142,14 @@ function Skak(squareData, antInfo) {
 
   function goOutSlinger() {
     // Use mx as random seed
-    myBrain.mx = myBrain.mx * 4637 + 342;
+    myBrain.mx = (myBrain.mx * 4637 + 342) & 0x7FFFFFFF >> 0;
     if (myBrain.mx > (myBrain.id << 24)) {
-      myBrain.mx = myBrain.mx * 4637 + 342;
+      myBrain.mx = (myBrain.mx * 4637 + 342) & 0x7FFFFFFF >> 0;
       if (myBrain.px > 0) return EAST;
       if (myBrain.px < 0) return WEST;
       return (myBrain.mx > 0) ? EAST : WEST;
     } else {
-      myBrain.mx = myBrain.mx * 4637 + 342;
+      myBrain.mx = (myBrain.mx * 4637 + 342) & 0x7FFFFFFF >> 0;
       if (myBrain.py > 0) return NORTH;
       if (myBrain.py < 0) return SOUTH;
       return (myBrain.mx > 0) ? NORTH : SOUTH;
@@ -163,12 +163,14 @@ function Skak(squareData, antInfo) {
   switch (myBrain.state & ~(128 | 64)) {
     case stINIT: {
       let queen = 0;
+      myBrain.mx = (myBrain.random & 0xFFFF) >> 0;
+      myBrain.my = ((myBrain.random >> 16) & 0xFFFF) >> 0;
       myBrain.id = myBrain.mx;
       myBrain.px = myBrain.py = 0;
 
       for (i = 1; i < squareData[0].numAnts; i++) {
         if (antInfo.brains[i].state === stQUEEN) {
-          queen = i; 
+          queen = i;
           break;
         }
       }
@@ -200,8 +202,8 @@ function Skak(squareData, antInfo) {
       if (squareData[0].numFood) { // Mad!
         if (squareData[0].numFood > 1 && !(KNOWS_FOOD())) {
           myBrain.state |= flKNOWSFOOD;
-          myBrain.mx = myBrain.px; 
-          myBrain.my = myBrain.py;
+          myBrain.mx = myBrain.px & 0x7FFFFFFF >> 0;
+          myBrain.my = myBrain.py & 0x7FFFFFFF >> 0;
           myBrain.pos = squareData[0].numFood - 1;
         }
         dir = goBackFollowingWall() | CARRY;
@@ -224,7 +226,7 @@ function Skak(squareData, antInfo) {
             for (i = 1; i < squareData[0].numAnts && myBrain.pos > 1; i++) {
               if (antInfo.brains[i].state === stFOOD) { // Kender ikke mad
                 antInfo.brains[i].state |= flKNOWSFOOD;
-                antInfo.brains[i].mx = myBrain.mx; 
+                antInfo.brains[i].mx = myBrain.mx;
                 antInfo.brains[i].my = myBrain.my;
                 myBrain.pos -= (antInfo.brains[i].pos = myBrain.pos >> 1); // Del maden
                 i++;
@@ -264,7 +266,7 @@ function Skak(squareData, antInfo) {
       if ((myBrain.px | myBrain.py) && ((myBrain.px & STIPLET) === 0 && (myBrain.py & STIPLET) === 0)) {
         for (i = 1; i < squareData[0].numAnts; i++) {
           if (antInfo.brains[i].state === stWALL && antInfo.brains[i].pos) {
-            found = TRUE; 
+            found = TRUE;
             break;
           }
         }
@@ -323,7 +325,7 @@ function Skak(squareData, antInfo) {
         // Find ny plads? (TEST)
         for (i = 1; i < squareData[0].numAnts; i++) {
           if (antInfo.brains[i].state === stWALL && antInfo.brains[i].pos === myBrain.pos) {
-            myBrain.state = stWALL0; 
+            myBrain.state = stWALL0;
             break;
           }
         }
@@ -336,7 +338,7 @@ function Skak(squareData, antInfo) {
         // Se omkring for mad:
         for (i = 1; i <= 4; i++) {
           if (squareData[i].numFood > squareData[i].numAnts) {
-            dir = i; 
+            dir = i;
             break;
           }
         }

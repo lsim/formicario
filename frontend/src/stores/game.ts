@@ -117,12 +117,12 @@ export const useGameStore = defineStore('game', () => {
     gamePaused.value = false;
   }
 
-  async function step() {
+  async function step(steps = 0) {
     gamePaused.value = true;
     if (!gameRunning.value && !battleReplaying.value) {
-      await start(speed.value);
+      await start(steps || speed.value || 1);
     } else {
-      await worker.stepGame(speed.value);
+      await worker.stepGame(steps || speed.value || 1);
     }
   }
 

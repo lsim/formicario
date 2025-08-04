@@ -1,13 +1,31 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue';
+import {
+  computed,
+  onBeforeUnmount,
+  ref,
+  useTemplateRef,
+  watch,
+  withDefaults,
+  defineProps,
+} from 'vue';
 import AntMagnifier from '@/components/AntMagnifier.vue';
 import { useMagicKeys, useMouseInElement } from '@vueuse/core';
 import { filter, tap } from 'rxjs';
 import useBattleRenderer from '@/composables/renderer.ts';
 import { useWorker } from '@/workers/WorkerDispatcher.ts';
 
+const props = withDefaults(
+  defineProps<{
+    zoomLevel?: number;
+    centerMagnifier?: boolean;
+  }>(),
+  {
+    zoomLevel: 2,
+    centerMagnifier: false,
+  },
+);
+
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
-const canvasDefaultZoom = ref(2);
 
 const backBuffer = document.createElement('canvas');
 const backBufferCtx = backBuffer.getContext('2d') as CanvasRenderingContext2D;
@@ -80,6 +98,11 @@ const subscription = worker.battleStatuses$
     tap((battle) => {
       if (lastRenderedTurn === -1 || battle.turns < lastReceivedTurn) {
         // First status from new battle
+        if (props.centerMagnifier) {
+          magnifierX.value = (battle.args.mapWidth * props.zoomLevel) / 2;
+          magnifierY.value = (battle.args.mapHeight * props.zoomLevel) / 2;
+          magnifierPinned.value = true;
+        }
 
         lastRenderedTurn = 0;
         backBuffer.width = battle.args.mapWidth;
@@ -108,8 +131,8 @@ function ensureRendering() {
 function getAntData() {
   worker
     .getDebugAnts(
-      Math.round(magX.value / canvasDefaultZoom.value),
-      Math.round(magY.value / canvasDefaultZoom.value) - 1,
+      Math.round(magX.value / (props.zoomLevel || 1)),
+      Math.round(magY.value / (props.zoomLevel || 1)) - 1,
     )
     .then(() => {});
 }
@@ -126,7 +149,7 @@ onBeforeUnmount(() => {
         ref="canvas"
         :width="mapWidth"
         :height="mapHeight"
-        :style="{ zoom: canvasDefaultZoom }"
+        :style="{ zoom: props.zoomLevel }"
         @click.exact="magnifierPinned = false"
         @click.ctrl.exact="getAntData"
         @click.meta.exact="getAntData"
@@ -140,8 +163,8 @@ onBeforeUnmount(() => {
         class="magnifier"
         :back-buffer="backBuffer"
         :zoom-level="5"
-        :center-x="magX / canvasDefaultZoom"
-        :center-y="magY / canvasDefaultZoom"
+        :center-x="magX / (props.zoomLevel || 1)"
+        :center-y="magY / (props.zoomLevel || 1)"
         :style="{ left: `${magX}px`, top: `${magY}px` }"
       />
     </div>

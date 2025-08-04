@@ -24,7 +24,7 @@ function increaseSpeed() {
 </script>
 
 <template>
-  <div class="navbar-item">
+  <div>
     <div class="field has-addons">
       <div class="control">
         <a class="button is-static is-medium">
@@ -44,6 +44,7 @@ function increaseSpeed() {
 <style scoped lang="scss">
 .the-slider {
   pointer-events: all;
+  width: 100%;
 }
 
 .button span {
