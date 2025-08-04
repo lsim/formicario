@@ -23,8 +23,6 @@ const props = withDefaults(
 );
 
 const liveTeams = ref<TeamStatus[]>([]);
-const turn = ref<number>();
-const tps = ref<number>();
 
 const teams = computed(() => {
   // Look up the teams in the teamStore
@@ -51,8 +49,6 @@ watch(
         )
         .subscribe((battleStatus) => {
           liveTeams.value = battleStatus.teams;
-          turn.value = battleStatus.turns;
-          tps.value = battleStatus.turnsPerSecond;
         });
     } else {
       subscription?.unsubscribe();
@@ -100,10 +96,6 @@ const sortedBars = computed(() => {
     </div>
     <div class="column">
       <div class="team-stats">
-        <div class="team-stats-header">
-          <span v-show="turn">Simulated turns {{ turn }}</span>
-          <span v-show="tps">Simulated turns/second {{ tps }}</span>
-        </div>
         <template v-for="bar in sortedBars" :key="bar.name">
           <div class="team-name" :title="bar.value + ''">{{ bar.name }}</div>
           <!-- A colored bar for the selected property and the current bar -->

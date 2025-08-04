@@ -2,7 +2,11 @@
 
 ## Battle
 
-- Add support for multiple workers running battles in parallel, so a game can be computed faster across multiple cores 
+- Add support for multiple workers running battles in parallel, so a game can be computed faster across multiple cores
+- Add progress bar showing progress towards configured half-turn and timeout turn limits
+  - Perhaps an extra panel-block under battle-feed
+- Show average tps so far in the battle (from #turns and time since first turn)
+- Change speed implementation so that it works towards a fixed tps rather than a fixed wait-time per turn
 
 ## Editor
 
