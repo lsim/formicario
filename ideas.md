@@ -7,6 +7,8 @@
   - Perhaps an extra panel-block under battle-feed
 - Show average tps so far in the battle (from #turns and time since first turn)
 - Change speed implementation so that it works towards a fixed tps rather than a fixed wait-time per turn
+- Check if new properties appear to an ant's brain after its turn and if so, disqualify the team (and provide a good explanation)
+- Check if brain properties have the right type after each turn - disqualify if not
 
 ## Editor
 

@@ -18,12 +18,15 @@ import { onBeforeUnmount, shallowRef, useTemplateRef, watch } from 'vue';
 import { map, Subscription, switchAll, tap } from 'rxjs';
 import { useGameStore } from '@/stores/game.ts';
 import StatPropChooser from '@/components/StatPropChooser.vue';
+import { useTeamStore } from '@/stores/teams.ts';
 
 ChartJS.register(Title, Tooltip, Legend, PointElement, LineElement, CategoryScale, LinearScale);
 
 const chartRef = useTemplateRef('chart');
 
 const gameStore = useGameStore();
+
+const teamStore = useTeamStore();
 
 const props = withDefaults(
   defineProps<{
@@ -76,9 +79,9 @@ function chartDataFromStats(stats?: BattleStats) {
   if (!stats) return { labels: [], datasets: [] };
   const labels = stats.turn;
   // A dataset for each team
-  const datasets = Object.entries(stats.teams).map(([teamName, teamStats]) => {
+  const datasets = Object.entries(stats.teams).map(([teamId, teamStats]) => {
     return {
-      label: teamName,
+      label: teamStore.teamName(teamId),
       data: teamStats.stats[gameStore.selectedStatusProperty],
       borderColor: teamStats.teamColor,
       borderWidth: 1,
