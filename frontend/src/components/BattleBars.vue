@@ -29,10 +29,10 @@ const tps = ref<number>();
 const teams = computed(() => {
   // Look up the teams in the teamStore
   const participatingTeamStatuses = props.battleSummary?.teams || liveTeams.value;
-  return participatingTeamStatuses.map((t) => {
+  return participatingTeamStatuses.map((team) => {
     // Look up the team name in the teamStore and add it to the team status
-    const teamFromStore = teamStore.allTeamMetas.find((t) => t.id === t.id);
-    return { ...t, name: teamFromStore?.name };
+    const teamFromStore = teamStore.allTeamMetas.find((t) => t.id === team.id);
+    return { ...team, name: teamFromStore?.name };
   });
 });
 
