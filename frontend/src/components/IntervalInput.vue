@@ -65,4 +65,7 @@ watch(
 .interval-summary {
   width: 7em;
 }
+input {
+  pointer-events: all;
+}
 </style>
