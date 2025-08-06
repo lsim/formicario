@@ -4,7 +4,7 @@ import SpeedGauge from '@/components/SpeedGauge.vue';
 import { useGameStore } from '@/stores/game.ts';
 import { faPause, faPlay, faStepForward } from '@fortawesome/free-solid-svg-icons';
 import type { BattleArgs } from '@/Battle.ts';
-import { ref } from 'vue';
+import { onBeforeUnmount, ref } from 'vue';
 import { watchDebounced } from '@vueuse/core';
 
 const props = defineProps<{
@@ -36,9 +36,9 @@ function startDemo(code: string, color: string) {
     newFoodMin: 20,
     newFoodDiff: 20,
     startAnts: 25,
-    halfTimeTurn: 10000,
+    halfTimeTurn: 2000,
     halfTimePercent: 60,
-    timeOutTurn: 20000,
+    timeOutTurn: 4000,
     winPercent: 70,
     statusInterval: 10,
   };
@@ -64,6 +64,10 @@ function resumeDemo() {
 function stepForward() {
   gameStore.step(1);
 }
+
+onBeforeUnmount(() => {
+  gameStore.stop();
+});
 </script>
 
 <template>
