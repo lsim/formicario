@@ -62,7 +62,7 @@ describe('Ant test-bench', () => {
         numBattleTeams: 15,
       };
 
-      const antFunction = instantiateParticipant(team.code, team.id);
+      const antFunction = instantiateParticipant(team.code);
       expect(antFunction).toBeDefined();
 
       const seeds = [1, 2, 3, 4, 5];
@@ -85,7 +85,7 @@ describe('Ant test-bench', () => {
 
     // NOTE: We should re-enable this when the last of the built-in teams have valid brain templates
     it.skip(`${team.id} should have a valid brain template`, () => {
-      const antFunction = instantiateParticipant(team.code, team.id);
+      const antFunction = instantiateParticipant(team.code);
       const descriptor = antFunction();
       expect(descriptor.brainTemplate).toBeDefined();
       expect(descriptor.brainTemplate).toBeTruthy();
