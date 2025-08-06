@@ -91,7 +91,9 @@ export const useTeamStore = defineStore('team', () => {
     else {
       const remoteTeam = await apiClient.getFullPublication(team.id);
       if (remoteTeam) {
-        battleTeams.value = [...battleTeams.value, { ...team, ...remoteTeam }];
+        const fullTeam = { ...team, ...remoteTeam };
+        saveTeam(fullTeam);
+        battleTeams.value = [...battleTeams.value, fullTeam];
       } else {
         toast.show('Could not find code for team', 'is-danger');
       }
