@@ -30,9 +30,9 @@ function auditParticipant(teamCode: string) {
 
 const safeEval = createRestrictedEval();
 
-export function instantiateParticipant(teamCode: string, teamId: string) {
+export function instantiateParticipant(teamCode: string) {
   auditParticipant(teamCode);
-  return safeEval(teamCode, teamId) as AntFunction;
+  return safeEval(teamCode) as AntFunction;
 }
 
 export class Game {
@@ -71,6 +71,7 @@ export class Game {
         this.teamFunctions,
         this.singleBattleSeed ?? 1,
         _pauseAfterTurns,
+        true,
       );
       this.activeBattle.setSpeed(this.speed);
       const battleSummary = await this.activeBattle.run();

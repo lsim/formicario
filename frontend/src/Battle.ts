@@ -124,7 +124,12 @@ export type AntDescriptor = {
   id: string;
 };
 
-export type AntFunction = (() => AntDescriptor) & ((map: SquareData[], antInfo: AntInfo) => number);
+export type AntFunction = (() => AntDescriptor) &
+  ((
+    map: SquareData[],
+    antInfo: AntInfo,
+    logFn: (message: string, args: unknown[]) => void,
+  ) => number);
 
 export type BattleContinuation = {
   type: 'resume' | 'stop' | 'takeSteps';
@@ -175,8 +180,9 @@ export class Battle {
     antFunctions: { id: string; func: AntFunction }[],
     private seed: number,
     private pauseAfterTurns = -1,
+    private readonly isTest = false,
   ) {
-    console.log('Battle created', args, antFunctions, seed, pauseAfterTurns);
+    console.log('Battle created', args, antFunctions, seed, pauseAfterTurns, isTest);
     this.rng = getRNG(seed);
     this.teams = antFunctions.map((antFunc) => {
       const descriptor = antFunc.func();
@@ -697,6 +703,15 @@ export class Battle {
     }
   }
 
+  handleAntLog(ant: AntData, message: string, args: unknown[]) {
+    postMessage({
+      type: 'test-log',
+      message,
+      args,
+      ant: { ...ant, mapNext: undefined, mapPrev: undefined },
+    });
+  }
+
   runAnt(ant: AntData): number {
     const team = this.teams[ant.team - 1];
     if (!team) return 0;
@@ -737,16 +752,19 @@ export class Battle {
     // Execute team function
     let action: number | AntDescriptor;
     // Random timing measurement (1 in 10 chance like C implementation)
+    const logFn = this.isTest
+      ? (message: string, ...args: unknown[]) => this.handleAntLog(ant, message, args)
+      : () => {};
     const shouldTime = this.rng(10) === 0;
     //console.log('Calling ant with args', obfuscatedMapData, antInfo, 'in turn', this.currentTurn);
     if (shouldTime) {
       const startTime = performance.now();
-      action = team.func(obfuscatedMapData, antInfo);
+      action = team.func(obfuscatedMapData, antInfo, logFn);
       const endTime = performance.now();
       team.timeUsed += endTime - startTime;
       team.timesTimed++;
     } else {
-      action = team.func(obfuscatedMapData, antInfo);
+      action = team.func(obfuscatedMapData, antInfo, logFn);
     }
 
     // Return action as number (ignore AntDescriptor case for now)

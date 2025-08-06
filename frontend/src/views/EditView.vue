@@ -15,6 +15,7 @@ import type { AntDescriptor } from '@/Battle.ts';
 import ModalWrapper from '@/components/ModalWrapper.vue';
 import { faCloudArrowUp, faPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
 import TestBattleView from '@/components/TestBattleView.vue';
+import LogScroller from '@/components/LogScroller.vue';
 
 const teamStore = useTeamStore();
 const router = useRouter();
@@ -317,6 +318,9 @@ const codeMirrorOptions = {
     </modal-wrapper>
     <div class="columns">
       <div class="editor-column column">
+        <div class="log-scroller-container no-scroll-bars">
+          <log-scroller />
+        </div>
         <code-editor
           v-model="team.code"
           :disabled="currentIsBuiltIn"
@@ -401,7 +405,6 @@ const codeMirrorOptions = {
 }
 .menu-column {
   div.panel {
-    width: 12em;
     position: sticky;
     top: 1em;
     .team-selection {
@@ -423,13 +426,31 @@ const codeMirrorOptions = {
   transition:
     background-color 0.5s ease,
     color 0.5s ease;
-  border: 5px solid;
-  margin: -5px;
+}
+
+.editor-column {
+  position: relative;
+  .log-scroller-container {
+    position: absolute;
+    height: 2em;
+    right: var(--bulma-column-gap);
+    left: var(--bulma-column-gap);
+    top: -1.2em;
+    overflow-y: auto;
+    background-color: rgba(black, 0.5);
+    z-index: 31;
+    font-size: 85%;
+    border-radius: var(--bulma-radius);
+    transition: height 0.3s ease;
+
+    &:hover {
+      height: 10vh;
+    }
+  }
 }
 </style>
 <style lang="scss">
 .cm-editor {
-  width: calc(100vw - 18em);
   height: calc(100vh - 10em);
 }
 </style>

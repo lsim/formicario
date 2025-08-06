@@ -1,5 +1,9 @@
 # Ideas for future development
 
+## Backend
+
+- Add lamport clocks to teams, to avoid accidentally overwriting each other's code
+
 ## Battle
 
 - Add support for multiple workers running battles in parallel, so a game can be computed faster across multiple cores
@@ -16,8 +20,8 @@
 - A visual interface for setting up battle situation (eg 3x3 squares with ant in the middle), take a step and inspect the ant state and decision-making
 - The ability to quickly run eg a 128x128 simulation with just the ant(s) being edited (eg in a slide in overlay with pause/step controls)
   - Perhaps with different handy modes/challenges available:
-    - No food drops after round 1 (how many turns to collect and convert them all)
-    - A sprinkling of random ants added initially (how many turns to find/kill them all)
+    - No food drops after round 1 (how many turns to collect and convert them all) (wheat-awn)
+    - A sprinkling of random enemy ants added initially (how many turns to find/kill them all) (user-ninja)
 - 
 
 ## Ranking

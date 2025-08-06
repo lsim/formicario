@@ -18,6 +18,7 @@ export type WorkerMessageType =
   | 'ant-info-reply'
   | 'skip-battle'
   | 'run-battle'
+  | 'test-log'
   | 'set-speed'
   | 'error'
   | 'ok';
@@ -92,6 +93,13 @@ export interface SkipBattleMessage extends TypedMessage {
   type: 'skip-battle';
 }
 
+export interface TestLogMessage extends TypedMessage {
+  type: 'test-log';
+  message: string;
+  args: unknown[];
+  ant: Partial<AntData>;
+}
+
 export interface RunBattleMessage extends TypedMessage {
   type: 'run-battle';
   args: BattleArgs;
@@ -131,6 +139,7 @@ declare type CommandMap = {
   SkipBattleMessage: SkipBattleMessage;
   RunBattleMessage: RunBattleMessage;
   SetSpeedMessage: SetSpeedMessage;
+  TestLogMessage: TestLogMessage;
   OkReply: OkReply;
   ErrorReply: ErrorReply;
 };

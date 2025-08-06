@@ -8,6 +8,7 @@ import type {
   RunGameCommand,
   SetSpeedMessage,
   StepGameCommand,
+  TestLogMessage,
   WorkerMessage,
 } from '@/workers/WorkerMessage.ts';
 import { ReplaySubject, Subject } from 'rxjs';
@@ -20,6 +21,7 @@ const battleStatusSubject$ = new Subject<BattleStatus>();
 const battleSummarySubject$ = new Subject<BattleSummary>();
 const gameSummarySubject$ = new ReplaySubject<GameSummary>(1);
 const debugAntsSubject$ = new Subject<AntData[]>();
+const testLogSubject$ = new Subject<TestLogMessage>();
 
 const worker = new Worker();
 let messageCount = 0;
@@ -37,6 +39,8 @@ worker.onmessage = (e) => {
       console.debug('Emitting battle summary', e.data.summary);
       battleSummarySubject$.next(e.data.summary);
       console.debug('Emitted battle summary');
+    } else if (e.data.type === 'test-log') {
+      testLogSubject$.next(e.data);
     } else {
       if (e.data.type === 'debug-reply') debugAntsSubject$.next(e.data.ants);
 
@@ -120,6 +124,7 @@ export function useWorker() {
     battleSummaries$: battleSummarySubject$.asObservable(),
     debugAnts$: debugAntsSubject$.asObservable(),
     gameSummaries$: gameSummarySubject$.asObservable(),
+    testLogSubject$: testLogSubject$.asObservable(),
     getDebugAnts,
     getTeamInfo,
     pauseGame,
