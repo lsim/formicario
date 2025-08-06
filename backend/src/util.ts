@@ -4,22 +4,43 @@ export const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization', // Include Authorization here
 };
 
-export function Ok(payload: BodyInit, statusCode?: number, contentType?: 'text' | 'json') {
+export function Ok(
+  payload: BodyInit,
+  statusCode?: number,
+  contentType?: 'text' | 'json',
+) {
   let contentHeader = null;
   if (contentType === 'text') {
-    contentHeader = { 'Content-Type': 'text/plain' }
+    contentHeader = { 'Content-Type': 'text/plain' };
   } else if (contentType === 'json') {
-    contentHeader = { 'Content-Type': 'application/json' }
+    contentHeader = { 'Content-Type': 'application/json' };
   }
-  return new Response(payload, { headers: {...corsHeaders, ...contentHeader }, status: statusCode || 200 });
+  return new Response(payload, {
+    headers: { ...corsHeaders, ...contentHeader },
+    status: statusCode || 200,
+  });
 }
 
 export function OkJson(payload: object, statusCode?: number) {
   return Ok(JSON.stringify(payload), statusCode || 200, 'json');
 }
 
-export function Err(statusText: string, statusCode: number) {
-  return new Response(null, { status: statusCode, statusText: statusText, headers: corsHeaders });
+export function Err(
+  statusText: string,
+  statusCode: number,
+  contentType?: 'text' | 'json',
+) {
+  let contentHeader = null;
+  if (contentType === 'text') {
+    contentHeader = { 'Content-Type': 'text/plain' };
+  } else if (contentType === 'json') {
+    contentHeader = { 'Content-Type': 'application/json' };
+  }
+  return new Response('null', {
+    status: statusCode,
+    statusText: statusText,
+    headers: { ...corsHeaders, ...contentHeader },
+  });
 }
 
 export async function zip(data: string) {
@@ -31,18 +52,20 @@ export async function zip(data: string) {
     const chunks: Uint8Array<ArrayBufferLike>[] = [];
     let finished = false;
     do {
-      const { value, done} = await reader.read();
+      const { value, done } = await reader.read();
       if (value) chunks.push(value);
       finished = done;
     } while (!finished);
-    return chunks
+    return chunks;
   })();
   encoderStream.readable.pipeTo(compressor.writable).then();
   await textWriter.ready;
   await textWriter.write(data);
   await textWriter.close();
   const chunks = await p;
-  return new Uint8Array(Array.prototype.concat(...chunks.map(c => Array.from(c))));
+  return new Uint8Array(
+    Array.prototype.concat(...chunks.map((c) => Array.from(c))),
+  );
 }
 
 export async function unzip(archive: Uint8Array<ArrayBufferLike>) {
@@ -66,4 +89,14 @@ export async function unzip(archive: Uint8Array<ArrayBufferLike>) {
   await byteWriter.write(archive);
   await byteWriter.close();
   return p;
+}
+
+export async function hash(data: string) {
+  const encoder = new TextEncoder();
+  const digestBytes = await crypto.subtle.digest(
+    'SHA-256',
+    encoder.encode(data),
+  );
+  // Now base64 encode the digest bytes
+  return btoa(String.fromCharCode(...new Uint8Array(digestBytes)));
 }

@@ -15,6 +15,7 @@ export type Team = TeamExtract & {
   status?: 'ok' | 'error';
   lastChanged?: number;
   code?: string;
+  lamport?: number;
 };
 
 export type TeamWithCode = Team & { code: string };

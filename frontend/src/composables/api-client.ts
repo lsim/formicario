@@ -9,10 +9,11 @@ export interface BackendPublication {
   code: string;
   color: string;
   timestamp: number;
-  authorId: string;
   authorName: string;
   description: string;
   id: string;
+  lamport: number;
+  codeHash: string;
 }
 
 function antPublicationFromApiObject(
@@ -26,7 +27,8 @@ function antPublicationFromApiObject(
     description: obj.description,
     code: obj.code || '',
     authorName: obj.authorName,
-    authorId: obj.authorId,
+    lamport: parseInt(obj.lamport, 10),
+    codeHash: obj.codeHash,
   };
 }
 
@@ -266,13 +268,8 @@ class ApiClient {
     return data.value;
   }
 
-  // TODO: Add a digest to the team code, so we can track changes. May as well do this in the backend
-  // crypto.subtle
-  //   .digest('SHA-256', new TextEncoder().encode(teamCode))
-  //   .then((x) => console.log('SHA-256', x));
-
   // Returns the backend id of the publication
-  async publishTeam(team: TeamWithCode): Promise<string | null> {
+  async publishTeam(team: TeamWithCode): Promise<{ id: string; lamport: number }> {
     const publication: Omit<BackendPublication, 'id'> = {
       code: team.code,
       color: team.color || 'magenta',
@@ -280,18 +277,24 @@ class ApiClient {
       name: team.name || '',
       timestamp: Date.now(),
       authorName: this.userName.value,
-      authorId: '',
+      lamport: team.lamport || 0,
+      codeHash: '',
     };
 
     const { data, response } = await this.fetch('publications', team.id || '')
       .post(publication)
-      .text();
+      .json();
     if (!data.value || (response.value?.status !== 201 && response.value?.status !== 200)) {
       console.error(
         `Failed to publish team (${response.value?.status}): ${response.value?.statusText}`,
       );
-      this.toast.show('Failed to publish team', 'is-danger');
-      return null;
+      if (response.value?.status === 409) {
+        this.toast.show(
+          'Failed to publish team: Save conflict. Please reload the page and try again.',
+          'is-danger',
+        );
+      }
+      throw Error(`Failed to publish team (${response.value?.status || '?'})`);
     }
 
     this.toast.show(`The team '${team.name}' was published successfully!`, 'celebrate');

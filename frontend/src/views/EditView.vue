@@ -253,14 +253,21 @@ async function publishTeam() {
     console.warn('No code to publish');
     return;
   }
-  await apiClient.publishTeam({
-    color: team.value.color,
-    name: team.value.name,
-    brainTemplate: team.value.brainTemplate,
-    description: team.value.description,
-    id: team.value.id,
-    code: team.value.code,
-  });
+  try {
+    const reply = await apiClient.publishTeam({
+      color: team.value.color,
+      name: team.value.name,
+      brainTemplate: team.value.brainTemplate,
+      description: team.value.description,
+      id: team.value.id,
+      code: team.value.code,
+      lamport: team.value.lamport,
+    });
+    team.value.lamport = reply.lamport;
+  } catch (e: unknown) {
+    console.error('Failed to publish team', e);
+    return;
+  }
 }
 
 const showDeleteConfirmation = ref<{
@@ -408,7 +415,6 @@ const codeMirrorOptions = {
     position: sticky;
     top: 1em;
     .team-selection {
-      &:hover,
       &:has(:focus) {
         .team-list {
           height: 30vh;

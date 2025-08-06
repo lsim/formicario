@@ -58,6 +58,7 @@ function emitSelection(team: { id: string }) {
   const teamToEmit =
     teamStore.localTeams.find((t) => t.id === team.id) ||
     teamStore.remoteTeams.find((t) => t.id === team.id)!;
+  focusFilter();
   emits('teamSelected', teamToEmit);
 }
 
@@ -67,16 +68,9 @@ function focusFilter() {
 </script>
 
 <template>
-  <div class="root field" @mouseenter="focusFilter">
+  <div class="root field">
     <div class="filter block control has-icons-left has-icons-right">
-      <input
-        class="input"
-        type="text"
-        v-model="filter"
-        placeholder="Teams"
-        ref="filterInput"
-        autofocus
-      />
+      <input class="input" type="text" v-model="filter" placeholder="Teams" ref="filterInput" />
       <span class="icon is-small is-left">
         <font-awesome-icon :icon="faFilter" />
       </span>

@@ -1,7 +1,7 @@
 import { User } from './auth/tokens.ts';
 import { kv } from './kv.ts';
 import { broadcast } from './subscription.ts';
-import { Err, Ok, OkJson, unzip, zip } from './util.ts';
+import { Err, hash, Ok, OkJson, unzip, zip } from './util.ts';
 
 export class AntPublication {
   public authorName?: string;
@@ -13,6 +13,8 @@ export class AntPublication {
     public id: string,
     public timestamp: number,
     public description: string,
+    public lamport: number,
+    public codeHash: string,
     authorId?: string,
   ) {
     this.authorId = authorId;
@@ -53,6 +55,7 @@ async function storePublication(
   description: string,
   id: string | null,
   userId: string,
+  lamport: number,
 ) {
   const publicationId = id || crypto.randomUUID();
 
@@ -61,27 +64,76 @@ async function storePublication(
   if (!timestamp) return Err('No publication timestamp', 400);
 
   const compressedCode = await zip(code);
+  const codeHash = await hash(code);
 
-  const publication = new AntPublication(name, color, compressedCode, publicationId, timestamp, description, userId);
-  await kv.set(['publications', publicationId], publication);
+  const specificPublicationKey = ['publications', publicationId];
+  // Increment lamport for the object we save. Compare old lamport with the existing object
+  const publication = new AntPublication(
+    name,
+    color,
+    compressedCode,
+    publicationId,
+    timestamp,
+    description,
+    lamport + 1,
+    codeHash,
+    userId,
+  );
+
+  const oldPublication = await kv.get<AntPublication>(specificPublicationKey);
+  if (oldPublication) {
+    // Extract lamport and verify that it matches the submitted lamport
+    if (
+      oldPublication.value.lamport != null &&
+      oldPublication.value.lamport !== lamport
+    ) {
+      return Err('Lamport mismatch', 409, 'json');
+    }
+  }
+  await kv.atomic()
+    // Make sure nobody else overwrote with same lamport
+    .check(oldPublication)
+    .set(specificPublicationKey, publication)
+    .commit();
   broadcast({
     type: 'publications-updated',
   });
 
-  return Ok(publicationId, id ? 200 : 201);
+  return OkJson(
+    { id: publicationId, lamport: publication.lamport },
+    id ? 200 : 201,
+  );
 }
 
-async function updatePublicationMeta(id: string, description: string, timestamp: number, userId: string) {
-  const res = await kv.get<AntPublication>(['publications', id]);
+async function updatePublicationMeta(
+  id: string,
+  description: string,
+  timestamp: number,
+  userId: string,
+  lamport: number,
+) {
+  const specificPublicationKey = ['publications', id];
+  const res = await kv.get<AntPublication>(specificPublicationKey);
   if (!res.value) return Err('No publication found', 404);
   if (res.value.authorId !== userId) return Err('Not authorized', 403);
   if (description) res.value.description = description;
   if (timestamp) res.value.timestamp = timestamp;
-  await kv.set(['publications', id], res.value);
+
+  // Extract lamport and verify that it matches the submitted lamport
+  if (res.value.lamport != null && res.value.lamport !== lamport) {
+    return Err('Lamport mismatch', 409);
+  }
+  res.value.lamport += 1;
+  // await kv.set(['publications', id], res.value);
+  await kv.atomic()
+    // Make sure nobody else overwrote with same lamport
+    .check(res)
+    .set(specificPublicationKey, res.value)
+    .commit();
   broadcast({
     type: 'publications-updated',
   });
-  return Ok(res.value.id, 200);
+  return OkJson({ id: res.value.id, lamport: res.value.lamport }, 200);
 }
 
 async function deletePublication(id: string, userId: string) {
@@ -95,21 +147,39 @@ async function deletePublication(id: string, userId: string) {
   return Ok(`${res.value.name} deleted`, 200);
 }
 
-export async function handlePublicationRequest(request: Request, id: string, user: User | null) {
+export async function handlePublicationRequest(
+  request: Request,
+  id: string,
+  user: User | null,
+) {
   if (request.method === 'GET') {
     if (id) {
       if (!user) return Err('Not authorized', 401);
       return OkJson(await getPublication(id));
-    }
-    else return OkJson(await getPublications());
+    } else return OkJson(await getPublications());
   } else if (request.method === 'POST') {
     if (!user) return Err('Not authorized', 401);
     const json = await request.json();
-    return storePublication(json.name, json.color, json.code, json.timestamp, json.description, id, user.userId);
+    return storePublication(
+      json.name,
+      json.color,
+      json.code,
+      json.timestamp,
+      json.description,
+      id,
+      user.userId,
+      json.lamport || 0,
+    );
   } else if (request.method === 'PATCH') {
     if (!user) return Err('Not authorized', 401);
-    const { description, timestamp } = await request.json();
-    return updatePublicationMeta(id, description, timestamp, user.userId);
+    const { description, timestamp, lamport } = await request.json();
+    return updatePublicationMeta(
+      id,
+      description,
+      timestamp,
+      user.userId,
+      lamport || 0,
+    );
   } else if (request.method === 'DELETE') {
     if (!user) return Err('Not authorized', 401);
     return deletePublication(id, user.userId);
