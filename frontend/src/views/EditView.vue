@@ -13,7 +13,12 @@ import TeamList from '@/components/TeamList.vue';
 import useApiClient from '@/composables/api-client.ts';
 import type { AntDescriptor } from '@/Battle.ts';
 import ModalWrapper from '@/components/ModalWrapper.vue';
-import { faCloudArrowUp, faPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
+import {
+  faCloudArrowDown,
+  faCloudArrowUp,
+  faPlus,
+  faTrash,
+} from '@fortawesome/free-solid-svg-icons';
 import TestBattleView from '@/components/TestBattleView.vue';
 import LogScroller from '@/components/LogScroller.vue';
 
@@ -60,9 +65,7 @@ const team = ref<Team>({
   authorName: '',
 });
 
-const currentIsBuiltIn = computed(() =>
-  teamStore.isBuiltIn({ authorName: team.value.authorName || '' }),
-);
+const currentIsOwnedByUser = computed(() => teamStore.isOwnedByUser(team.value));
 
 async function setupExistingTeam(id: string) {
   const localTeamForId = teamStore.localTeams.find((t) => t.id === id);
@@ -302,6 +305,20 @@ function createNewTeam() {
   router.push('/edit');
 }
 
+async function pullTeam() {
+  await confirm(
+    `Are you sure you want to overwrite this local version of '${team.value.name}' with the cloud version?`,
+  );
+  const cloudPublication = await apiClient.getFullPublication(team.value.id);
+  if (!cloudPublication) {
+    toast.show('No cloud publication found', 'is-warning');
+    return;
+  }
+  teamStore.saveTeam(cloudPublication);
+  team.value = cloudPublication;
+  toast.show('Team pulled from cloud', 'is-success');
+}
+
 const codeMirrorOptions = {
   lineWrapping: true,
 };
@@ -330,7 +347,7 @@ const codeMirrorOptions = {
         </div>
         <code-editor
           v-model="team.code"
-          :disabled="currentIsBuiltIn"
+          :disabled="!currentIsOwnedByUser"
           :options="codeMirrorOptions"
         />
       </div>
@@ -345,7 +362,7 @@ const codeMirrorOptions = {
                 borderColor: teamStore.invertedColor(pickedColor),
               }
             "
-            :class="{ mouseDisabled: currentIsBuiltIn }"
+            :class="{ mouseDisabled: !currentIsOwnedByUser }"
           >
             {{ team.name }}
             <span class="is-pulled-right" v-if="team.id && pickedColor">
@@ -388,6 +405,20 @@ const codeMirrorOptions = {
               <span>Publish team</span>
             </button>
           </div>
+          <test-battle-view :code="team.code || ''" :color="team.color" />
+          <div class="panel-block">
+            <button
+              class="button is-warning is-outlined is-fullwidth"
+              @click="pullTeam()"
+              :disabled="!!team.id && !teamStore.isOwnedByUser(team)"
+              title="Pull the cloud version of this team"
+            >
+              <span class="icon is-small is-justify-content-left">
+                <font-awesome-icon :icon="faCloudArrowDown" />
+              </span>
+              <span>Refresh from Cloud</span>
+            </button>
+          </div>
           <div class="panel-block">
             <button
               class="button is-danger is-outlined is-fullwidth"
@@ -400,7 +431,6 @@ const codeMirrorOptions = {
               <span>Delete team</span>
             </button>
           </div>
-          <test-battle-view :code="team.code || ''" :color="team.color" />
         </div>
       </div>
     </div>
