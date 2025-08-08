@@ -2,8 +2,9 @@
 import TeamChooser from '@/components/TeamChooser.vue';
 import { useTeamStore } from '@/stores/teams.ts';
 import { useGameStore } from '@/stores/game.ts';
-import { ref, type Ref, watch } from 'vue';
+import { computed, ref, type Ref, watch } from 'vue';
 import IntervalInput from '@/components/IntervalInput.vue';
+import { faPlay } from '@fortawesome/free-solid-svg-icons';
 
 const teamStore = useTeamStore();
 const gameStore = useGameStore();
@@ -19,14 +20,26 @@ watch(
     expanded.value = false;
   },
 );
+
+const readyToStart = computed(() => !gameStore.gameRunning);
 </script>
 
 <template>
   <div class="panel is-primary" :class="{ expanded }">
     <div class="panel-heading" @click="expanded = !expanded">
-      Next game {{ expanded ? '▼' : '▲' }}
+      <span class="collapse-icon" :class="{ expanded }"> ▶ </span>
+      Next game
+      <span class="is-pulled-right"
+        ><button
+          class="button is-success"
+          :class="{ 'is-loading': gameStore.gameRunning }"
+          :disabled="!readyToStart"
+          @click.capture.prevent.stop="gameStore.start()"
+        >
+          <font-awesome-icon :icon="faPlay" /></button
+      ></span>
     </div>
-    <p class="panel-tabs">
+    <p class="panel-tabs" @click.capture="expanded = true">
       <a :class="{ 'is-active': activeTab === 'teams' }" @click="activeTab = 'teams'"
         >Teams ({{ teamStore.battleTeams.length }})</a
       >
@@ -251,6 +264,13 @@ watch(
 .panel-heading {
   cursor: pointer;
   pointer-events: all;
+  .collapse-icon {
+    transition: transform 0.5s ease-in-out;
+    display: inline-block;
+    &.expanded {
+      transform: rotate(90deg);
+    }
+  }
 }
 div.panel {
   height: 8em;

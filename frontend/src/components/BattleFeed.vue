@@ -12,12 +12,13 @@ import AntMagnifier from '@/components/AntMagnifier.vue';
 import { useMagicKeys, useMouseInElement } from '@vueuse/core';
 import { filter, tap } from 'rxjs';
 import useBattleRenderer from '@/composables/renderer.ts';
-import { useWorker } from '@/workers/WorkerDispatcher.ts';
+import { useWorker, type WorkerName } from '@/workers/WorkerDispatcher.ts';
 
 const props = withDefaults(
   defineProps<{
     zoomLevel?: number;
     centerMagnifier?: boolean;
+    workerName: WorkerName;
   }>(),
   {
     zoomLevel: 2,
@@ -25,13 +26,19 @@ const props = withDefaults(
   },
 );
 
+// Event when ant debug at specific coordinates is requested
+const emits = defineEmits<{
+  (e: 'ant-debug-requested', x: number, y: number): void;
+}>();
+
+const worker = useWorker(props.workerName);
+
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
 
 const backBuffer = document.createElement('canvas');
 const backBufferCtx = backBuffer.getContext('2d') as CanvasRenderingContext2D;
 
 const battleRenderer = useBattleRenderer();
-const worker = useWorker();
 
 // Magnifier stuff
 const { ctrl, meta } = useMagicKeys();
@@ -121,6 +128,10 @@ const subscription = worker.battleStatuses$
     ensureRendering();
   });
 
+onBeforeUnmount(() => {
+  subscription?.unsubscribe();
+});
+
 let rendering = false;
 function ensureRendering() {
   if (rendering) return;
@@ -129,17 +140,12 @@ function ensureRendering() {
 }
 
 function getAntData() {
-  worker
-    .getDebugAnts(
-      Math.round(magX.value / (props.zoomLevel || 1)),
-      Math.round(magY.value / (props.zoomLevel || 1)) - 1,
-    )
-    .then(() => {});
+  emits(
+    'ant-debug-requested',
+    Math.round(magX.value / (props.zoomLevel || 1)),
+    Math.round(magY.value / (props.zoomLevel || 1)) - 1,
+  );
 }
-
-onBeforeUnmount(() => {
-  subscription?.unsubscribe();
-});
 </script>
 
 <template>

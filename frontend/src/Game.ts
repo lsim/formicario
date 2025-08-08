@@ -1,10 +1,4 @@
-import {
-  type AntFunction,
-  Battle,
-  type BattleArgs,
-  type BattleContinuation,
-  produceBattleArgs,
-} from '@/Battle.ts';
+import { type AntFunction, Battle, type BattleContinuation, produceBattleArgs } from '@/Battle.ts';
 import type { GameSpec } from '@/GameSpec.ts';
 import type { BattleSummary, GameSummary } from '@/GameSummary.ts';
 import { getRNG, type RNGFunction } from '@/prng.ts';
@@ -40,47 +34,18 @@ export class Game {
   activeBattle: Battle | null = null;
   rng: RNGFunction;
   private speed = 50;
+  private gameOver = false;
 
   constructor(
     private spec: GameSpec | null,
     private readonly teamFunctions: { id: string; func: AntFunction }[],
-    private readonly singleBattleArgs?: BattleArgs,
-    private readonly singleBattleSeed?: number,
   ) {
     this.id = Date.now();
     this.rng = getRNG(this.spec?.seed ?? 1);
   }
 
   public async run(pauseAfterTurns = -1): Promise<GameSummary | undefined> {
-    const _pauseAfterTurns = this.activeBattle?.isPaused
-      ? 1
-      : !this.activeBattle
-        ? pauseAfterTurns
-        : -1;
-
-    if (this.singleBattleArgs != null) {
-      console.log(
-        '(Re-)running single-battle game',
-        this.singleBattleArgs,
-        this.singleBattleSeed,
-        pauseAfterTurns,
-      );
-
-      this.activeBattle = new Battle(
-        this.singleBattleArgs,
-        this.teamFunctions,
-        this.singleBattleSeed ?? 1,
-        _pauseAfterTurns,
-        true,
-      );
-      this.activeBattle.setSpeed(this.speed);
-      const battleSummary = await this.activeBattle.run();
-      postMessage({ type: 'battle-summary', summary: battleSummary });
-      return {
-        seed: 1,
-        battles: [battleSummary],
-      };
-    } else if (this.spec != null) {
+    if (this.spec != null) {
       console.log('Running standard game', this.spec, pauseAfterTurns);
       const battleSummaries: BattleSummary[] = [];
       for (let i = 0; i < this.spec.numBattles && !this.stopRequested; i++) {
@@ -96,6 +61,7 @@ export class Game {
           args,
           this.pickRandomTeamsForBattle(),
           battleSeed,
+          i,
           startNextPaused ? 1 : -1,
         );
         this.activeBattle.setSpeed(this.speed);
@@ -104,6 +70,7 @@ export class Game {
         postMessage({ type: 'battle-summary', summary: battleSummary });
         battleSummaries.push(battleSummary);
       }
+      this.gameOver = true;
       return {
         seed: this.spec.seed,
         battles: battleSummaries,
@@ -135,23 +102,25 @@ export class Game {
   }
 
   private stopRequested = false;
-  public skipBattle() {
-    this.activeBattle?.stop();
+
+  public async skipBattle() {
+    await this.activeBattle?.stop();
   }
 
-  public stopGame() {
+  public async stopGame() {
     this.stopRequested = true;
-    this.activeBattle?.stop();
+    if (this.gameOver) return;
+    await this.activeBattle?.stop();
   }
 
   public pause() {
     this.activeBattle?.pause();
   }
 
-  public proceed(continuation: BattleContinuation) {
+  public async proceed(continuation: BattleContinuation) {
     this.activeBattle?.proceed(continuation);
     if (continuation.type === 'stop') {
-      this.stopGame();
+      await this.stopGame();
     }
   }
 

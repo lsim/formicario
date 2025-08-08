@@ -50,7 +50,12 @@ describe('Disqualification System', () => {
         return 'invalid'; // Returns string instead of number
       }) as AntFunction;
 
-      const battle = new Battle(battleArgs, [{ id: 'StringAnt', func: stringReturningAnt }], 123);
+      const battle = new Battle(
+        battleArgs,
+        [{ id: 'StringAnt', func: stringReturningAnt }],
+        123,
+        0,
+      );
 
       expect(battle.disqualifiedTeams).toHaveLength(0);
 
@@ -71,7 +76,12 @@ describe('Disqualification System', () => {
         return { move: 1 }; // Returns object instead of number
       }) as AntFunction;
 
-      const battle = new Battle(battleArgs, [{ id: 'ObjectAnt', func: objectReturningAnt }], 123);
+      const battle = new Battle(
+        battleArgs,
+        [{ id: 'ObjectAnt', func: objectReturningAnt }],
+        123,
+        0,
+      );
 
       battle.doTurn();
 
@@ -91,6 +101,7 @@ describe('Disqualification System', () => {
         battleArgs,
         [{ id: 'UndefinedAnt', func: undefinedReturningAnt }],
         123,
+        0,
       );
 
       battle.doTurn();
@@ -110,7 +121,7 @@ describe('Disqualification System', () => {
         return NaN;
       }) as AntFunction;
 
-      const battle = new Battle(battleArgs, [{ id: 'NaNAnt', func: nanReturningAnt }], 123);
+      const battle = new Battle(battleArgs, [{ id: 'NaNAnt', func: nanReturningAnt }], 123, 0);
 
       battle.doTurn();
 
@@ -126,7 +137,12 @@ describe('Disqualification System', () => {
         return Math.sqrt(-1); // Returns NaN
       }) as AntFunction;
 
-      const battle = new Battle(battleArgs, [{ id: 'InvalidMathAnt', func: invalidMathAnt }], 123);
+      const battle = new Battle(
+        battleArgs,
+        [{ id: 'InvalidMathAnt', func: invalidMathAnt }],
+        123,
+        0,
+      );
 
       battle.doTurn();
 
@@ -144,7 +160,7 @@ describe('Disqualification System', () => {
         throw new Error('Ant function crashed!');
       }) as AntFunction;
 
-      const battle = new Battle(battleArgs, [{ id: 'ThrowingAnt', func: throwingAnt }], 123);
+      const battle = new Battle(battleArgs, [{ id: 'ThrowingAnt', func: throwingAnt }], 123, 0);
 
       battle.doTurn();
 
@@ -162,7 +178,12 @@ describe('Disqualification System', () => {
         return brain.nonExistentProperty.someMethod(); // Throws error
       }) as AntFunction;
 
-      const battle = new Battle(battleArgs, [{ id: 'AccessErrorAnt', func: accessErrorAnt }], 123);
+      const battle = new Battle(
+        battleArgs,
+        [{ id: 'AccessErrorAnt', func: accessErrorAnt }],
+        123,
+        0,
+      );
 
       battle.doTurn();
 
@@ -183,7 +204,7 @@ describe('Disqualification System', () => {
         return infiniteRecursion();
       }) as AntFunction;
 
-      const battle = new Battle(battleArgs, [{ id: 'RecursiveAnt', func: recursiveAnt }], 123);
+      const battle = new Battle(battleArgs, [{ id: 'RecursiveAnt', func: recursiveAnt }], 123, 0);
 
       battle.doTurn();
 
@@ -220,6 +241,7 @@ describe('Disqualification System', () => {
           { id: 'ValidAnt', func: validAnt },
         ],
         123,
+        0,
       );
 
       // First turn should disqualify team 1
@@ -267,6 +289,7 @@ describe('Disqualification System', () => {
           { id: 'WeakAnt', func: weakAnt },
         ],
         123,
+        0,
       );
 
       // Run battle long enough for the dominant ant to crash
@@ -318,6 +341,7 @@ describe('Disqualification System', () => {
           { id: 'GoodAnt', func: goodAnt },
         ],
         123,
+        0,
       );
 
       expect(battle.testAccess().stopRequested).toBe(false);
@@ -343,7 +367,7 @@ describe('Disqualification System', () => {
         throw new Error('Intentional crash for testing');
       }) as AntFunction;
 
-      const battle = new Battle(battleArgs, [{ id: 'TrackedAnt', func: trackedAnt }], 123);
+      const battle = new Battle(battleArgs, [{ id: 'TrackedAnt', func: trackedAnt }], 123, 0);
 
       battle.doTurn();
 
@@ -369,7 +393,7 @@ describe('Disqualification System', () => {
         throw new Error(`Crash number ${crashCount}`);
       }) as AntFunction;
 
-      const battle = new Battle(battleArgs, [{ id: 'MultiCrashAnt', func: multiCrashAnt }], 123);
+      const battle = new Battle(battleArgs, [{ id: 'MultiCrashAnt', func: multiCrashAnt }], 123, 0);
 
       // Run one turn - should disqualify the team
       battle.doTurn();
@@ -388,7 +412,7 @@ describe('Disqualification System', () => {
         return NaN;
       }) as AntFunction;
 
-      const battle = new Battle(battleArgs, [{ id: 'FaultyAnt', func: faultyAnt }], 123);
+      const battle = new Battle(battleArgs, [{ id: 'FaultyAnt', func: faultyAnt }], 123, 0);
 
       battle.doTurn();
 
@@ -417,7 +441,7 @@ describe('Disqualification System', () => {
         throw new Error('Should not be called on dead ant');
       }) as AntFunction;
 
-      const battle = new Battle(battleArgs, [{ id: 'SuicidalAnt', func: suicidalAnt }], 123);
+      const battle = new Battle(battleArgs, [{ id: 'SuicidalAnt', func: suicidalAnt }], 123, 0);
 
       // Manually kill the ant to simulate death during battle
       const ant = battle.ants[0];
@@ -431,7 +455,7 @@ describe('Disqualification System', () => {
 
     it('should work correctly with zero teams (edge case)', () => {
       const emptyBattleArgs = { ...battleArgs };
-      const battle = new Battle(emptyBattleArgs, [], 123);
+      const battle = new Battle(emptyBattleArgs, [], 123, 0);
 
       // Should not crash when checking disqualifications with no teams
       expect(() => battle.doTurn()).not.toThrow();

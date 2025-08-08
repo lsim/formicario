@@ -8,18 +8,66 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 import { computed } from 'vue';
-import { useMagicKeys, whenever } from '@vueuse/core';
 import { useGameStore } from '@/stores/game.ts';
-const { enter, shift_space, escape } = useMagicKeys();
+import { BattleState } from '@/composables/single-battle.ts';
 const gameStore = useGameStore();
 
-whenever(enter, () => gameStore.start());
+// When a battle state is given, that is what is being controlled
+const props = defineProps<{
+  battleState?: BattleState;
+  size?: 'small' | 'medium';
+}>();
 
-whenever(shift_space, () => gameStore.step());
+const emit = defineEmits<{
+  (e: 'start'): void;
+  (e: 'step'): void;
+}>();
 
-whenever(escape, () => gameStore.stop());
+const running = computed(() => !!props.battleState || gameStore.gameRunning);
 
-const running = computed(() => gameStore.gameRunning || gameStore.battleReplaying);
+function start() {
+  emit('start');
+}
+
+function pause() {
+  if (props.battleState) {
+    props.battleState.pause();
+  } else {
+    gameStore.pause();
+  }
+}
+
+function step() {
+  emit('step');
+}
+
+function stop() {
+  if (props.battleState) {
+    props.battleState.stop();
+  } else {
+    gameStore.stop();
+  }
+}
+
+function skipBattle() {
+  if (props.battleState) {
+    props.battleState.stop();
+  } else {
+    gameStore.skipBattle();
+  }
+}
+
+function resume() {
+  if (props.battleState) {
+    props.battleState.resume();
+  } else {
+    gameStore.resume();
+  }
+}
+
+const isPaused = computed(() =>
+  !!props.battleState ? props.battleState.isPaused : gameStore.gamePaused,
+);
 </script>
 
 <template>
@@ -27,11 +75,15 @@ const running = computed(() => gameStore.gameRunning || gameStore.battleReplayin
     <div class="field has-addons">
       <div class="control">
         <button
-          class="button is-medium is-success"
+          class="button is-success"
           type="button"
-          @click="() => gameStore.start()"
+          @click="start"
           :disabled="running"
-          :class="{ 'is-loading': running }"
+          :class="{
+            'is-loading': running,
+            'is-small': size === 'small',
+            'is-medium': size === 'medium',
+          }"
           title="[Enter]"
         >
           <span class="icon" v-if="!running">
@@ -42,36 +94,60 @@ const running = computed(() => gameStore.gameRunning || gameStore.battleReplayin
       </div>
       <div class="control">
         <button
-          class="button is-medium is-danger"
+          class="button is-danger"
           type="button"
-          @click="gameStore.stop"
+          @click="stop"
           title="[Escape]"
           :disabled="!running"
+          :class="{
+            'is-small': size === 'small',
+            'is-medium': size === 'medium',
+          }"
         >
           <span class="icon"><font-awesome-icon :icon="faStop" /></span>
         </button>
       </div>
       <div class="control">
         <button
-          class="button is-medium is-info"
+          class="button is-info"
           type="button"
-          @click="gameStore.skipBattle"
+          @click="skipBattle"
           :disabled="!running"
+          :class="{
+            'is-small': size === 'small',
+            'is-medium': size === 'medium',
+          }"
         >
           <span class="icon">
             <font-awesome-icon :icon="faFastForward" />
           </span>
         </button>
       </div>
-      <div class="control" v-show="!gameStore.gamePaused && running">
-        <button class="button is-medium is-info" type="button" @click="gameStore.pause">
+      <div class="control" v-show="!isPaused && running">
+        <button
+          class="button is-info"
+          type="button"
+          @click="pause"
+          :class="{
+            'is-small': size === 'small',
+            'is-medium': size === 'medium',
+          }"
+        >
           <span class="icon">
             <font-awesome-icon :icon="faPause" />
           </span>
         </button>
       </div>
-      <div class="control" v-show="gameStore.gamePaused && running">
-        <button class="button is-medium is-info" type="button" @click="gameStore.resume">
+      <div class="control" v-show="isPaused && running">
+        <button
+          class="button is-info"
+          type="button"
+          @click="resume"
+          :class="{
+            'is-small': size === 'small',
+            'is-medium': size === 'medium',
+          }"
+        >
           <span class="icon">
             <font-awesome-icon :icon="faPlay" />
           </span>
@@ -79,11 +155,15 @@ const running = computed(() => gameStore.gameRunning || gameStore.battleReplayin
       </div>
       <div class="control">
         <button
-          class="button is-medium is-info"
+          class="button is-info"
           type="button"
-          @click="() => gameStore.step()"
-          :disabled="running && !gameStore.gamePaused"
+          @click="step"
+          :disabled="!isPaused && running"
           title="[Shift + Space]"
+          :class="{
+            'is-small': size === 'small',
+            'is-medium': size === 'medium',
+          }"
         >
           <span class="icon">
             <font-awesome-icon :icon="faStepForward" />

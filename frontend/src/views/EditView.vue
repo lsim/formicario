@@ -24,7 +24,7 @@ import LogScroller from '@/components/LogScroller.vue';
 
 const teamStore = useTeamStore();
 const router = useRouter();
-const worker = useWorker();
+const worker = useWorker('debug-worker');
 const toast = useToast();
 const apiClient = useApiClient();
 
@@ -33,7 +33,7 @@ const props = defineProps<{
 }>();
 
 const codeTemplate = `// eslint-disable-next-line no-unused-vars
-function ant(squareData, antInfo) {
+function ant(squareData, antInfo, log) {
   // Return ant descriptor when called without arguments
   if (!squareData || !antInfo) {
     return {
@@ -319,6 +319,10 @@ async function pullTeam() {
   toast.show('Team pulled from cloud', 'is-success');
 }
 
+function handleAntDebugRequested(x: number, y: number) {
+  worker.getDebugAnts(x, y);
+}
+
 const codeMirrorOptions = {
   lineWrapping: true,
 };
@@ -405,7 +409,12 @@ const codeMirrorOptions = {
               <span>Publish team</span>
             </button>
           </div>
-          <test-battle-view :code="team.code || ''" :color="team.color" />
+          <test-battle-view
+            :code="team.code || ''"
+            :color="team.color"
+            :battle-statuses$="worker.battleStatuses$"
+            @ant-debug-requested="handleAntDebugRequested"
+          />
           <div class="panel-block">
             <button
               class="button is-warning is-outlined is-fullwidth"

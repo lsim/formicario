@@ -56,7 +56,7 @@ export function emptyTeamStats(color: string): TeamStats {
 }
 
 export function useStats() {
-  const worker = useWorker();
+  const worker = useWorker('game-worker');
 
   function aggregateBattleStats(throttle = 100) {
     return worker.battleStatuses$.pipe(

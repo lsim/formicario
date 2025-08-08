@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import { faFrog, faTruckFast } from '@fortawesome/free-solid-svg-icons';
-import { useGameStore } from '@/stores/game.ts';
 import { ref, watch } from 'vue';
+import { useWorker, type WorkerName } from '@/workers/WorkerDispatcher.ts';
 
-const gameStore = useGameStore();
+const props = defineProps<{
+  workerName: WorkerName;
+}>();
 
-const speedString = ref(gameStore.speed.toString());
+const worker = useWorker(props.workerName);
+
+const speedString = ref(worker.speed.value.toString());
 
 watch(
   () => speedString.value,
   (newSpeed) => {
-    gameStore.speed = parseInt(newSpeed, 10);
+    worker.speed.value = parseInt(newSpeed, 10);
   },
 );
 

@@ -11,13 +11,11 @@ import {
   useStats,
 } from '@/composables/stats.ts';
 import type { BattleStatus } from '@/GameSummary.ts';
-import { filter, finalize, Observable, ReplaySubject, take, timeout } from 'rxjs';
-import type { BattleArgs } from '@/Battle.ts';
-import type { TeamWithCode } from '@/Team.ts';
+import { Observable, ReplaySubject } from 'rxjs';
 import { useStorage, watchDebounced } from '@vueuse/core';
 
 export const useGameStore = defineStore('game', () => {
-  const worker = useWorker();
+  const worker = useWorker('game-worker');
   const teamStore = useTeamStore();
   const stats = useStats();
 
@@ -98,7 +96,6 @@ export const useGameStore = defineStore('game', () => {
   }
 
   async function stop() {
-    if (!gameRunning.value && !battleReplaying.value) return;
     await worker.stopGame();
     gamePaused.value = false;
     gameRunning.value = false;
@@ -106,13 +103,11 @@ export const useGameStore = defineStore('game', () => {
   }
 
   async function pause() {
-    if (!gameRunning.value && !battleReplaying.value) return;
     await worker.pauseGame();
     gamePaused.value = true;
   }
 
   async function resume() {
-    if (!gameRunning.value && !battleReplaying.value) return;
     await worker.resumeGame();
     gamePaused.value = false;
   }
@@ -129,36 +124,6 @@ export const useGameStore = defineStore('game', () => {
   async function skipBattle() {
     if (!gameRunning.value && !battleReplaying.value) return;
     await worker.skipBattle();
-  }
-
-  async function runBattle(
-    args: BattleArgs,
-    teams: TeamWithCode[],
-    seed: number,
-    pauseAfterTurns: number = -1,
-  ) {
-    if (gameRunning.value || battleReplaying.value) return;
-    if (teams.length === 0) throw new Error('No teams selected');
-    battleReplaying.value = true;
-    lastError.value = [];
-    gamePaused.value = pauseAfterTurns > 0;
-    worker.battleSummaries$
-      .pipe(
-        filter((summary) => summary.seed === seed),
-        take(1),
-        timeout(10 * 60 * 1000),
-        finalize(() => (battleReplaying.value = false)),
-      )
-      .subscribe();
-    console.debug('Rerunning battle');
-    await worker.runBattle({
-      args,
-      teams,
-      seed,
-      speed: speed.value,
-      pauseAfterTurns,
-    });
-    console.debug('Rerun started');
   }
 
   watchDebounced(
@@ -187,6 +152,5 @@ export const useGameStore = defineStore('game', () => {
     step,
     resume,
     skipBattle,
-    runBattle,
   };
 });

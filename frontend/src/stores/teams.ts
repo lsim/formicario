@@ -15,7 +15,7 @@ export declare type TeamMeta = {
 };
 
 export const useTeamStore = defineStore('team', () => {
-  const worker = useWorker();
+  const worker = useWorker('game-worker');
   const apiClient = useApiClient();
   const toast = useToast();
 

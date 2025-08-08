@@ -109,7 +109,7 @@ describe('Brain Data Consistency During Ant Creation', () => {
 
     const rng: RNGFunction = getRNG(42);
     const battleArgs: BattleArgs = produceBattleArgs(gameSpec, rng);
-    const battle = new Battle(battleArgs, [{ id: 'TestAnt', func: foodBringingAnt }], 123);
+    const battle = new Battle(battleArgs, [{ id: 'TestAnt', func: foodBringingAnt }], 123, 0);
 
     // Place food one square down from the base for deterministic testing
     const baseX = Math.floor(battle.testAccess().mapWidth / 2);
@@ -233,7 +233,7 @@ describe('Brain Data Consistency During Ant Creation', () => {
 
     const rng2: RNGFunction = getRNG(123);
     const battleArgs2: BattleArgs = produceBattleArgs(gameSpec, rng2);
-    const battle = new Battle(battleArgs2, [{ id: 'TestAnt', func: coordinnatingAnt }], 123);
+    const battle = new Battle(battleArgs2, [{ id: 'TestAnt', func: coordinnatingAnt }], 123, 0);
 
     // Run battle to trigger the target scenario
     for (let turn = 0; turn < 25; turn++) {

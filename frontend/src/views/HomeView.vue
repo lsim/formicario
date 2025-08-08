@@ -3,18 +3,25 @@ import { onBeforeUnmount, ref } from 'vue';
 import GameSetup from '@/components/GameSetup.vue';
 import type { GameSummary } from '@/GameSummary.ts';
 import { map, switchAll, tap } from 'rxjs';
-import GameControls from '@/components/GameControls.vue';
 import { useGameStore } from '@/stores/game.ts';
 import { type BattleSummaryStats } from '@/composables/stats.ts';
 import { useWorker } from '@/workers/WorkerDispatcher.ts';
 import GameSummaryUi from '@/components/GameSummaryUi.vue';
 import BattleView from '@/components/BattleView.vue';
 import SpeedGauge from '@/components/SpeedGauge.vue';
+import { useMagicKeys, whenever } from '@vueuse/core';
+const { enter, shift_space, escape } = useMagicKeys();
 
 const gameSummary = ref<GameSummary>();
 
-const worker = useWorker();
+const worker = useWorker('game-worker');
 const gameStore = useGameStore();
+
+whenever(enter, () => gameStore.start());
+
+whenever(shift_space, () => gameStore.step());
+
+whenever(escape, () => gameStore.stop());
 
 const gameStats = ref<BattleSummaryStats[]>([]);
 
@@ -37,8 +44,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="container">
     <Teleport to="#navbarMenu">
-      <game-controls />
-      <speed-gauge class="navbar-item" />
+      <speed-gauge class="navbar-item" :worker-name="'game-worker'" />
     </Teleport>
     <div class="fixed-grid has-2-cols">
       <div class="grid">

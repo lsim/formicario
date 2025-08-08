@@ -15,7 +15,7 @@ const { up, down } = useMagicKeys({
   },
 });
 
-const worker = useWorker();
+const worker = useWorker('game-worker');
 
 whenever(up, () => skipAnt(-1));
 whenever(down, () => skipAnt(1));

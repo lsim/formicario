@@ -8,7 +8,7 @@ import { map, switchAll, tap } from 'rxjs';
 import type { BattleSummaryStats } from '@/composables/stats.ts';
 import { useTeamStore } from '@/stores/teams.ts';
 
-const worker = useWorker();
+const worker = useWorker('game-worker');
 const gameStore = useGameStore();
 const teamStore = useTeamStore();
 
@@ -91,7 +91,7 @@ watch(
               }"
               @click="selectedRow = selectedRow === idx ? null : idx"
             >
-              <td>{{ idx + 1 }}</td>
+              <td>{{ battle.battleId }}</td>
               <td>
                 <span class="button is-static" :style="winnerStyle(battle)">{{
                   teamStore.teamName(battle.winner)

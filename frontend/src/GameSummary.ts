@@ -37,6 +37,7 @@ export type TeamStatus = {
 };
 
 export type BattleInfo = {
+  battleId: number;
   args: BattleArgs;
   teams: TeamStatus[];
 };

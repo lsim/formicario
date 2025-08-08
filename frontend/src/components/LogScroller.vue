@@ -3,7 +3,7 @@ import { useWorker } from '@/workers/WorkerDispatcher.ts';
 import { onBeforeUnmount, ref, watch } from 'vue';
 import { useGameStore } from '@/stores/game.ts';
 
-const worker = useWorker();
+const worker = useWorker('debug-worker');
 const gameStore = useGameStore();
 
 const messages = ref<
@@ -22,7 +22,7 @@ watch(
   },
 );
 
-const subscription = worker.testLogSubject$.subscribe(({ message, args, ant }) => {
+const subscription = worker.testLogs$.subscribe(({ message, args, ant }) => {
   // Can have ant here too
   messages.value.unshift({
     index: ant.index!,

@@ -8,23 +8,24 @@ import BattleArgs from '@/components/BattleArgs.vue';
 import BattleGraph from '@/components/BattleGraph.vue';
 import { computed, onBeforeUnmount, ref } from 'vue';
 import BattleRender from '@/components/BattleRender.vue';
-import { faPlay, faStepForward } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { useTeamStore } from '@/stores/teams.ts';
 import useApiClient from '@/composables/api-client.ts';
 import type { TeamWithCode } from '@/Team.ts';
 import TeamDisqualifications from '@/components/TeamDisqualifications.vue';
 import { throttleTime } from 'rxjs';
 import { useWorker } from '@/workers/WorkerDispatcher.ts';
+import useSingleBattle, { BattleState } from '@/composables/single-battle.ts';
+import GameControls from '@/components/GameControls.vue';
 
 const gameStore = useGameStore();
 const teamStore = useTeamStore();
-const worker = useWorker();
+const worker = useWorker('game-worker');
+const singleBattle = useSingleBattle('game-worker');
 
 const apiClient = useApiClient();
 
 const isLive = computed(() => {
-  return gameStore.gameRunning || gameStore.battleReplaying;
+  return gameStore.gameRunning || !!battleReplay.value;
 });
 
 const summaryStats = computed(() => gameStore.selectedBattleSummaryStats);
@@ -37,9 +38,13 @@ const subscription = worker.battleStatuses$.pipe(throttleTime(100)).subscribe((s
   currentTps.value = status.turnsPerSecond >> 0;
 });
 
+const battleReplay = ref<BattleState | undefined>();
+
 async function runBattle(startPaused = false) {
   const battle = summaryStats.value?.summary;
   if (!battle) return;
+  battleReplay.value?.stop();
+  battleReplay.value = undefined;
   const teamIds = battle.teams.map((t) => t.id);
   const teams = (await Promise.all(
     teamIds
@@ -53,7 +58,16 @@ async function runBattle(startPaused = false) {
       })
       .filter((t) => !!t),
   )) as TeamWithCode[];
-  gameStore.runBattle(battle.args, teams, battle.seed, startPaused ? 1 : -1);
+  battleReplay.value = await singleBattle.runBattle(
+    battle.args,
+    teams,
+    battle.seed,
+    startPaused ? 1 : -1,
+  );
+
+  battleReplay.value.endPromise.then(() => {
+    battleReplay.value = undefined;
+  });
 }
 
 const activeTab = ref<'graph' | 'bars' | 'params' | 'debugger' | 'disqualifications'>('graph');
@@ -66,27 +80,46 @@ onBeforeUnmount(() => {
   gameStore.stop();
   subscription?.unsubscribe();
 });
+
+function handleAntDebugRequested(x: number, y: number) {
+  worker.getDebugAnts(x, y);
+}
+
+function handleStart() {
+  if (battleReplay.value) return;
+  runBattle();
+}
+
+function handleStep() {
+  if (battleReplay.value) {
+    battleReplay.value.step();
+  } else {
+    runBattle(true);
+  }
+}
 </script>
 
 <template>
   <nav class="panel is-primary">
-    <div class="panel-heading">
-      Battle - turn {{ currentTurn }} - {{ currentTps }} tps
-      <span class="is-pulled-right" v-if="summaryStats && !isLive">
-        <span class="field">
-          <button class="button is-small is-success" @click="runBattle()">
-            <span class="icon"><font-awesome-icon :icon="faPlay" /></span>
-          </button>
-        </span>
-        &nbsp;
-        <span class="field">
-          <button class="button is-small is-info" @click="runBattle(true)">
-            <span class="icon"><font-awesome-icon :icon="faStepForward" /></span>
-          </button>
-        </span>
+    <div
+      class="panel-heading is-flex is-flex-direction-row is-align-items-center is-justify-content-space-between"
+    >
+      Battle - turn {{ currentTurn }} - {{ currentTps }} tps live: {{ isLive }}
+      <span class="navbar battle-controls">
+        <game-controls
+          :battle-state="battleReplay"
+          :size="'small'"
+          @start="handleStart"
+          @step="handleStep"
+        />
       </span>
     </div>
-    <battle-feed class="panel-block battle-feed" v-if="isLive && gameStore.liveFeed" />
+    <battle-feed
+      class="panel-block battle-feed"
+      v-if="isLive && gameStore.liveFeed"
+      :worker-name="'game-worker'"
+      @ant-debug-requested="handleAntDebugRequested"
+    />
     <battle-render
       class="panel-block battle-render"
       :summary="summaryStats?.summary"
@@ -159,5 +192,8 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+.battle-controls {
+  background-color: transparent;
 }
 </style>

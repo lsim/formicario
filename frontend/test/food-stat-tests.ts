@@ -74,7 +74,7 @@ describe('Food statistics tests', () => {
 
   describe('Food statistics (foodOwnTouch) integration', () => {
     it('should maintain balanced food statistics during ant movement', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123);
+      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123, 0);
 
       // Set up source and destination squares with food
       const ant = battle.ants[0];
@@ -120,7 +120,7 @@ describe('Food statistics tests', () => {
     });
 
     it('should handle empty squares correctly in food statistics', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123);
+      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123, 0);
 
       const ant = battle.ants[0];
       const emptySquare = battle.mapData(ant.xPos + 1, ant.yPos);
@@ -147,7 +147,7 @@ describe('Food statistics tests', () => {
     });
 
     it('should verify foodOwnTouch method logic is correct', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123);
+      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123, 0);
 
       // Test the foodOwnTouch method directly with known values
       const testSquare: SquareData = {
@@ -206,7 +206,7 @@ describe('Food statistics tests', () => {
 
   describe('foodOwnTouch integration tests', () => {
     it('should call foodOwnTouch during termination check', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123);
+      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123, 0);
 
       // Set up a square with food and ants
       const square = battle.mapData(10, 10);
@@ -226,7 +226,7 @@ describe('Food statistics tests', () => {
     });
 
     it('should update food statistics during ant movement and base building', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123);
+      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123, 0);
 
       const ant = battle.ants[0];
       const sourceSquare = battle.mapData(ant.xPos, ant.yPos);
@@ -292,7 +292,7 @@ describe('Food statistics tests', () => {
 
   describe('foodOwnTouch diagnostic tests', () => {
     it('should verify foodOwnTouch method works correctly in isolation', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123);
+      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123, 0);
       const square = battle.mapData(64, 64);
 
       // Set up initial state
@@ -334,7 +334,7 @@ describe('Food statistics tests', () => {
     });
 
     it('should test base building foodOwnTouch calls', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123);
+      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123, 0);
       const ant = battle.ants[0];
       const square = battle.mapData(ant.xPos, ant.yPos);
 
@@ -391,7 +391,7 @@ describe('Food statistics tests', () => {
     });
 
     it('should test ant movement foodOwnTouch calls on empty squares', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123);
+      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123, 0);
       const ant = battle.ants[0];
 
       // Set up initial position with some food
@@ -442,6 +442,7 @@ describe('Food statistics tests', () => {
           { id: 'AggressiveAnt', func: aggressiveAnt },
         ],
         123,
+        0,
       );
 
       // Position two ants from different teams to trigger combat
@@ -516,6 +517,7 @@ describe('Food statistics tests', () => {
         battleArgs,
         [{ id: 'MovementOnlyAnt', func: movementOnlyAnt }],
         123,
+        0,
       );
 
       console.log('Testing movement-only scenario (no base building)...');
@@ -551,7 +553,7 @@ describe('Food statistics tests', () => {
     });
 
     it('should credit team when ant steps onto unclaimed square with food', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123);
+      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123, 0);
       const ant = battle.ants[0];
 
       // Position ant at (64, 64) on team's starting base
@@ -607,7 +609,7 @@ describe('Food statistics tests', () => {
     });
 
     it('should preserve food stats when ant carries food from non-base square', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123);
+      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123, 0);
       const ant = battle.ants[0];
 
       // Position ant at (64, 64) with 1 food on a non-base square
@@ -667,7 +669,7 @@ describe('Food statistics tests', () => {
     });
 
     it('should verify all foodOwnTouch call sites produce balanced results', () => {
-      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123);
+      const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123, 0);
 
       // Run a short battle and check if foodOwn goes negative
       console.log('Running short battle to check for negative foodOwn...');

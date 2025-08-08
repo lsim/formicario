@@ -1,8 +1,9 @@
 import type { WorkerMessage } from '@/workers/WorkerMessage.ts';
 import { Game, instantiateParticipant } from '@/Game.ts';
-import { type AntFunction } from '@/Battle.ts';
+import { type AntFunction, Battle } from '@/Battle.ts';
 
 let activeGame: Game | undefined;
+let activeSingleBattle: Battle | undefined;
 
 function getAntFunctions(teams: { id: string; code: string }[]): {
   id: string;
@@ -28,12 +29,17 @@ function getAntFunctions(teams: { id: string; code: string }[]): {
   });
 }
 
+let singleBattleEnded: Promise<void> | null = null;
+
+let gameEnded: Promise<void> | null = null;
+
 onmessage = async (e) => {
   const command: WorkerMessage = e.data as WorkerMessage;
   // console.debug('Worker received message', command);
   try {
     if (command?.type === 'run-game') {
       activeGame?.stopGame();
+      await gameEnded;
       const teamFunctions = getAntFunctions(command.game.teams);
       const failedAntFunctions = teamFunctions.filter((f) => f.error);
       if (failedAntFunctions.length > 0) {
@@ -49,23 +55,26 @@ onmessage = async (e) => {
         teamFunctions.filter((f) => f && f.func && f.id).map((f) => ({ id: f.id!, func: f.func! })),
       );
       activeGame.setSpeed(command.speed);
-      const p = activeGame.run(command.pauseAfterTurns);
+      gameEnded = activeGame.run(command.pauseAfterTurns).then((summary) => {
+        if (!summary) {
+          postMessage({ type: 'error', error: ['Failed to run game'] });
+          return;
+        }
+        activeGame = undefined;
+        postMessage({ type: 'game-summary', results: summary });
+      });
       postMessage({ type: 'ok', id: command.id });
-      const summary = await p;
-      if (!summary) {
-        postMessage({ type: 'error', error: ['Failed to run game'] });
-        return;
-      }
-      activeGame = undefined;
-      postMessage({ type: 'game-summary', results: summary });
     } else if (command?.type === 'stop-game') {
       activeGame?.stopGame();
+      activeSingleBattle?.stop();
+      await (gameEnded || singleBattleEnded);
       postMessage({ type: 'ok', id: command.id });
     } else if (command?.type === 'skip-battle') {
       activeGame?.skipBattle();
       postMessage({ type: 'ok', id: command.id });
     } else if (command?.type === 'run-battle') {
-      activeGame?.stopGame();
+      activeSingleBattle?.stop();
+      await singleBattleEnded;
       const teamFunctions = getAntFunctions(command.teams);
       const failedAntFunctions = teamFunctions.filter((f) => f.error);
       if (failedAntFunctions.length > 0) {
@@ -76,25 +85,35 @@ onmessage = async (e) => {
         });
         return;
       }
-      activeGame = new Game(
-        null,
-        teamFunctions.filter((f) => f && f.func && f.id).map((f) => ({ id: f.id!, func: f.func! })),
+      activeSingleBattle = new Battle(
         command.args,
+        teamFunctions.filter((f) => f && f.func && f.id).map((f) => ({ id: f.id!, func: f.func! })),
         command.seed,
+        command.battleId,
+        command.pauseAfterTurns,
       );
-      activeGame.setSpeed(command.speed);
-      const p = activeGame.run(command.pauseAfterTurns);
+      activeSingleBattle.setSpeed(command.speed);
+      singleBattleEnded = activeSingleBattle
+        .run()
+        .then((summary) => {
+          postMessage({ type: 'battle-summary', summary, id: -1 });
+        })
+        .catch((e) => {
+          console.error('Battle ended in error', activeSingleBattle?.battleId, e);
+        })
+        .finally(() => (activeSingleBattle = undefined));
       postMessage({ type: 'ok', id: command.id });
-      await p;
-      activeGame = undefined;
     } else if (command?.type === 'pause-game') {
       activeGame?.pause();
+      activeSingleBattle?.pause();
       postMessage({ type: 'ok', id: command.id });
     } else if (command?.type === 'resume-game') {
       activeGame?.proceed({ type: 'resume' });
+      activeSingleBattle?.proceed({ type: 'resume' });
       postMessage({ type: 'ok', id: command.id });
     } else if (command?.type === 'step-game') {
       activeGame?.proceed({ type: 'takeSteps', steps: command.stepSize });
+      activeSingleBattle?.proceed({ type: 'takeSteps', steps: command.stepSize });
       postMessage({ type: 'ok', id: command.id });
     } else if (command?.type === 'ant-info-request') {
       try {
@@ -105,10 +124,14 @@ onmessage = async (e) => {
         postMessage({ type: 'error', error: [String(error)], id: command.id });
       }
     } else if (command?.type === 'debug-request') {
-      const ants = activeGame?.activeBattle?.getAntsForDebug(command.x, command.y);
+      const ants = (activeGame?.activeBattle || activeSingleBattle)?.getAntsForDebug(
+        command.x,
+        command.y,
+      );
       postMessage({ type: 'debug-reply', ants, id: command.id });
     } else if (command?.type === 'set-speed') {
       activeGame?.setSpeed(command.speed);
+      activeSingleBattle?.setSpeed(command.speed);
       postMessage({ type: 'ok', id: command.id });
     } else {
       console.error('Unknown command', command);

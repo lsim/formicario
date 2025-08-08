@@ -179,6 +179,7 @@ export class Battle {
     private args: BattleArgs,
     antFunctions: { id: string; func: AntFunction }[],
     private seed: number,
+    readonly battleId: number,
     private pauseAfterTurns = -1,
     private readonly isTest = false,
   ) {
@@ -204,6 +205,7 @@ export class Battle {
       leading: true,
     });
   }
+
   mapIndex(x: number, y: number) {
     return x + y * this.args.mapWidth;
   }
@@ -506,6 +508,7 @@ export class Battle {
     }
 
     const status: BattleStatus = {
+      battleId: this.battleId,
       seed: this.seed,
       args: this.args,
       teams: this.teams.map((team, i) => this.getTeamSummary(team, i + 1)),
@@ -527,6 +530,7 @@ export class Battle {
   }
 
   async run(): Promise<BattleSummary> {
+    console.log('Running battle', this.battleId);
     let terminated = false;
     let stepsToTake = -1;
 
@@ -571,12 +575,19 @@ export class Battle {
       }
     } while (!terminated);
     this.isTerminated = true;
+    if (this.stopResolver) this.stopResolver(null);
     return this.generateBattleSummary();
   }
 
-  public stop() {
-    this.stopRequested = true;
-    this.proceed({ type: 'stop' });
+  private stopResolver: ((value: unknown) => void) | null = null;
+
+  public async stop() {
+    if (this.isTerminated) return;
+    await new Promise((resolve) => {
+      this.stopResolver = resolve;
+      this.stopRequested = true;
+      this.proceed({ type: 'stop' });
+    });
   }
 
   public setSpeed(speed: number) {
@@ -605,6 +616,7 @@ export class Battle {
 
     return {
       startTime: this.startTime,
+      battleId: this.battleId,
       winner: winnerId,
       teams: this.teams.map((t, index) => this.getTeamSummary(t, index + 1)),
       turns: this.currentTurn,
@@ -616,6 +628,7 @@ export class Battle {
   }
 
   disqualifiedTeams: (TeamDisqualification & { teamIndex: number })[] = [];
+
   isTeamDisqualified(teamIndex: number) {
     return this.disqualifiedTeams.some((q) => q.teamIndex === teamIndex);
   }
@@ -1080,9 +1093,11 @@ export class Battle {
   relinquishFood(square: SquareData, team: number) {
     this.foodOwnTouch(square, team, -1);
   }
+
   seizeFood(square: SquareData, team: number) {
     this.foodOwnTouch(square, team, 1);
   }
+
   //   foodOwn: Food the team can directly control (min(square.numFood, square.numAnts))
   //   foodTouch: Excess food the team can potentially access (square.numFood - foodOwn)
   //   foodKnown: Total food the team is aware of (square.numFood)
