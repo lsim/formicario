@@ -12,7 +12,7 @@ import {
 } from '@/composables/stats.ts';
 import type { BattleStatus } from '@/GameSummary.ts';
 import { Observable, ReplaySubject } from 'rxjs';
-import { useStorage, watchDebounced } from '@vueuse/core';
+import { watchDebounced } from '@vueuse/core';
 
 export const useGameStore = defineStore('game', () => {
   const worker = useWorker('game-worker');
@@ -63,7 +63,8 @@ export const useGameStore = defineStore('game', () => {
   const lastError = ref<string[]>([]);
   const liveFeed = ref(true);
   const selectedBattleSummaryStats = ref<BattleSummaryStats | null>(null);
-  const speed = useStorage('speed', 50, sessionStorage);
+
+  // const speed = useStorage('speed', 50, sessionStorage);
 
   async function start(pauseAfterTurns = -1) {
     selectedBattleSummaryStats.value = null;
@@ -76,12 +77,12 @@ export const useGameStore = defineStore('game', () => {
         ...gameSpec,
         teams: [...battleTeams.map((t) => ({ id: t.id, code: t.code }))],
         seed: gameSpec.seed,
-        speed: speed.value,
+        speed: worker.speed.value,
         statusInterval: !liveFeed.value ? 100 : gameSpec.statusInterval,
         numBattles: gameSpec.numBattles,
       },
       pauseAfterTurns,
-      speed: speed.value,
+      speed: worker.speed.value,
     };
     gameRunning.value = true;
     battleStreams$.value.next([
@@ -115,9 +116,9 @@ export const useGameStore = defineStore('game', () => {
   async function step(steps = 0) {
     gamePaused.value = true;
     if (!gameRunning.value && !battleReplaying.value) {
-      await start(steps || speed.value || 1);
+      await start(steps || worker.speed.value || 1);
     } else {
-      await worker.stepGame(steps || speed.value || 1);
+      await worker.stepGame(steps || worker.speed.value || 1);
     }
   }
 
@@ -127,7 +128,7 @@ export const useGameStore = defineStore('game', () => {
   }
 
   watchDebounced(
-    () => speed.value,
+    () => worker.speed.value,
     async (newSpeed) => {
       await worker.setSpeed(newSpeed);
     },
@@ -144,7 +145,7 @@ export const useGameStore = defineStore('game', () => {
     selectedStatusProperty,
     battleStreams$,
     selectedBattleSummaryStats,
-    speed,
+    speed: worker.speed,
 
     start,
     stop,

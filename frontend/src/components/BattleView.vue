@@ -31,11 +31,15 @@ const isLive = computed(() => {
 const summaryStats = computed(() => gameStore.selectedBattleSummaryStats);
 
 const currentTurn = ref(0);
+const currentHalfTime = ref(0);
+const currentFullTime = ref(0);
 const currentTps = ref(0);
 
 const subscription = worker.battleStatuses$.pipe(throttleTime(100)).subscribe((status) => {
   currentTurn.value = status.turns;
   currentTps.value = status.turnsPerSecond >> 0;
+  currentHalfTime.value = status.args.halfTimeTurn;
+  currentFullTime.value = status.args.timeOutTurn;
 });
 
 const battleReplay = ref<BattleState | undefined>();
@@ -97,6 +101,9 @@ function handleStep() {
     runBattle(true);
   }
 }
+
+const progress = computed(() => (currentTurn.value / (currentFullTime.value || 1)) * 100);
+const pastHalfTime = computed(() => currentTurn.value > currentHalfTime.value);
 </script>
 
 <template>
@@ -104,7 +111,8 @@ function handleStep() {
     <div
       class="panel-heading is-flex is-flex-direction-row is-align-items-center is-justify-content-space-between"
     >
-      Battle - turn {{ currentTurn }} - {{ currentTps }} tps live: {{ isLive }}
+      Battle
+      <span class="tps">{{ currentTps }} tps</span>
       <span class="navbar battle-controls">
         <game-controls
           :battle-state="battleReplay"
@@ -113,6 +121,13 @@ function handleStep() {
           @step="handleStep"
         />
       </span>
+      <progress
+        class="progress is-small"
+        :class="{ 'is-info': !pastHalfTime, 'is-warning': pastHalfTime }"
+        :value="progress"
+        max="100"
+        :title="`Turn ${currentTurn}/${currentFullTime}`"
+      ></progress>
     </div>
     <battle-feed
       class="panel-block battle-feed"
@@ -188,6 +203,22 @@ function handleStep() {
 </template>
 
 <style scoped lang="scss">
+.panel-heading {
+  position: relative;
+  .tps {
+    font-size: 70%;
+    position: absolute;
+    right: 5px;
+    top: 3px;
+    opacity: 0.3;
+  }
+  .progress {
+    position: absolute;
+    bottom: 3px;
+    left: 5px;
+    width: calc(100% - 10px);
+  }
+}
 .battle-args {
   display: flex;
   flex-direction: column;
