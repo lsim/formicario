@@ -63,7 +63,7 @@ async function startDemo(code: string, color: string, incrementSeed = true) {
 
   await activeBattle.value?.stop();
   const nextSeed = incrementSeed ? battleSeed.value++ : battleSeed.value;
-  activeBattle.value = await singleBattle.runBattle(battleArgs, [teamWithCode], nextSeed);
+  activeBattle.value = await singleBattle.runBattle(battleArgs, [teamWithCode], nextSeed, -1, true);
 }
 
 function pauseDemo() {

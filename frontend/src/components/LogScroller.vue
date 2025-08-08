@@ -41,6 +41,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+  <span class="logs-label">Logs</span>
   <table class="table is-hoverable is-striped is-narrow">
     <tr v-for="(o, idx) in messages" :key="idx" :title="o.ant">
       <td>{{ o.turn }}</td>
@@ -53,6 +54,18 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped lang="scss">
+.logs-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 120%;
+  opacity: 0.3;
+}
 * {
   background-color: transparent;
   color: inherit;

@@ -91,6 +91,7 @@ onmessage = async (e) => {
         command.seed,
         command.battleId,
         command.pauseAfterTurns,
+        command.isTest,
       );
       activeSingleBattle.setSpeed(command.speed);
       singleBattleEnded = activeSingleBattle

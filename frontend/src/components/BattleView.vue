@@ -67,6 +67,7 @@ async function runBattle(startPaused = false) {
     teams,
     battle.seed,
     startPaused ? 1 : -1,
+    false,
   );
 
   battleReplay.value.endPromise.then(() => {

@@ -108,6 +108,7 @@ export interface RunBattleMessage extends TypedMessage {
   speed: number;
   pauseAfterTurns?: number;
   battleId: number;
+  isTest: boolean;
 }
 
 export interface SetSpeedMessage extends TypedMessage {

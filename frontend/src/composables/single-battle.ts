@@ -75,6 +75,7 @@ export default function useSingleBattle(workerId: WorkerName) {
     teams: TeamWithCode[],
     seed: number,
     pauseAfterTurns: number = -1,
+    isTest: boolean = false,
   ) {
     const battleId = battleCounter++;
     if (teams.length === 0) throw new Error('No teams selected');
@@ -87,6 +88,7 @@ export default function useSingleBattle(workerId: WorkerName) {
       speed: worker.speed.value,
       pauseAfterTurns,
       battleId,
+      isTest,
     });
 
     return new BattleState(worker, battleId, seed, args, teams, pauseAfterTurns);
