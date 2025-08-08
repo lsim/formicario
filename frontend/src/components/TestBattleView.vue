@@ -47,7 +47,7 @@ async function startDemo(code: string, color: string, incrementSeed = true) {
     newFoodMin: 20,
     newFoodDiff: 20,
     startAnts: 25,
-    halfTimeTurn: 2000,
+    halfTimeTurn: 1000,
     halfTimePercent: 60,
     timeOutTurn: 4000,
     winPercent: 70,
@@ -64,6 +64,9 @@ async function startDemo(code: string, color: string, incrementSeed = true) {
   await activeBattle.value?.stop();
   const nextSeed = incrementSeed ? battleSeed.value++ : battleSeed.value;
   activeBattle.value = await singleBattle.runBattle(battleArgs, [teamWithCode], nextSeed, -1, true);
+  activeBattle.value.endPromise.then(() => {
+    setTimeout(() => startDemo(code, color, true), 1000);
+  });
 }
 
 function pauseDemo() {

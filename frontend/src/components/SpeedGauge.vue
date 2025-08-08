@@ -14,7 +14,7 @@ const speedString = ref(worker.speed.value.toString());
 watch(
   () => speedString.value,
   (newSpeed) => {
-    worker.speed.value = parseInt(newSpeed, 10);
+    worker.setSpeed(parseInt(newSpeed, 10));
   },
 );
 

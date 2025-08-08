@@ -127,6 +127,7 @@ export class WorkerDispatcher {
   }
 
   async setSpeed(speed: number) {
+    this.speed.value = speed;
     await this.queueMessage<SetSpeedMessage>({ type: 'set-speed', speed });
   }
 

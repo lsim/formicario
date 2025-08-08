@@ -16,6 +16,7 @@ import { throttleTime } from 'rxjs';
 import { useWorker } from '@/workers/WorkerDispatcher.ts';
 import useSingleBattle, { BattleState } from '@/composables/single-battle.ts';
 import GameControls from '@/components/GameControls.vue';
+import { useStorage } from '@vueuse/core';
 
 const gameStore = useGameStore();
 const teamStore = useTeamStore();
@@ -75,7 +76,10 @@ async function runBattle(startPaused = false) {
   });
 }
 
-const activeTab = ref<'graph' | 'bars' | 'params' | 'debugger' | 'disqualifications'>('graph');
+const activeTab = useStorage<'graph' | 'bars' | 'params' | 'debugger' | 'disqualifications'>(
+  'activeTab',
+  'graph',
+);
 
 const activeTabComputed = computed(() =>
   !gameStore.gameRunning && activeTab.value === 'debugger' ? 'graph' : activeTab.value,
