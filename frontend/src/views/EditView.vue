@@ -414,6 +414,7 @@ const codeMirrorOptions = {
             :color="team.color"
             :battle-statuses$="worker.battleStatuses$"
             @ant-debug-requested="handleAntDebugRequested"
+            :id="team.id"
           />
           <div class="panel-block">
             <button

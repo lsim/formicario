@@ -18,6 +18,7 @@ import useSingleBattle, { BattleState } from '@/composables/single-battle.ts';
 const props = defineProps<{
   code: string;
   color: string;
+  id?: string;
   battleStatuses$: Observable<BattleStatus>;
 }>();
 
@@ -37,7 +38,6 @@ watchDebounced(
 
 // Battle state is the type of the returned object from runBattle
 const activeBattle = ref<BattleState>();
-
 async function startDemo(code: string, color: string, incrementSeed = true) {
   if (!code) return;
   const battleArgs: BattleArgs = {
@@ -64,11 +64,6 @@ async function startDemo(code: string, color: string, incrementSeed = true) {
   await activeBattle.value?.stop();
   const nextSeed = incrementSeed ? battleSeed.value++ : battleSeed.value;
   activeBattle.value = await singleBattle.runBattle(battleArgs, [teamWithCode], nextSeed, -1, true);
-  activeBattle.value.endPromise.then(() => {
-    if (props.code !== code || props.color !== color) return;
-    // Only keep going if the code/color haven't changed (eg idle)
-    setTimeout(() => startDemo(code, color, true), 1000);
-  });
 }
 
 function pauseDemo() {
