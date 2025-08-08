@@ -10,7 +10,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import type { BattleArgs } from '@/Battle.ts';
 import { onBeforeUnmount, ref } from 'vue';
-import { watchDebounced } from '@vueuse/core';
+import { useStorage, watchDebounced } from '@vueuse/core';
 import type { BattleStatus } from '@/GameSummary.ts';
 import type { Observable } from 'rxjs';
 import useSingleBattle, { BattleState } from '@/composables/single-battle.ts';
@@ -86,7 +86,7 @@ function skipForward() {
   startDemo(props.code, props.color, true);
 }
 
-const autoMagnifier = ref(true);
+const autoMagnifier = useStorage('autoMagnifier', true, localStorage);
 
 function handleAntDebugRequested(x: number, y: number) {
   emits('ant-debug-requested', x, y);
