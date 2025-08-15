@@ -56,6 +56,7 @@ const toast = useToast();
     //border-radius: 5px;
     //pointer-events: auto;
     border: 2px solid rgba(white, 0.3);
+    color: white;
     &.celebrate {
       @include colorize(purple);
       animation: colorFade 2s ease-in-out;
@@ -71,7 +72,6 @@ const toast = useToast();
         }
       }
     }
-    color: white;
 
     &:hover {
       opacity: 0.8;
