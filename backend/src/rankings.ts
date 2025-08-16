@@ -4,7 +4,7 @@ import {
   BattleParticipant,
   BattleResult,
   Scores,
-} from '#shared/BattleResult.ts';
+} from './shared/BattleResult.ts';
 import { kv } from './kv.ts';
 import { broadcast } from './subscription.ts';
 import { getPublications, loadBuiltinPublications } from './publications.ts';

@@ -11,7 +11,7 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
       '@ants': fileURLToPath(new URL('../ants', import.meta.url)),
-      '#shared': fileURLToPath(new URL('../shared', import.meta.url)),
+      '#shared': fileURLToPath(new URL('../backend/src/shared', import.meta.url)),
     },
   },
   server: {
