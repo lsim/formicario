@@ -1,13 +1,5 @@
 <script setup lang="ts">
-import {
-  computed,
-  onBeforeUnmount,
-  ref,
-  useTemplateRef,
-  watch,
-  withDefaults,
-  defineProps,
-} from 'vue';
+import { computed, onBeforeUnmount, ref, useTemplateRef, watch, defineProps } from 'vue';
 import AntMagnifier from '@/components/AntMagnifier.vue';
 import { useMagicKeys, useMouseInElement } from '@vueuse/core';
 import { filter, tap } from 'rxjs';

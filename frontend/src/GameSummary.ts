@@ -20,6 +20,7 @@ export type TeamStatus = {
   id: string;
   color: string;
   disqualification?: TeamDisqualification;
+  codeHash: string;
   numbers: {
     numBorn: number;
     numAnts: number;
@@ -49,6 +50,16 @@ export type BattleStatus = BattleInfo & {
   turnsPerSecond: number;
 };
 
+export type TerminationReason =
+  | 'timeout'
+  | 'half-time-domination'
+  | 'domination'
+  | 'disqualification'
+  | 'error'
+  | 'user-abort'
+  | 'not-terminated'
+  | 'solo-battle-ended';
+
 export type BattleSummary = BattleInfo & {
   startTime: number;
   // The id of the winning team
@@ -57,6 +68,7 @@ export type BattleSummary = BattleInfo & {
   duration: number;
   squares: SquareStatus[];
   seed: number;
+  terminationReason: TerminationReason;
 };
 
 export type GameSummary = {

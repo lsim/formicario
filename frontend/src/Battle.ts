@@ -7,6 +7,7 @@ import type {
   SquareStatus,
   TeamDisqualification,
   TeamStatus,
+  TerminationReason,
 } from '@/GameSummary.ts';
 
 // Constants from MyreKrig.h
@@ -129,7 +130,7 @@ export type AntFunction = (() => AntDescriptor) &
     map: SquareData[],
     antInfo: AntInfo,
     logFn: (message: string, args: unknown[]) => void,
-  ) => number);
+  ) => number) & { codeHash: string };
 
 export type BattleContinuation = {
   type: 'resume' | 'stop' | 'takeSteps';
@@ -139,6 +140,7 @@ export type BattleContinuation = {
 export class Battle {
   static DEFAULT_SPEED = 50;
   private isTerminated = false;
+  private terminationReason: TerminationReason = 'not-terminated';
   teams: TeamData[];
   // An array of squares, each with a linked list of ants on that square
   map: SquareData[] = [];
@@ -465,6 +467,7 @@ export class Battle {
       id: team.id,
       color: team.color,
       disqualification,
+      codeHash: team.func.codeHash,
       numbers: {
         numBorn: team.numBorn,
         numAnts: team.numAnts,
@@ -564,7 +567,8 @@ export class Battle {
       }
 
       // Check for termination conditions (equivalent to TermCheck() in C)
-      terminated = this.checkTermination();
+      this.terminationReason = this.checkTermination();
+      if (this.terminationReason !== 'not-terminated') terminated = true;
 
       // Allow for async operations and UI responsiveness
       // Yield control periodically for non-blocking execution
@@ -624,6 +628,7 @@ export class Battle {
       duration: Date.now() - this.startTime,
       squares: this.map.map((s, index) => this.squareDataToStatus(s, index)),
       seed: this.seed,
+      terminationReason: this.terminationReason,
     };
   }
 
@@ -1123,13 +1128,13 @@ export class Battle {
   }
 
   // Check if battle should terminate
-  checkTermination(): boolean {
+  checkTermination(): TerminationReason {
     const baseValue = BASE_VALUE;
     let totalValue = 0;
     let maxTeamValue = 0;
     let activeTeams = 0;
 
-    if (this.stopRequested) return true;
+    if (this.stopRequested) return 'user-abort';
 
     // Calculate team values
     for (const team of this.teams) {
@@ -1142,18 +1147,18 @@ export class Battle {
     // Last team standing wins (only applies to multi-team battles)
     if (this.teams.length > 1 && activeTeams <= 1) {
       console.debug('Single team wins', this.teams, activeTeams);
-      return true;
+      return 'solo-battle-ended';
     }
 
     if (this.teams.length === 1 && this.currentTurn >= this.args.halfTimeTurn) {
       console.debug('Solo battle ends at halftime', this.teams, activeTeams);
-      return true;
+      return 'solo-battle-ended';
     }
 
     // Timeout
     if (this.currentTurn >= this.args.timeOutTurn) {
       console.debug('Timeout', this.currentTurn, this.args.timeOutTurn);
-      return true;
+      return 'timeout';
     }
 
     // Win percentage reached (only applies to multi-team battles)
@@ -1172,7 +1177,7 @@ export class Battle {
         //   'baseValue', baseValue,
         //   'this.args.winPercent', this.args.winPercent,
         // );
-        return true;
+        return 'domination';
       }
     }
 
@@ -1181,11 +1186,11 @@ export class Battle {
       const halfTimeThreshold = (totalValue * this.args.halfTimePercent) / 100;
       if (maxTeamValue >= halfTimeThreshold) {
         console.debug('Half-time advantage reached', maxTeamValue, halfTimeThreshold);
-        return true;
+        return 'half-time-domination';
       }
     }
 
-    return false;
+    return 'not-terminated';
   }
 
   public getAntsForDebug(x?: number, y?: number): AntData[] {

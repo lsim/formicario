@@ -32,7 +32,37 @@ export async function getPublication(id: string) {
   return res.value;
 }
 
-export async function getPublications() {
+let builtinPublications: AntPublication[] | null = null;
+export async function loadBuiltinPublications() {
+  if (builtinPublications) return builtinPublications;
+  const antFiles = Deno.readDir('../ants');
+
+  const publications: AntPublication[] = [];
+  for await (const file of antFiles) {
+    if (!file.name.endsWith('.js')) continue;
+    const code = await Deno.readTextFile(`../ants/${file.name}`);
+    const id = file.name.replace(/\.js$/, '');
+    publications.push(
+      new AntPublication(
+        id,
+        '',
+        '',
+        id,
+        0,
+        '',
+        0,
+        await hash(code),
+        'built-in',
+      ),
+    );
+  }
+  builtinPublications = publications;
+  return publications;
+}
+
+loadBuiltinPublications();
+
+export async function getPublications(): Promise<AntPublication[]> {
   const publications = kv.list<AntPublication>({ prefix: ['publications'] });
   // Return shallow publication objects
   const result = [];

@@ -4,8 +4,9 @@ import { blacklist, type Team } from '@/Team.ts';
 import { useWorker } from '@/workers/WorkerDispatcher.ts';
 import { useStorage } from '@vueuse/core';
 import Color from 'color';
-import useApiClient, { type BackendPublication } from '@/composables/api-client.ts';
+import useApiClient from '@/composables/api-client.ts';
 import useToast from '@/composables/toast.ts';
+import type { BackendPublication } from '#shared/BattleResult.ts';
 
 export declare type TeamMeta = {
   name: string;

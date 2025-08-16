@@ -80,6 +80,9 @@ const editTabTitle = computed(() => {
               <li :class="{ 'is-active': route.name === 'home' }">
                 <router-link to="/">Battle</router-link>
               </li>
+              <li :class="{ 'is-active': route.name === 'rankings' }">
+                <router-link to="/rankings">Rankings</router-link>
+              </li>
               <li :class="{ 'is-active': route.name === 'edit' || route.name === 'editTeam' }">
                 <router-link to="/edit">{{ editTabTitle }}</router-link>
               </li>

@@ -1,6 +1,7 @@
 import type { WorkerMessage } from '@/workers/WorkerMessage.ts';
 import { Game, instantiateParticipant } from '@/Game.ts';
 import { type AntFunction, Battle } from '@/Battle.ts';
+import { hash } from '#shared/hash.ts';
 
 let activeGame: Game | undefined;
 let activeSingleBattle: Battle | undefined;
@@ -14,9 +15,12 @@ function getAntFunctions(teams: { id: string; code: string }[]): {
 }[] {
   return teams.map((team) => {
     try {
+      const func = instantiateParticipant(team.code);
+      // Store hash of code that was run (to prevent tampering)
+      hash(team.code).then((codeHash) => (func.codeHash = codeHash));
       return {
         id: team.id,
-        func: instantiateParticipant(team.code),
+        func: func,
       };
     } catch (error) {
       return {

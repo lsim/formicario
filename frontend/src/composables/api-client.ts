@@ -3,18 +3,12 @@ import { ref, watch } from 'vue';
 import useToast from '@/composables/toast.ts';
 import useBusy from '@/composables/busy.ts';
 import type { TeamWithCode } from '@/Team.ts';
+import { BattleParticipant, BattleResult, type Scores } from '#shared/BattleResult.ts';
+import type { GameSummary } from '@/GameSummary.ts';
+import { useTeamStore } from '@/stores/teams.ts';
+import type { BackendPublication } from '#shared/BattleResult.ts';
 
-export interface BackendPublication {
-  name: string;
-  code: string;
-  color: string;
-  timestamp: number;
-  authorName: string;
-  description: string;
-  id: string;
-  lamport: number;
-  codeHash: string;
-}
+const allowedRankedTerminationReasons = ['domination', 'half-time-domination', 'timeout'];
 
 function antPublicationFromApiObject(
   obj: Record<keyof BackendPublication, string>,
@@ -53,6 +47,7 @@ class ApiClient {
   public readonly loginPromise = ref<Promise<void> | null>(null);
   public readonly loginResolver = ref<(() => void) | null>(null);
   public readonly numUpdates = ref(0);
+  private readonly teamStore = useTeamStore();
 
   constructor(
     private readonly toast: ReturnType<typeof useToast>,
@@ -137,6 +132,7 @@ class ApiClient {
     path:
       | 'hello'
       | 'publications'
+      | 'rankings'
       | 'auth/register'
       | 'auth/login'
       | 'auth/recovery'
@@ -311,6 +307,74 @@ class ApiClient {
       return null;
     }
     this.toast.show('Team unpublished successfully', 'is-info');
+    return data.value;
+  }
+
+  async getTeamsWithScores(): Promise<Scores> {
+    const { data, response } = await this.fetch<BattleResult[]>('rankings').get().json();
+    if (!data.value || response.value?.status !== 200) {
+      console.error(
+        `Failed to fetch battle results (${response.value?.status}): ${response.value?.statusText}`,
+      );
+      this.toast.show('Failed to fetch battle results', 'is-danger');
+      return {};
+    }
+    return data.value as Scores;
+  }
+
+  async submitGameSummary(summary: GameSummary) {
+    const battleResults = summary.battles
+      .filter((battle) => allowedRankedTerminationReasons.includes(battle.terminationReason))
+      .map((battle) => {
+        const battleParticipants = battle.teams.map((team) => {
+          // We insist that teams be published (or be built-in) before they can take part in a ranked battle
+          const builtInTeam = this.teamStore.localTeams.find(
+            (t) =>
+              t.authorName &&
+              this.teamStore.isBuiltIn({ authorName: t.authorName }) &&
+              t.id === team.id,
+          );
+          console.log('submit: builtInTeam', builtInTeam, team.codeHash);
+          if (builtInTeam)
+            return new BattleParticipant(
+              builtInTeam.id,
+              builtInTeam.name,
+              builtInTeam.color,
+              0,
+              team.codeHash,
+            );
+          const remoteTeam = this.teamStore.remoteTeams.find((t) => t.id === team.id);
+          if (remoteTeam)
+            return new BattleParticipant(
+              remoteTeam.id,
+              remoteTeam.name,
+              remoteTeam.color,
+              remoteTeam.lamport,
+              team.codeHash,
+            );
+          throw Error('Team not published?: ' + team.id);
+        });
+
+        return new BattleResult(battleParticipants, battle.turns, battle.startTime, battle.winner);
+      })
+      .filter((result) => result.isValid());
+
+    for (const result of battleResults) {
+      await this.submitBattleResult(result);
+    }
+  }
+
+  async submitBattleResult(result: BattleResult) {
+    const { data, response } = await this.fetch('rankings')
+      .post({ ...result })
+      .json();
+    if (!data.value || response.value?.status !== 200) {
+      console.error(
+        `Failed to submit battle result (${response.value?.status}): ${response.value?.statusText}`,
+      );
+      this.toast.show('Failed to submit battle result', 'is-danger');
+      return null;
+    }
     return data.value;
   }
 }

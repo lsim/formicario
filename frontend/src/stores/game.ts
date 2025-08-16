@@ -13,11 +13,15 @@ import {
 import type { BattleStatus } from '@/GameSummary.ts';
 import { Observable, ReplaySubject } from 'rxjs';
 import { watchDebounced } from '@vueuse/core';
+import useApiClient from '@/composables/api-client.ts';
+import useToast from '@/composables/toast.ts';
 
 export const useGameStore = defineStore('game', () => {
   const worker = useWorker('game-worker');
   const teamStore = useTeamStore();
+  const apiClient = useApiClient();
   const stats = useStats();
+  const toast = useToast();
 
   const gameSpec: GameSpec = reactive<GameSpec>({
     mapWidth: [128, 256],
@@ -38,8 +42,10 @@ export const useGameStore = defineStore('game', () => {
   });
 
   // We leak this subscription as it is a singleton
-  worker.gameSummaries$.subscribe(() => {
+  worker.gameSummaries$.subscribe(async (gameSummary) => {
     gameRunning.value = false;
+    await apiClient.submitGameSummary(gameSummary);
+    toast.show('Battle results submitted', 'is-info');
   });
 
   // Replay the last set of streams, so components can get them even though the battle has already started

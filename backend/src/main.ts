@@ -2,6 +2,7 @@ import { handlePublicationRequest } from './publications.ts';
 import { getValidatedUser, handleAuthRequest } from './auth/tokens.ts';
 import { Err, Ok } from './util.ts';
 import { handleSubscriptionRequest } from './subscription.ts';
+import { handleRankingsRequest } from './rankings.ts';
 
 async function handleRequest(request: Request) {
   const url = new URL(request.url);
@@ -12,7 +13,9 @@ async function handleRequest(request: Request) {
 
   const user = token ? await getValidatedUser(token || '') : null;
 
-  console.debug(`${request.method} ${url.pathname} by ${user?.username || '<anonymous>'}`);
+  console.debug(
+    `${request.method} ${url.pathname} by ${user?.username || '<anonymous>'}`,
+  );
 
   if (request.method === 'OPTIONS') {
     return Ok('');
@@ -27,12 +30,17 @@ async function handleRequest(request: Request) {
       return Ok(user ? 'Hi ' + user.username : 'Hello stranger');
     case 'subscribe':
       return handleSubscriptionRequest(request);
+    case 'rankings':
+      return handleRankingsRequest(request, user);
     default:
       return Err('Invalid request', 500);
   }
 }
 
-function requestLimiter(maxTickets: number, handleRequest: (request: Request) => Promise<Response>) {
+function requestLimiter(
+  maxTickets: number,
+  handleRequest: (request: Request) => Promise<Response>,
+) {
   let tickets = maxTickets;
   setInterval(() => {
     tickets = Math.min(maxTickets, tickets + 1);
@@ -42,7 +50,7 @@ function requestLimiter(maxTickets: number, handleRequest: (request: Request) =>
     if (tickets === 0) return new Response(null, { status: 503 }); // Service Unavailable
     tickets--;
     return await handleRequest(request);
-  }
+  };
 }
 
 Deno.serve({ port: 8088 }, requestLimiter(100, handleRequest));

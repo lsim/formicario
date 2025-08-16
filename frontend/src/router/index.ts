@@ -30,6 +30,11 @@ const router = createRouter({
       component: () => import('../views/PasswordReset.vue'),
       props: true,
     },
+    {
+      path: '/rankings',
+      name: 'rankings',
+      component: () => import('../views/RankingView.vue'),
+    },
   ],
 });
 
