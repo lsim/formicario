@@ -403,11 +403,11 @@ describe('Battle tests', () => {
       const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123, 0);
 
       // Initial state should not be terminated
-      expect(battle.checkTermination()).toBe(false);
+      expect(battle.checkTermination()).toBe('not-terminated');
 
       // Force timeout
       battle.currentTurn = battle.testAccess().timeOutTurn;
-      expect(battle.checkTermination()).toBe(true);
+      expect(battle.checkTermination()).toBe('solo-battle-ended');
     });
 
     it('should calculate termination correctly for multiple teams', () => {
@@ -433,7 +433,7 @@ describe('Battle tests', () => {
       battle.teams[1].numBases = 0;
 
       // This should terminate due to single team remaining, not win percentage
-      expect(battle.checkTermination()).toBe(true);
+      expect(battle.checkTermination()).toBe('solo-battle-ended');
 
       // Reset to competitive scenario
       battle.teams[1].numAnts = 80;
@@ -444,7 +444,7 @@ describe('Battle tests', () => {
       // Team 2: 80 ants + 1 base = 155 total value
       // Total value: 330, so 70% threshold = 231
       // Team 1 has 175/330 = 53% (should NOT trigger termination)
-      expect(battle.checkTermination()).toBe(false);
+      expect(battle.checkTermination()).toBe('not-terminated');
 
       // Give team 1 a decisive advantage
       // Team 1: 250 ants + 2 bases = 400 total value
@@ -453,7 +453,7 @@ describe('Battle tests', () => {
       // Team 1 has 400/555 = 72% (should terminate)
       battle.teams[0].numAnts = 250;
       battle.teams[0].numBases = 2;
-      expect(battle.checkTermination()).toBe(true);
+      expect(battle.checkTermination()).toBe('domination');
 
       // Test that the calculation works correctly with different base values
       // Reset for edge case testing
@@ -462,11 +462,11 @@ describe('Battle tests', () => {
       battle.teams[1].numAnts = 100;
       battle.teams[1].numBases = 0; // 100 value
       // Total: 325, threshold: 227.5, team 1 has 225/325 = 69.2% (should NOT terminate)
-      expect(battle.checkTermination()).toBe(false);
+      expect(battle.checkTermination()).toBe('not-terminated');
 
       // Bump team 1 just over threshold
       battle.teams[0].numBases = 4; // 4 * 75 = 300 value, 300/400 = 75% (should terminate)
-      expect(battle.checkTermination()).toBe(true);
+      expect(battle.checkTermination()).toBe('domination');
     });
   });
 
@@ -487,7 +487,7 @@ describe('Battle tests', () => {
     battle.teams[1].numAnts = 10;
     battle.teams[1].numBases = 1;
 
-    expect(battle.checkTermination()).toBe(false);
+    expect(battle.checkTermination()).toBe('not-terminated');
   });
 
   describe('Battle execution', () => {
@@ -775,7 +775,7 @@ describe('Battle tests', () => {
       battle.teams[1].numBases = 1;
 
       // Check termination
-      expect(battle.checkTermination()).toBe(true);
+      expect(battle.checkTermination()).toBe('domination');
     });
 
     it('should handle termination by half-time advantage', () => {
@@ -803,7 +803,7 @@ describe('Battle tests', () => {
       battle.teams[1].numBases = 1;
 
       // Check termination
-      expect(battle.checkTermination()).toBe(true);
+      expect(battle.checkTermination()).toBe('half-time-domination');
     });
 
     it('should handle termination when only one team remains active', () => {
@@ -824,7 +824,7 @@ describe('Battle tests', () => {
       battle.teams[1].numBases = 0;
 
       // Check termination - should return true as only 1 team remains active
-      expect(battle.checkTermination()).toBe(true);
+      expect(battle.checkTermination()).toBe('solo-battle-ended');
     });
 
     it('should handle timing measurements for performance tracking', () => {
@@ -863,13 +863,13 @@ describe('Battle tests', () => {
       const battle = new Battle(battleArgs, [{ id: 'SimpleAnt', func: simpleAnt }], 123, 0);
 
       // Initially stop is not requested
-      expect(battle.checkTermination()).toBe(false);
+      expect(battle.checkTermination()).toBe('not-terminated');
 
       // Request stop
       battle.stop();
 
       // Termination should now return true due to stop request
-      expect(battle.checkTermination()).toBe(true);
+      expect(battle.checkTermination()).toBe('user-abort');
     });
 
     it('should handle square ownership transfer when moving to enemy territory', () => {
