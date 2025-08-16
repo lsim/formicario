@@ -322,6 +322,7 @@ class ApiClient {
     return data.value as Scores;
   }
 
+  // TODO: We should submit the battle summaries as the game progresses
   async submitGameSummary(summary: GameSummary) {
     const battleResults = summary.battles
       .filter((battle) => allowedRankedTerminationReasons.includes(battle.terminationReason))
