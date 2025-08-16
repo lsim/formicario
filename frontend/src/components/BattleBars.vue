@@ -26,7 +26,7 @@ const liveTeams = ref<TeamStatus[]>([]);
 
 const teams = computed(() => {
   // Look up the teams in the teamStore
-  const participatingTeamStatuses = props.battleSummary?.teams || liveTeams.value;
+  const participatingTeamStatuses = liveTeams.value || props.battleSummary?.teams;
   return participatingTeamStatuses.map((team) => {
     // Look up the team name in the teamStore and add it to the team status
     const teamFromStore = teamStore.allTeamMetas.find((t) => t.id === team.id);
@@ -94,7 +94,7 @@ const sortedBars = computed(() => {
     <div class="column is-one-fifth">
       <stat-prop-chooser />
     </div>
-    <div class="column">
+    <div class="column is-align-self-baseline">
       <div class="team-stats">
         <template v-for="bar in sortedBars" :key="bar.name">
           <div class="team-name" :title="bar.value + ''">{{ bar.name }}</div>

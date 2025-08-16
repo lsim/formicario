@@ -6,7 +6,7 @@ import { useGameStore } from '@/stores/game.ts';
 import BattleBars from '@/components/BattleBars.vue';
 import BattleArgs from '@/components/BattleArgs.vue';
 import BattleGraph from '@/components/BattleGraph.vue';
-import { computed, onBeforeUnmount, ref } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import BattleRender from '@/components/BattleRender.vue';
 import { useTeamStore } from '@/stores/teams.ts';
 import useApiClient from '@/composables/api-client.ts';
@@ -71,10 +71,17 @@ async function runBattle(startPaused = false) {
     false,
   );
 
-  battleReplay.value.endPromise.then(() => {
+  battleReplay.value.endPromise.finally(() => {
     battleReplay.value = undefined;
   });
 }
+
+watch(
+  () => gameStore.selectedBattleSummaryStats,
+  () => {
+    battleReplay.value?.stop();
+  },
+);
 
 const activeTab = useStorage<'graph' | 'bars' | 'params' | 'debugger' | 'disqualifications'>(
   'activeTab',
