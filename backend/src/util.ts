@@ -28,15 +28,9 @@ export function OkJson(payload: object, statusCode?: number) {
 export function Err(
   statusText: string,
   statusCode: number,
-  contentType?: 'text' | 'json',
 ) {
-  let contentHeader = null;
-  if (contentType === 'text') {
-    contentHeader = { 'Content-Type': 'text/plain' };
-  } else if (contentType === 'json') {
-    contentHeader = { 'Content-Type': 'application/json' };
-  }
-  return new Response('null', {
+  const contentHeader = { 'Content-Type': 'application/json' };
+  return new Response(JSON.stringify({ error: statusText }), {
     status: statusCode,
     statusText: statusText,
     headers: { ...corsHeaders, ...contentHeader },

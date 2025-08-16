@@ -77,7 +77,7 @@ class ApiClient {
           await this.startUserLogin();
           return await ctx.execute();
         }
-        console.error(`Fetch error: ${ctx.response.status} ${ctx.error.message}`);
+        ctx.error = new Error(ctx.data.error);
         return ctx;
       },
     },
@@ -365,14 +365,15 @@ class ApiClient {
   }
 
   async submitBattleResult(result: BattleResult) {
-    const { data, response } = await this.fetch('rankings')
+    const { data, response, error } = await this.fetch('rankings')
       .post({ ...result })
       .json();
     if (!data.value || response.value?.status !== 200) {
       console.error(
         `Failed to submit battle result (${response.value?.status}): ${response.value?.statusText}`,
+        error.value.message,
       );
-      this.toast.show('Failed to submit battle result', 'is-danger');
+      this.toast.show(error.value.message, 'is-danger');
       return null;
     }
     return data.value;

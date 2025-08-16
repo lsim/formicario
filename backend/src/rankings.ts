@@ -110,7 +110,6 @@ async function postBattleResult(result: BattleResult) {
       'One ore more participants failed ranked battle verification: ' +
         e.message,
       500,
-      'json',
     );
   }
 
