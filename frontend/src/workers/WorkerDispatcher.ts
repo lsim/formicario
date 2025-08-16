@@ -16,7 +16,8 @@ import type { BattleStatus, BattleSummary, GameSummary } from '@/GameSummary.ts'
 import type { AntData } from '@/Battle.ts';
 import type { TeamWithCode } from '@/Team.ts';
 import { deepUnref } from 'vue-deepunref';
-import { ref, watch } from 'vue';
+import { type Ref, watch } from 'vue';
+import { useStorage } from '@vueuse/core';
 
 export class WorkerDispatcher {
   private readonly battleStatusSubject$ = new Subject<BattleStatus>();
@@ -28,10 +29,11 @@ export class WorkerDispatcher {
   private messageCount = 0;
   private readonly pendingCommands = new Map<number, (message: WorkerMessage) => void>();
 
-  public readonly speed = ref(50);
+  public readonly speed: Ref<number, number>;
 
   constructor(public readonly workerId: string) {
     console.log('Creating a worker...', workerId);
+    this.speed = useStorage(`${workerId}-speed`, 50);
     this.handleWorkerMessages();
   }
 
