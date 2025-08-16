@@ -6,9 +6,10 @@ import { hash } from '#shared/hash.ts';
 let activeGame: Game | undefined;
 let activeSingleBattle: Battle | undefined;
 
-function getAntFunctions(teams: { id: string; code: string }[]): {
+function getAntFunctions(teams: { id: string; code: string; color?: string }[]): {
   id: string;
   func?: AntFunction;
+  color?: string;
   error?: string;
   line?: number;
   column?: number;
@@ -21,6 +22,7 @@ function getAntFunctions(teams: { id: string; code: string }[]): {
       return {
         id: team.id,
         func: func,
+        color: team.color,
       };
     } catch (error) {
       return {
@@ -91,7 +93,9 @@ onmessage = async (e) => {
       }
       activeSingleBattle = new Battle(
         command.args,
-        teamFunctions.filter((f) => f && f.func && f.id).map((f) => ({ id: f.id!, func: f.func! })),
+        teamFunctions
+          .filter((f) => f && f.func && f.id)
+          .map((f) => ({ id: f.id!, func: f.func!, color: f.color })),
         command.seed,
         command.battleId,
         command.pauseAfterTurns,

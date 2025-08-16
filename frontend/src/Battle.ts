@@ -179,7 +179,7 @@ export class Battle {
 
   constructor(
     private args: BattleArgs,
-    antFunctions: { id: string; func: AntFunction }[],
+    antFunctions: { id: string; func: AntFunction; color?: string }[],
     private seed: number,
     readonly battleId: number,
     private pauseAfterTurns = -1,
@@ -190,6 +190,8 @@ export class Battle {
     this.teams = antFunctions.map((antFunc) => {
       const descriptor = antFunc.func();
       const team = { ...antFunc, ...descriptor };
+      // Allow caller to override the color
+      if (antFunc.color) team.color = antFunc.color;
       return this.resetTeam(team);
     });
 

@@ -14,6 +14,9 @@ import { useStorage, watchDebounced } from '@vueuse/core';
 import type { BattleStatus } from '@/GameSummary.ts';
 import type { Observable } from 'rxjs';
 import useSingleBattle, { BattleState } from '@/composables/single-battle.ts';
+import { useTeamStore } from '@/stores/teams.ts';
+
+const teamStore = useTeamStore();
 
 const props = defineProps<{
   code: string;
@@ -41,15 +44,15 @@ const activeBattle = ref<BattleState>();
 async function startDemo(code: string, color: string, incrementSeed = true) {
   if (!code) return;
   const battleArgs: BattleArgs = {
-    mapWidth: 64,
+    mapWidth: 128,
     mapHeight: 128,
     newFoodSpace: 25,
     newFoodMin: 20,
     newFoodDiff: 20,
     startAnts: 25,
-    halfTimeTurn: 1000,
+    halfTimeTurn: 10000,
     halfTimePercent: 60,
-    timeOutTurn: 4000,
+    timeOutTurn: 20000,
     winPercent: 70,
     statusInterval: 10,
   };
@@ -61,9 +64,17 @@ async function startDemo(code: string, color: string, incrementSeed = true) {
     color,
   };
 
+  const randomTeam = teamStore.localTeams[Math.floor(Math.random() * teamStore.localTeams.length)];
+
   await activeBattle.value?.stop();
   const nextSeed = incrementSeed ? battleSeed.value++ : battleSeed.value;
-  activeBattle.value = await singleBattle.runBattle(battleArgs, [teamWithCode], nextSeed, -1, true);
+  activeBattle.value = await singleBattle.runBattle(
+    battleArgs,
+    [teamWithCode, { ...randomTeam, code: randomTeam.code! }],
+    nextSeed,
+    -1,
+    true,
+  );
 }
 
 function pauseDemo() {
