@@ -7,7 +7,9 @@ import {
 } from './shared/BattleResult.ts';
 import { kv } from './kv.ts';
 import { broadcast } from './subscription.ts';
-import { getPublications, loadBuiltinPublications } from './publications.ts';
+import { getPublications } from './publications.ts';
+
+import { builtInHashes } from './built-in-hashes.ts';
 
 async function getTeamsWithScores() {
   const kvResults = kv.list<BattleResult>({ prefix: ['battle-results'] });
@@ -62,19 +64,23 @@ async function getTeamsWithScores() {
 
 async function verifyParticipants(result: BattleResult) {
   const publications = await getPublications();
-  const builtInPublications = await loadBuiltinPublications();
-  const allPublications = [...publications, ...builtInPublications];
   for (const participant of result.participants) {
-    const publication = allPublications.find((p) =>
-      p.id === participant.teamId
-    );
+    const builtInHash = builtInHashes[participant.teamId];
+    if (builtInHash) {
+      if (builtInHash !== participant.codeHash) {
+        throw Error(
+          `Built-in team ${participant.teamId} has invalid code hash`,
+        );
+      }
+      continue;
+    }
+    const publication = publications.find((p) => p.id === participant.teamId);
     if (!publication) {
       throw Error(
         `No publication found for team ${participant.teamId}. Make sure to publish all participants before ranked battles`,
       );
     }
     if (
-      publication.authorId !== 'built-in' &&
       publication.lamport !== participant.lamport
     ) {
       throw Error(
