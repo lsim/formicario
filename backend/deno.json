@@ -4,7 +4,7 @@
   },
   "imports": {
     "@std/assert": "jsr:@std/assert@1",
-    "#shared/": "../shared/"
+    "#shared/": "./src/shared/"
   },
   "deploy": {
     "project": "formicario",
