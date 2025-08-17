@@ -57,6 +57,7 @@ describe('Ant test-bench', () => {
         startAnts: [20, 20], // Start with enough ants for base building
         timeOutTurn: 100,
         teams: [team],
+        fillers: [],
         winPercent: 70,
         numBattles: 1,
         numBattleTeams: 15,

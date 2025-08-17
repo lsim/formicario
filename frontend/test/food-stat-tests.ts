@@ -32,6 +32,7 @@ describe('Food statistics tests', () => {
       seed: 42,
       startAnts: [5, 5],
       teams: [],
+      fillers: [],
       timeOutTurn: 1000,
       winPercent: 70,
       numBattles: 1,

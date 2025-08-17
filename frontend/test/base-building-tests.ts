@@ -74,6 +74,7 @@ describe('Base Building Brain Management', () => {
       seed: 42,
       startAnts: [25, 25], // Start with enough ants for base building
       teams: [],
+      fillers: [],
       timeOutTurn: 200,
       winPercent: 70,
       numBattles: 1,
@@ -154,6 +155,7 @@ describe('Base Building Brain Management', () => {
       seed: 123,
       startAnts: [20, 20],
       teams: [],
+      fillers: [],
       timeOutTurn: 100,
       winPercent: 70,
       numBattles: 1,

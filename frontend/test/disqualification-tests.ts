@@ -29,6 +29,7 @@ describe('Disqualification System', () => {
       seed: 42,
       startAnts: [3, 3],
       teams: [],
+      fillers: [],
       timeOutTurn: 1000,
       winPercent: 70,
       numBattles: 1,
