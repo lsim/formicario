@@ -111,7 +111,7 @@ async function storePublication(
   );
 
   const oldPublication = await kv.get<AntPublication>(specificPublicationKey);
-  if (oldPublication) {
+  if (oldPublication && oldPublication.value) {
     // Extract lamport and verify that it matches the submitted lamport
     if (
       oldPublication.value.lamport != null &&
@@ -120,6 +120,7 @@ async function storePublication(
       return Err('Lamport mismatch', 409);
     }
   }
+
   await kv.atomic()
     // Make sure nobody else overwrote with same lamport
     .check(oldPublication)
