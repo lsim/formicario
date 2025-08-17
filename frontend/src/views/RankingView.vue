@@ -13,7 +13,14 @@ const teamsWithScores = ref<Record<string, ScoreAggregator>>({});
   teamsWithScores.value = await apiClient.getTeamsWithScores();
 })();
 
-declare type Sorting = 'name' | 'wins' | 'losses' | 'beaten' | 'avgWinTurns' | 'winLossRatio';
+declare type Sorting =
+  | 'name'
+  | 'wins'
+  | 'losses'
+  | 'beaten'
+  | 'avgWinTurns'
+  | 'winLossRatio'
+  | 'authorName';
 
 const direction = ref<'asc' | 'desc'>('desc');
 const sorting = ref<Sorting>('winLossRatio');
@@ -33,6 +40,8 @@ const sortedTeams = computed(() => {
         return a.avgWinTurns - b.avgWinTurns;
       case 'winLossRatio':
         return a.winLossRatio - b.winLossRatio;
+      case 'authorName':
+        return a.authorName.localeCompare(b.authorName);
       default:
         return 0;
     }
@@ -104,6 +113,14 @@ const strongestTeam = computed(() => {
               >Avg. Win Turns</a
             >
           </th>
+          <!-- authorName -->
+          <th>
+            <a
+              :class="{ sorting: sorting === 'authorName', desc: !isAscending }"
+              @click="sortBy('authorName')"
+              >Author</a
+            >
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -132,6 +149,7 @@ const strongestTeam = computed(() => {
           </td>
           <td>{{ team.numBeatenTeams }}</td>
           <td>{{ Math.round(team.avgWinTurns) }}</td>
+          <td>{{ team.authorName }}</td>
         </tr>
       </tbody>
     </table>

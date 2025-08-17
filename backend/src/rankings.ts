@@ -13,6 +13,7 @@ import { builtInHashes } from './built-in-hashes.ts';
 
 async function getTeamsWithScores() {
   const kvResults = kv.list<BattleResult>({ prefix: ['battle-results'] });
+  const publications = await getPublications();
 
   const teamsWithScores: Scores = {};
 
@@ -20,6 +21,7 @@ async function getTeamsWithScores() {
     const battleResult = entry.value;
     for (const participant of battleResult.participants) {
       const teamId = participant.teamId;
+      const publication = publications.find((p) => p.id === teamId);
       if (!teamsWithScores[teamId]) {
         teamsWithScores[teamId] = {
           numWins: 0,
@@ -29,6 +31,7 @@ async function getTeamsWithScores() {
           name: participant.teamName,
           color: participant.teamColor,
           winLossRatio: 0,
+          authorName: publication?.authorName || 'Legacy',
         };
       }
 

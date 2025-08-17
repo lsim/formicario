@@ -1,5 +1,4 @@
 export class BattleParticipant {
-
   constructor(
     public readonly teamId: string,
     public readonly teamName: string,
@@ -7,7 +6,6 @@ export class BattleParticipant {
     public readonly lamport: number,
     public readonly codeHash: string,
   ) {
-
   }
 
   // TODO: We should add more stats from the battle here (from TeamStatus)
@@ -21,19 +19,18 @@ export class BattleResult {
     public readonly participants: BattleParticipant[],
     public readonly durationTurns: number,
     public readonly timestamp: number,
-    public readonly winnerId: string
+    public readonly winnerId: string,
   ) {
   }
 
   isValid() {
-
-    const isValid = this.participants.length > 1
-      && this.participants.every(p => p.teamId)
-      && this.participants.every(p => p.lamport != null)
-      && this.participants.every(p => p.codeHash)
-      && this.durationTurns > 0
-      && this.timestamp > 0
-      && !!this.winnerId;
+    const isValid = this.participants.length > 1 &&
+      this.participants.every((p) => p.teamId) &&
+      this.participants.every((p) => p.lamport != null) &&
+      this.participants.every((p) => p.codeHash) &&
+      this.durationTurns > 0 &&
+      this.timestamp > 0 &&
+      !!this.winnerId;
 
     console.log('BattleResult.isValid', this.winnerId, isValid);
     return isValid;
@@ -60,6 +57,7 @@ export type ScoreAggregator = {
   numBeatenTeams: number;
   avgWinTurns: number;
   winLossRatio: number;
+  authorName: string;
 };
 
 export type Scores = {
