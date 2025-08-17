@@ -117,7 +117,7 @@ async function storePublication(
       oldPublication.value.lamport != null &&
       oldPublication.value.lamport !== lamport
     ) {
-      return Err('Lamport mismatch', 409, 'json');
+      return Err('Lamport mismatch', 409);
     }
   }
   await kv.atomic()
