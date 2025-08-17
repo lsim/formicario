@@ -38,6 +38,7 @@ export const useGameStore = defineStore('game', () => {
     numBattles: 3,
     seed: (Math.random() * 4294967295) >>> 0,
     teams: [],
+    fillers: [],
     numBattleTeams: 5,
   });
 
@@ -67,25 +68,20 @@ export const useGameStore = defineStore('game', () => {
   );
 
   const gameRunning = ref(false);
-  const battleReplaying = ref(false);
   const gamePaused = ref(false);
   const selectedStatusProperty = ref<TeamStat>('numAnts');
   const lastError = ref<string[]>([]);
   const liveFeed = ref(true);
   const selectedBattleSummaryStats = ref<BattleSummaryStats | null>(null);
 
-  // const speed = useStorage('speed', 50, sessionStorage);
-
   async function start(pauseAfterTurns = -1) {
     selectedBattleSummaryStats.value = null;
-    // Select battle teams among local and built-in teams
-    const battleTeams =
-      teamStore.battleTeams.length === 0 ? teamStore.localTeams : teamStore.battleTeams;
-    if (gameRunning.value || battleReplaying.value) return;
+    if (gameRunning.value) return;
     const message = {
       game: {
         ...gameSpec,
-        teams: [...battleTeams.map((t) => ({ id: t.id, code: t.code }))],
+        teams: [...teamStore.battleTeams.map((t) => ({ id: t.id, code: t.code }))],
+        fillers: [...teamStore.localTeams.map((t) => ({ id: t.id, code: t.code }))],
         seed: gameSpec.seed,
         speed: worker.speed.value,
         statusInterval: !liveFeed.value ? 100 : gameSpec.statusInterval,
@@ -110,7 +106,6 @@ export const useGameStore = defineStore('game', () => {
     await worker.stopGame();
     gamePaused.value = false;
     gameRunning.value = false;
-    battleReplaying.value = false;
   }
 
   async function pause() {
@@ -125,7 +120,7 @@ export const useGameStore = defineStore('game', () => {
 
   async function step(steps = 0) {
     gamePaused.value = true;
-    if (!gameRunning.value && !battleReplaying.value) {
+    if (!gameRunning.value) {
       await start(steps || worker.speed.value || 1);
     } else {
       await worker.stepGame(steps || worker.speed.value || 1);
@@ -133,7 +128,7 @@ export const useGameStore = defineStore('game', () => {
   }
 
   async function skipBattle() {
-    if (!gameRunning.value && !battleReplaying.value) return;
+    if (!gameRunning.value) return;
     await worker.skipBattle();
   }
 
@@ -148,7 +143,6 @@ export const useGameStore = defineStore('game', () => {
   return {
     gameSpec,
     gameRunning,
-    battleReplaying,
     gamePaused,
     lastError,
     liveFeed,

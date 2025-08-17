@@ -39,6 +39,7 @@ export class Game {
   constructor(
     private spec: GameSpec | null,
     private readonly teamFunctions: { id: string; func: AntFunction }[],
+    private readonly fillerTeamFunctions: { id: string; func: AntFunction }[],
   ) {
     this.id = Date.now();
     this.rng = getRNG(this.spec?.seed ?? 1);
@@ -92,13 +93,13 @@ export class Game {
     return array;
   }
 
+  // Picks randomly with preference for the teamFunctions - fills up with the filler teams
   pickRandomTeamsForBattle() {
     if (this.spec == null) return this.teamFunctions;
     const teamFunctions = this.fisherYates([...this.teamFunctions]);
-    if (this.spec.numBattleTeams <= 1 || this.spec.numBattleTeams >= this.teamFunctions.length) {
-      return teamFunctions;
-    }
-    return teamFunctions.slice(0, this.spec.numBattleTeams);
+    const fillerTeamFunctions = this.fisherYates([...this.fillerTeamFunctions]);
+    const roster = [...teamFunctions, ...fillerTeamFunctions];
+    return roster.slice(0, this.spec.numBattleTeams);
   }
 
   private stopRequested = false;

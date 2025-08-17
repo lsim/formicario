@@ -10,6 +10,7 @@ export type GameSpec = {
   timeOutTurn: number;
   winPercent: number;
   teams: { id: string; code: string }[];
+  fillers: { id: string; code: string }[];
   numBattleTeams: number;
   numBattles: number;
 

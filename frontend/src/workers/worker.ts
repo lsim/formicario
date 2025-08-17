@@ -46,7 +46,7 @@ onmessage = async (e) => {
     if (command?.type === 'run-game') {
       activeGame?.stopGame();
       await gameEnded;
-      const teamFunctions = getAntFunctions(command.game.teams);
+      const teamFunctions = getAntFunctions(command.game.fillers);
       const failedAntFunctions = teamFunctions.filter((f) => f.error);
       if (failedAntFunctions.length > 0) {
         postMessage({
@@ -56,9 +56,19 @@ onmessage = async (e) => {
         });
         return;
       }
+      const fixedTeamIds = command.game.teams.map((t) => t.id);
+      const fixedTeamFunctions = teamFunctions.filter((tf) => fixedTeamIds.includes(tf.id));
       activeGame = new Game(
         command.game,
-        teamFunctions.filter((f) => f && f.func && f.id).map((f) => ({ id: f.id!, func: f.func! })),
+        fixedTeamFunctions
+          .filter((f) => f && f.func && f.id)
+          .map((f) => ({ id: f.id!, func: f.func! })),
+        teamFunctions
+          .filter((f) => f && f.func && f.id && !fixedTeamIds.includes(f.id))
+          .map((f) => ({
+            id: f.id!,
+            func: f.func!,
+          })),
       );
       activeGame.setSpeed(command.speed);
       gameEnded = activeGame.run(command.pauseAfterTurns).then((summary) => {

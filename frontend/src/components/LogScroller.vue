@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { useWorker } from '@/workers/WorkerDispatcher.ts';
-import { onBeforeUnmount, ref, watch } from 'vue';
-import { useGameStore } from '@/stores/game.ts';
+import { onBeforeUnmount, ref } from 'vue';
 
 const worker = useWorker('debug-worker');
-const gameStore = useGameStore();
 
 const messages = ref<
   {
@@ -14,13 +12,6 @@ const messages = ref<
     ant: string;
   }[]
 >([]);
-
-watch(
-  () => gameStore.battleReplaying,
-  (newVal) => {
-    if (newVal) messages.value = [];
-  },
-);
 
 const subscription = worker.testLogs$.subscribe(({ message, args, ant }) => {
   // Can have ant here too
