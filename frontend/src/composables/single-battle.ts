@@ -1,7 +1,8 @@
 import { useWorker, type WorkerName } from '@/workers/WorkerDispatcher.ts';
 import type { BattleArgs } from '@/Battle.ts';
 import type { TeamWithCode } from '@/Team.ts';
-import { filter, finalize, take, timeout } from 'rxjs';
+import { filter, finalize, type Observable, take, timeout } from 'rxjs';
+import type { BattleStatus } from '@/GameSummary.ts';
 
 export class BattleState {
   private running = true;
@@ -41,6 +42,10 @@ export class BattleState {
         }),
       )
       .subscribe();
+  }
+
+  public get battleStatus$(): Observable<BattleStatus> {
+    return this.worker.battleStatuses$;
   }
 
   pause() {

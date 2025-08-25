@@ -15,6 +15,7 @@ import type { BattleStatus } from '@/GameSummary.ts';
 import type { Observable } from 'rxjs';
 import useSingleBattle, { BattleState } from '@/composables/single-battle.ts';
 import { useTeamStore } from '@/stores/teams.ts';
+import DemoBars from '@/components/DemoBars.vue';
 
 const teamStore = useTeamStore();
 
@@ -31,10 +32,15 @@ const emits = defineEmits<{
 
 const singleBattle = useSingleBattle('debug-worker');
 
+const testBattlesCompleted = ref(0);
 const battleSeed = ref(1);
 
 watchDebounced(
-  () => ({ code: props.code, color: props.color }),
+  () => ({
+    code: props.code,
+    color: props.color,
+    testBattlesCompleted: testBattlesCompleted.value,
+  }),
   async ({ code, color }) => startDemo(code, color),
   { debounce: 3000 },
 );
@@ -75,6 +81,7 @@ async function startDemo(code: string, color: string, incrementSeed = true) {
     -1,
     true,
   );
+  activeBattle.value.endPromise.then(() => testBattlesCompleted.value++);
 }
 
 function pauseDemo() {
@@ -155,6 +162,9 @@ onBeforeUnmount(() => {
         :worker-name="'debug-worker'"
         @ant-debug-requested="handleAntDebugRequested"
       />
+    </div>
+    <div class="panel-block is-fullwidth">
+      <demo-bars :battle-status$="activeBattle?.battleStatus$" />
     </div>
     <div class="panel-block is-justify-content-center">
       <speed-gauge :worker-name="'debug-worker'" />
