@@ -77,6 +77,9 @@ const editTabTitle = computed(() => {
         <nav class="tabs is-boxed" v-show="!isPasswordReset">
           <div class="container">
             <ul>
+              <li :class="{ 'is-active': route.name === 'about' }">
+                <router-link to="/about">About</router-link>
+              </li>
               <li :class="{ 'is-active': route.name === 'home' }">
                 <router-link to="/">Battle</router-link>
               </li>
