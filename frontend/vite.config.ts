@@ -17,5 +17,5 @@ export default defineConfig({
   server: {
     port: 4243,
   },
-  base: '/formicario',
+  base: '/',
 });
