@@ -1,8 +1,8 @@
 import { useWorker, type WorkerName } from '@/workers/WorkerDispatcher.ts';
 import type { BattleArgs } from '@/Battle.ts';
 import type { TeamWithCode } from '@/Team.ts';
-import { filter, finalize, type Observable, take, timeout } from 'rxjs';
-import type { BattleStatus } from '@/GameSummary.ts';
+import { filter, finalize, type Observable, take, tap, timeout } from 'rxjs';
+import type { BattleStatus, TerminationReason } from '@/GameSummary.ts';
 
 export class BattleState {
   private running = true;
@@ -12,8 +12,10 @@ export class BattleState {
     return this.paused;
   }
 
-  private endResolver: ((value: void | PromiseLike<void>) => void) | undefined;
-  public readonly endPromise: Promise<void>;
+  private endResolver:
+    | ((value: TerminationReason | PromiseLike<TerminationReason>) => void)
+    | undefined;
+  public readonly endPromise: Promise<TerminationReason>;
 
   constructor(
     private readonly worker: ReturnType<typeof useWorker>,
@@ -25,7 +27,7 @@ export class BattleState {
   ) {
     this.paused = pauseAfterTurns > 0;
 
-    this.endPromise = new Promise((resolve) => {
+    this.endPromise = new Promise<TerminationReason>((resolve) => {
       this.endResolver = resolve;
     });
 
@@ -35,10 +37,13 @@ export class BattleState {
           return summary.battleId === battleId;
         }),
         take(1),
+        tap((summary) => {
+          this.endResolver?.(summary.terminationReason);
+        }),
         timeout(10 * 60 * 1000),
         finalize(() => {
+          this.endResolver?.('error');
           this.running = false;
-          this.endResolver?.();
         }),
       )
       .subscribe();

@@ -41,7 +41,10 @@ watchDebounced(
     color: props.color,
     testBattlesCompleted: testBattlesCompleted.value,
   }),
-  async ({ code, color }) => startDemo(code, color),
+  ({ code, color }) => {
+    if (activeBattle.value?.isPaused) return;
+    startDemo(code, color);
+  },
   { debounce: 3000 },
 );
 
@@ -57,9 +60,9 @@ async function startDemo(code: string, color: string, incrementSeed = true) {
     newFoodDiff: 20,
     startAnts: 25,
     halfTimeTurn: 10000,
-    halfTimePercent: 60,
+    halfTimePercent: 65,
     timeOutTurn: 20000,
-    winPercent: 70,
+    winPercent: 75,
     statusInterval: 10,
   };
 
@@ -81,7 +84,10 @@ async function startDemo(code: string, color: string, incrementSeed = true) {
     -1,
     true,
   );
-  activeBattle.value.endPromise.then(() => testBattlesCompleted.value++);
+  activeBattle.value.endPromise.then((reason) => {
+    if (reason === 'user-abort' || reason === 'error' || reason === 'disqualification') return;
+    testBattlesCompleted.value++;
+  });
 }
 
 function pauseDemo() {

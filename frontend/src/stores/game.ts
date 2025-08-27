@@ -46,11 +46,11 @@ export const useGameStore = defineStore('game', () => {
   worker.gameSummaries$.subscribe(async (gameSummary) => {
     gameRunning.value = false;
     try {
-      await apiClient.submitGameSummary(gameSummary);
+      const numSubmitted = await apiClient.submitGameSummary(gameSummary);
+      if (numSubmitted > 0) toast.show(`Done submitting ${numSubmitted} battles`, 'is-info');
     } catch (e) {
       console.error('Failed to submit game summary', e);
     }
-    toast.show(`Done submitting ${gameSummary.battles.length} battles`, 'is-info');
   });
 
   // Replay the last set of streams, so components can get them even though the battle has already started

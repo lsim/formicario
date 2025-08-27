@@ -335,7 +335,6 @@ class ApiClient {
               this.teamStore.isBuiltIn({ authorName: t.authorName }) &&
               t.id === team.id,
           );
-          console.log('submit: builtInTeam', builtInTeam, team.codeHash);
           if (builtInTeam)
             return new BattleParticipant(
               builtInTeam.id,
@@ -363,6 +362,7 @@ class ApiClient {
     for (const result of battleResults) {
       await this.submitBattleResult(result);
     }
+    return battleResults.length;
   }
 
   async submitBattleResult(result: BattleResult) {
