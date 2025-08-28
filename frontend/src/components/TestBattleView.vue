@@ -73,13 +73,17 @@ async function startDemo(code: string, color: string, incrementSeed = true) {
     color,
   };
 
+  // TODO: Let the Game constructor handle this - make a single battle game in stead.
+  //  That way the seed will also determine the opponent
   const randomTeam = teamStore.localTeams[Math.floor(Math.random() * teamStore.localTeams.length)];
 
   await activeBattle.value?.stop();
   const nextSeed = incrementSeed ? battleSeed.value++ : battleSeed.value;
   activeBattle.value = await singleBattle.runBattle(
     battleArgs,
-    [teamWithCode, { ...randomTeam, code: randomTeam.code! }],
+    includeOpponent.value
+      ? [teamWithCode, { ...randomTeam, code: randomTeam.code! }]
+      : [teamWithCode],
     nextSeed,
     -1,
     true,
@@ -111,6 +115,7 @@ function skipForward() {
 }
 
 const autoMagnifier = useStorage('autoMagnifier', true, localStorage);
+const includeOpponent = useStorage('includeOpponent', true, localStorage);
 
 function handleAntDebugRequested(x: number, y: number) {
   emits('ant-debug-requested', x, y);
@@ -122,9 +127,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="panel is-primary">
-    <div class="panel-block">
-      <div class="field has-addons is-fullwidth" style="width: 100%">
+  <div class="panel is-primary test-battle-view">
+    <div class="panel-block is-display-flex is-justify-content-center">
+      <div class="field has-addons">
         <div class="control" v-if="activeBattle && !activeBattle.isPaused">
           <a class="button is-small is-success" @click="pauseDemo"
             ><font-awesome-icon :icon="faPause"
@@ -153,12 +158,6 @@ onBeforeUnmount(() => {
             ><font-awesome-icon :icon="faForwardFast"
           /></a>
         </div>
-        <div class="floating-checkbox">
-          <label for="" class="label">
-            Magnifier
-            <input type="checkbox" v-model="autoMagnifier" />
-          </label>
-        </div>
       </div>
     </div>
     <div class="panel-block is-justify-content-center">
@@ -172,20 +171,48 @@ onBeforeUnmount(() => {
     <div class="panel-block is-fullwidth">
       <demo-bars :battle-status$="activeBattle?.battleStatus$" />
     </div>
-    <div class="panel-block is-justify-content-center">
-      <speed-gauge :worker-name="'debug-worker'" />
+    <div class="demo-toggles">
+      <div class="panel-block is-fullwidth">
+        <div class="control">
+          <label class="checkbox">
+            <input type="checkbox" v-model="includeOpponent" />
+            Include Opponent
+          </label>
+        </div>
+      </div>
+      <div class="panel-block is-fullwidth">
+        <div class="control">
+          <div class="control">
+            <label class="checkbox">
+              <input type="checkbox" v-model="autoMagnifier" />
+              Auto magnifier
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="panel-block is-justify-content-center">
+        <speed-gauge :worker-name="'debug-worker'" />
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped lang="scss">
-.last-button {
-  border-top-right-radius: 3px;
-  border-bottom-right-radius: 3px;
-}
+.test-battle-view {
+  // Chrome only feature: Transitioning to auto size
+  interpolate-size: allow-keywords;
 
-.floating-checkbox {
-  width: 100%;
-  text-align: right;
+  &:hover {
+    .demo-toggles {
+      height: auto;
+    }
+  }
+
+  // Demo toggles collapse when the mouse is not over the panel
+  .demo-toggles {
+    height: 0;
+    overflow: hidden;
+    transition: height 0.5s;
+  }
 }
 </style>
