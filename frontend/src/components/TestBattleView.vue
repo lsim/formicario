@@ -47,7 +47,7 @@ watchDebounced(
 );
 
 // Battle state is the type of the returned object from runBattle
-const activeBattle = ref<GameProxy>();
+const activeBattle = ref<GameProxy | null>();
 async function startDemo(code: string, color: string, incrementSeed = true) {
   if (!code) return;
 
@@ -83,6 +83,9 @@ async function startDemo(code: string, color: string, incrementSeed = true) {
   };
 
   activeBattle.value = await singleBattle.runDemoGame(gameSpec, wasPaused ? 1 : -1);
+  activeBattle.value.endPromise.then(() => {
+    activeBattle.value = null;
+  });
 }
 
 function pauseDemo() {
@@ -101,6 +104,9 @@ async function restartSame() {
   if (!activeBattle.value) return;
   // Switches from a many-battle game to a single-specific-battle game
   activeBattle.value = await activeBattle.value.restartSame();
+  activeBattle.value.endPromise.then(() => {
+    activeBattle.value = null;
+  });
 }
 
 function skipForward() {
@@ -123,6 +129,12 @@ onBeforeUnmount(() => {
   <div class="panel is-primary test-battle-view">
     <div class="panel-block is-display-flex is-justify-content-center">
       <div class="field has-addons">
+        <!-- play button for when there is no active battle -->
+        <div class="control" v-if="!activeBattle">
+          <a class="button is-small is-success" @click="() => startDemo(props.code, props.color)"
+            ><font-awesome-icon :icon="faPlay"
+          /></a>
+        </div>
         <div class="control" v-if="activeBattle && !activeBattle.isPaused">
           <a class="button is-small is-success" @click="pauseDemo"
             ><font-awesome-icon :icon="faPause"
@@ -138,12 +150,12 @@ onBeforeUnmount(() => {
             ><font-awesome-icon :icon="faStepForward"
           /></a>
         </div>
-        <div class="control">
+        <div class="control" v-if="activeBattle">
           <a class="button is-small is-success" @click="restartSame"
             ><font-awesome-icon :icon="faRotateLeft"
           /></a>
         </div>
-        <div class="control">
+        <div class="control" v-if="activeBattle">
           <a
             class="button is-small is-success last-button"
             @click="skipForward"

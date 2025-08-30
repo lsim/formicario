@@ -2,46 +2,27 @@ import { useWorker, type WorkerName } from '@/workers/WorkerDispatcher.ts';
 import type { BattleArgs } from '@/Battle.ts';
 import type { TeamWithCode } from '@/Team.ts';
 import { filter, finalize, type Observable, take } from 'rxjs';
-import type { BattleStatus } from '@/GameSummary.ts';
+import type { BattleStatus, BattleSummary, GameSummary } from '@/GameSummary.ts';
 import type { GameSpec } from '@/GameSpec.ts';
 import type { RunGameCommand } from '@/workers/WorkerMessage.ts';
 import { useTeamStore } from '@/stores/teams.ts';
 import { unref } from 'vue';
 
 export class GameProxy {
-  private running = true;
   private paused = false;
 
   public get isPaused() {
     return this.paused;
   }
 
-  private endResolver: ((value: void | PromiseLike<void>) => void) | undefined;
-  public readonly endPromise: Promise<void>;
-
   constructor(
     private readonly worker: ReturnType<typeof useWorker>,
     private readonly teamStore: ReturnType<typeof useTeamStore>,
     public readonly gameId: number,
     pauseAfterTurns: number,
+    public readonly endPromise: Promise<void>,
   ) {
     this.paused = pauseAfterTurns > 0;
-
-    this.endPromise = new Promise<void>((resolve) => {
-      this.endResolver = resolve;
-    });
-
-    worker.gameSummaries$
-      .pipe(
-        filter((summary) => {
-          return this.gameId === summary.gameId;
-        }),
-        take(1),
-        finalize(() => {
-          this.endResolver?.();
-        }),
-      )
-      .subscribe();
   }
 
   public get battleStatus$(): Observable<BattleStatus> {
@@ -74,9 +55,10 @@ export class GameProxy {
 
   restartSame(): Promise<GameProxy> {
     return new Promise(async (resolve) => {
-      this.worker.battleSummaries$.pipe(take(1)).subscribe((summary) => {
+      this.worker.battleSummaries$.pipe(take(1)).subscribe(async (summary) => {
         // When the next battle ends, start it right up again
-        this.worker.runBattle({
+        const battleId = summary.battleId + 100;
+        await this.worker.runBattle({
           args: summary.args,
           teams: summary.teams.map((t) => {
             const team = this.teamStore.localTeams.find((lt) => lt.id === t.id);
@@ -87,12 +69,20 @@ export class GameProxy {
           speed: unref(this.worker.speed),
           pauseAfterTurns: this.paused ? 1 : -1,
           gameId: this.gameId,
-          battleId: summary.battleId + 100,
+          battleId,
           isTest: true,
         });
 
+        const endPromise = getBattleEndPromise(battleId, this.worker.battleSummaries$);
+
         resolve(
-          new GameProxy(this.worker, this.teamStore, this.gameId + 100, this.paused ? 1 : -1),
+          new GameProxy(
+            this.worker,
+            this.teamStore,
+            this.gameId + 100,
+            this.paused ? 1 : -1,
+            endPromise,
+          ),
         );
       });
 
@@ -100,6 +90,38 @@ export class GameProxy {
       await this.stop();
     });
   }
+}
+
+function getBattleEndPromise(battleId: number, battleSummaries$: Observable<BattleSummary>) {
+  return new Promise<void>((resolve) => {
+    battleSummaries$
+      .pipe(
+        filter((summary) => {
+          return summary.battleId === battleId;
+        }),
+        take(1),
+        finalize(() => {
+          resolve();
+        }),
+      )
+      .subscribe();
+  });
+}
+
+function getGameEndPromise(gameId: number, gameSummaries$: Observable<GameSummary>) {
+  return new Promise<void>((resolve) => {
+    gameSummaries$
+      .pipe(
+        filter((summary) => {
+          return summary.gameId === gameId;
+        }),
+        take(1),
+        finalize(() => {
+          resolve();
+        }),
+      )
+      .subscribe();
+  });
 }
 
 // This composable tracks the state of the single-battle runs
@@ -130,8 +152,9 @@ export default function useSingleBattle(workerId: WorkerName) {
       gameId: dummyGameId,
       isTest,
     });
+    const endPromise = getBattleEndPromise(battleId, worker.battleSummaries$);
 
-    return new GameProxy(worker, teamStore, dummyGameId, pauseAfterTurns);
+    return new GameProxy(worker, teamStore, dummyGameId, pauseAfterTurns, endPromise);
   }
 
   async function runDemoGame(gameSpec: GameSpec, pauseAfterTurns = -1) {
@@ -147,7 +170,8 @@ export default function useSingleBattle(workerId: WorkerName) {
     };
     await worker.startGame(message as Omit<RunGameCommand, 'id' | 'type'>);
 
-    return new GameProxy(worker, teamStore, gameId, pauseAfterTurns);
+    const endPromise = getGameEndPromise(gameId, worker.gameSummaries$);
+    return new GameProxy(worker, teamStore, gameId, pauseAfterTurns, endPromise);
   }
 
   return {
