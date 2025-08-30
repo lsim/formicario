@@ -32,7 +32,7 @@ const emits = defineEmits<{
 
 const singleBattle = useSingleBattle('debug-worker');
 
-const gameSeed = ref(1);
+const gameSeed = ref(Date.now());
 
 watchDebounced(
   () => ({
@@ -66,7 +66,7 @@ async function startDemo(code: string, color: string, incrementSeed = true) {
     teams: [teamWithCode],
     fillers: [...teamStore.localTeams.map((t) => ({ id: t.id, code: t.code! }))],
     statusInterval: 10,
-    mapWidth: [128, 256],
+    mapWidth: [128, 196],
     mapHeight: [128, 256],
     newFoodSpace: [10, 20],
     newFoodMin: [10, 30],

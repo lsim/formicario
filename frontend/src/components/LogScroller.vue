@@ -26,8 +26,11 @@ const subscription = worker.testLogs$.subscribe(({ message, args, ant }) => {
   }
 });
 
+const battleSubscription = worker.battleSummaries$.subscribe(() => (messages.value = []));
+
 onBeforeUnmount(() => {
-  subscription?.unsubscribe();
+  subscription.unsubscribe();
+  battleSubscription.unsubscribe();
 });
 </script>
 

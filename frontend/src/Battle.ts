@@ -442,6 +442,9 @@ export class Battle {
       const shuffleTable: number[] = new Array(numTeams + 1).fill(0);
       const taken: number[] = new Array(numTeams).fill(0);
 
+      // Initialize taken[0] = 1 (own team always gets 0)
+      taken[0] = 1;
+
       // Own team is always seen as team 0
       shuffleTable[teamIndex + 1] = 0;
 
