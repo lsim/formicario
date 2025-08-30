@@ -22,6 +22,7 @@ export const useGameStore = defineStore('game', () => {
   const apiClient = useApiClient();
   const stats = useStats();
   const toast = useToast();
+  const gameCounter = ref(0);
 
   const gameSpec: GameSpec = reactive<GameSpec>({
     mapWidth: [128, 256],
@@ -89,6 +90,8 @@ export const useGameStore = defineStore('game', () => {
       },
       pauseAfterTurns,
       speed: worker.speed.value,
+      gameId: gameCounter.value++,
+      isTest: false,
     };
     gameRunning.value = true;
     battleStreams$.value.next([

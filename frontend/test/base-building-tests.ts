@@ -83,7 +83,7 @@ describe('Base Building Brain Management', () => {
 
     const rng: RNGFunction = getRNG(42);
     const battleArgs: BattleArgs = produceBattleArgs(gameSpec, rng);
-    const battle = new Battle(battleArgs, [{ id: 'TestAnt', func: baseBuildingAnt }], 123, 0);
+    const battle = new Battle(battleArgs, [{ id: 'TestAnt', func: baseBuildingAnt }], 123, 0, 0);
 
     // Add food to enable base building
     const baseX = Math.floor(battle.testAccess().mapWidth / 2);
@@ -164,7 +164,7 @@ describe('Base Building Brain Management', () => {
 
     const rng2: RNGFunction = getRNG(123);
     const battleArgs2: BattleArgs = produceBattleArgs(gameSpec, rng2);
-    const battle = new Battle(battleArgs2, [{ id: 'TestAnt', func: newBaseTestAnt }], 123, 0);
+    const battle = new Battle(battleArgs2, [{ id: 'TestAnt', func: newBaseTestAnt }], 123, 0, 0);
 
     // Set up conditions for base building and ant creation
     const baseX = Math.floor(battle.testAccess().mapWidth / 2);

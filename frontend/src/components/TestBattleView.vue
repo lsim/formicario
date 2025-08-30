@@ -8,14 +8,14 @@ import {
   faRotateLeft,
   faStepForward,
 } from '@fortawesome/free-solid-svg-icons';
-import type { BattleArgs } from '@/Battle.ts';
 import { onBeforeUnmount, ref } from 'vue';
 import { useStorage, watchDebounced } from '@vueuse/core';
 import type { BattleStatus } from '@/GameSummary.ts';
 import type { Observable } from 'rxjs';
-import useSingleBattle, { BattleState } from '@/composables/single-battle.ts';
+import useSingleBattle, { GameProxy } from '@/composables/single-battle.ts';
 import { useTeamStore } from '@/stores/teams.ts';
 import DemoBars from '@/components/DemoBars.vue';
+import type { GameSpec } from '@/GameSpec.ts';
 
 const teamStore = useTeamStore();
 
@@ -32,14 +32,12 @@ const emits = defineEmits<{
 
 const singleBattle = useSingleBattle('debug-worker');
 
-const testBattlesCompleted = ref(0);
-const battleSeed = ref(1);
+const gameSeed = ref(1);
 
 watchDebounced(
   () => ({
     code: props.code,
     color: props.color,
-    testBattlesCompleted: testBattlesCompleted.value,
   }),
   ({ code, color }) => {
     if (activeBattle.value?.isPaused) return;
@@ -49,49 +47,42 @@ watchDebounced(
 );
 
 // Battle state is the type of the returned object from runBattle
-const activeBattle = ref<BattleState>();
+const activeBattle = ref<GameProxy>();
 async function startDemo(code: string, color: string, incrementSeed = true) {
   if (!code) return;
-  const battleArgs: BattleArgs = {
-    mapWidth: 128,
-    mapHeight: 128,
-    newFoodSpace: 25,
-    newFoodMin: 20,
-    newFoodDiff: 20,
-    startAnts: 25,
-    halfTimeTurn: 10000,
-    halfTimePercent: 65,
-    timeOutTurn: 20000,
-    winPercent: 75,
-    statusInterval: 10,
-  };
 
   const teamWithCode = {
-    id: 'TestAnt',
+    id: props.id ?? 'TestAnt',
     name: 'Test Ant',
     code,
     color,
   };
 
-  // TODO: Let the Game constructor handle this - make a single battle game in stead.
-  //  That way the seed will also determine the opponent
-  const randomTeam = teamStore.localTeams[Math.floor(Math.random() * teamStore.localTeams.length)];
-
+  const wasPaused = activeBattle.value?.isPaused;
   await activeBattle.value?.stop();
-  const nextSeed = incrementSeed ? battleSeed.value++ : battleSeed.value;
-  activeBattle.value = await singleBattle.runBattle(
-    battleArgs,
-    includeOpponent.value
-      ? [teamWithCode, { ...randomTeam, code: randomTeam.code! }]
-      : [teamWithCode],
-    nextSeed,
-    -1,
-    true,
-  );
-  activeBattle.value.endPromise.then((reason) => {
-    if (reason === 'user-abort' || reason === 'error' || reason === 'disqualification') return;
-    testBattlesCompleted.value++;
-  });
+  const nextSeed = incrementSeed ? gameSeed.value++ : gameSeed.value;
+
+  const gameSpec: GameSpec = {
+    teams: [teamWithCode],
+    fillers: [...teamStore.localTeams.map((t) => ({ id: t.id, code: t.code! }))],
+    statusInterval: 10,
+    mapWidth: [128, 256],
+    mapHeight: [128, 256],
+    newFoodSpace: [10, 20],
+    newFoodMin: [10, 30],
+    newFoodDiff: [5, 20],
+    halfTimeTurn: 10000,
+    halfTimePercent: 60,
+    startAnts: [15, 40],
+    timeOutTurn: 20000,
+    winPercent: 75,
+
+    seed: nextSeed,
+    numBattles: 1000,
+    numBattleTeams: includeOpponent ? 2 : 1,
+  };
+
+  activeBattle.value = await singleBattle.runDemoGame(gameSpec, wasPaused ? 1 : -1);
 }
 
 function pauseDemo() {
@@ -106,12 +97,14 @@ function stepForward() {
   activeBattle.value?.step(1);
 }
 
-function restartSame() {
-  startDemo(props.code, props.color, false);
+async function restartSame() {
+  if (!activeBattle.value) return;
+  // Switches from a many-battle game to a single-specific-battle game
+  activeBattle.value = await activeBattle.value.restartSame();
 }
 
 function skipForward() {
-  startDemo(props.code, props.color, true);
+  activeBattle.value?.skipBattle();
 }
 
 const autoMagnifier = useStorage('autoMagnifier', true, localStorage);
@@ -162,7 +155,7 @@ onBeforeUnmount(() => {
     </div>
     <div class="panel-block is-justify-content-center">
       <battle-feed
-        :zoom-level="2"
+        :zoom-level="1"
         :center-magnifier="autoMagnifier"
         :worker-name="'debug-worker'"
         @ant-debug-requested="handleAntDebugRequested"

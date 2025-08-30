@@ -38,6 +38,7 @@ export type TeamStatus = {
 };
 
 export type BattleInfo = {
+  gameId: number;
   battleId: number;
   args: BattleArgs;
   teams: TeamStatus[];
@@ -72,6 +73,7 @@ export type BattleSummary = BattleInfo & {
 };
 
 export type GameSummary = {
+  gameId: number;
   seed: number;
   battles: BattleSummary[];
 };

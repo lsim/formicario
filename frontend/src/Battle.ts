@@ -181,6 +181,7 @@ export class Battle {
     private args: BattleArgs,
     antFunctions: { id: string; func: AntFunction; color?: string }[],
     private seed: number,
+    readonly gameId: number,
     readonly battleId: number,
     private pauseAfterTurns = -1,
     private readonly isTest = false,
@@ -513,6 +514,7 @@ export class Battle {
     }
 
     const status: BattleStatus = {
+      gameId: this.gameId,
       battleId: this.battleId,
       seed: this.seed,
       args: this.args,
@@ -622,6 +624,7 @@ export class Battle {
 
     return {
       startTime: this.startTime,
+      gameId: this.gameId,
       battleId: this.battleId,
       winner: winnerId,
       teams: this.teams.map((t, index) => this.getTeamSummary(t, index + 1)),

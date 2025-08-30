@@ -9,12 +9,12 @@ import {
 
 import { computed } from 'vue';
 import { useGameStore } from '@/stores/game.ts';
-import { BattleState } from '@/composables/single-battle.ts';
+import { GameProxy } from '@/composables/single-battle.ts';
 const gameStore = useGameStore();
 
 // When a battle state is given, that is what is being controlled
 const props = defineProps<{
-  battleState?: BattleState;
+  battleProxy?: GameProxy;
   size?: 'small' | 'medium';
 }>();
 
@@ -23,15 +23,15 @@ const emit = defineEmits<{
   (e: 'step'): void;
 }>();
 
-const running = computed(() => !!props.battleState || gameStore.gameRunning);
+const running = computed(() => !!props.battleProxy || gameStore.gameRunning);
 
 function start() {
   emit('start');
 }
 
 function pause() {
-  if (props.battleState) {
-    props.battleState.pause();
+  if (props.battleProxy) {
+    props.battleProxy.pause();
   } else {
     gameStore.pause();
   }
@@ -42,31 +42,31 @@ function step() {
 }
 
 function stop() {
-  if (props.battleState) {
-    props.battleState.stop();
+  if (props.battleProxy) {
+    props.battleProxy.stop();
   } else {
     gameStore.stop();
   }
 }
 
 function skipBattle() {
-  if (props.battleState) {
-    props.battleState.stop();
+  if (props.battleProxy) {
+    props.battleProxy.stop();
   } else {
     gameStore.skipBattle();
   }
 }
 
 function resume() {
-  if (props.battleState) {
-    props.battleState.resume();
+  if (props.battleProxy) {
+    props.battleProxy.resume();
   } else {
     gameStore.resume();
   }
 }
 
 const isPaused = computed(() =>
-  !!props.battleState ? props.battleState.isPaused : gameStore.gamePaused,
+  !!props.battleProxy ? props.battleProxy.isPaused : gameStore.gamePaused,
 );
 </script>
 

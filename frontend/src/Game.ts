@@ -30,7 +30,6 @@ export function instantiateParticipant(teamCode: string) {
 }
 
 export class Game {
-  public id = 0;
   activeBattle: Battle | null = null;
   rng: RNGFunction;
   private speed = 50;
@@ -40,8 +39,9 @@ export class Game {
     private spec: GameSpec | null,
     private readonly teamFunctions: { id: string; func: AntFunction }[],
     private readonly fillerTeamFunctions: { id: string; func: AntFunction }[],
+    public readonly id: number,
+    private readonly isTest: boolean,
   ) {
-    this.id = Date.now();
     this.rng = getRNG(this.spec?.seed ?? 1);
   }
 
@@ -62,8 +62,10 @@ export class Game {
           args,
           this.pickRandomTeamsForBattle(),
           battleSeed,
+          this.id,
           i,
           startNextPaused ? 1 : -1,
+          this.isTest,
         );
         this.activeBattle.setSpeed(this.speed);
 
@@ -73,6 +75,7 @@ export class Game {
       }
       this.gameOver = true;
       return {
+        gameId: this.id,
         seed: this.spec.seed,
         battles: battleSummaries,
       };

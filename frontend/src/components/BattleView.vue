@@ -14,7 +14,7 @@ import type { TeamWithCode } from '@/Team.ts';
 import TeamDisqualifications from '@/components/TeamDisqualifications.vue';
 import { throttleTime } from 'rxjs';
 import { useWorker } from '@/workers/WorkerDispatcher.ts';
-import useSingleBattle, { BattleState } from '@/composables/single-battle.ts';
+import useSingleBattle, { GameProxy } from '@/composables/single-battle.ts';
 import GameControls from '@/components/GameControls.vue';
 import { useStorage } from '@vueuse/core';
 
@@ -43,7 +43,7 @@ const subscription = worker.battleStatuses$.pipe(throttleTime(100)).subscribe((s
   currentFullTime.value = status.args.timeOutTurn;
 });
 
-const battleReplay = ref<BattleState | undefined>();
+const battleReplay = ref<GameProxy | undefined>();
 
 async function runBattle(startPaused = false) {
   const battle = summaryStats.value?.summary;

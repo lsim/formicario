@@ -72,7 +72,7 @@ describe('Ant test-bench', () => {
       for (const seed of seeds) {
         const rng: RNGFunction = getRNG(seed);
         const battleArgs: BattleArgs = produceBattleArgs(gameSpec, rng);
-        const battle = new Battle(battleArgs, [{ id: team.id, func: antFunction }], seed, 0);
+        const battle = new Battle(battleArgs, [{ id: team.id, func: antFunction }], seed, 0, 0);
 
         const result = await battle.run();
         if (result.teams[0].numbers.numBorn > bestResult) {

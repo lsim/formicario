@@ -69,6 +69,8 @@ onmessage = async (e) => {
             id: f.id!,
             func: f.func!,
           })),
+        command.gameId,
+        command.isTest,
       );
       activeGame.setSpeed(command.speed);
       gameEnded = activeGame.run(command.pauseAfterTurns).then((summary) => {
@@ -81,9 +83,11 @@ onmessage = async (e) => {
       });
       postMessage({ type: 'ok', id: command.id });
     } else if (command?.type === 'stop-game') {
-      activeGame?.stopGame();
-      activeSingleBattle?.stop();
-      await (gameEnded || singleBattleEnded);
+      if (activeGame) {
+        await activeGame.stopGame();
+      } else if (activeSingleBattle) {
+        await activeSingleBattle.stop();
+      }
       postMessage({ type: 'ok', id: command.id });
     } else if (command?.type === 'skip-battle') {
       activeGame?.skipBattle();
@@ -107,6 +111,7 @@ onmessage = async (e) => {
           .filter((f) => f && f.func && f.id)
           .map((f) => ({ id: f.id!, func: f.func!, color: f.color })),
         command.seed,
+        -1,
         command.battleId,
         command.pauseAfterTurns,
         command.isTest,

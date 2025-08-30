@@ -33,6 +33,8 @@ export interface RunGameCommand extends TypedMessage {
   game: GameSpec;
   speed: number;
   pauseAfterTurns?: number;
+  isTest: boolean;
+  gameId: number;
 }
 
 export interface StopGameCommand extends TypedMessage {
@@ -107,6 +109,7 @@ export interface RunBattleMessage extends TypedMessage {
   seed: number;
   speed: number;
   pauseAfterTurns?: number;
+  gameId: number;
   battleId: number;
   isTest: boolean;
 }
