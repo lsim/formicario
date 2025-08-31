@@ -8,7 +8,7 @@ const props = defineProps<{
   centerY: number;
 }>();
 
-const magnifierPixels = ref(250);
+const magnifierPixels = ref(500);
 
 const canvasRef = useTemplateRef('canvasRef');
 
