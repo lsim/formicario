@@ -15,6 +15,12 @@ export class GameProxy {
     return this.paused;
   }
 
+  private _lastBattleSummary: BattleSummary | undefined;
+
+  public get lastBattleSummary() {
+    return this._lastBattleSummary;
+  }
+
   constructor(
     private readonly worker: ReturnType<typeof useWorker>,
     private readonly teamStore: ReturnType<typeof useTeamStore>,
@@ -23,6 +29,9 @@ export class GameProxy {
     public readonly endPromise: Promise<void>,
   ) {
     this.paused = pauseAfterTurns > 0;
+    this.worker.battleSummaries$.subscribe((summary) => {
+      this._lastBattleSummary = summary;
+    });
   }
 
   public get battleStatus$(): Observable<BattleStatus> {
@@ -131,6 +140,19 @@ export default function useSingleBattle(workerId: WorkerName) {
 
   let battleCounter = 0;
 
+  async function replayFromSummary(summary: BattleSummary, startPaused: boolean = false) {
+    const teamIds = summary.teams.map((t) => t.id);
+    const teams = (await Promise.all(
+      teamIds.map(async (n) => {
+        const localTeam = teamStore.localTeams.find((t) => t.id === n);
+        if (localTeam) return localTeam;
+        else throw new Error('Can only replay battles with local teams');
+      }),
+    )) as TeamWithCode[];
+
+    return await runBattle(summary.args, teams, summary.seed, startPaused ? 1 : -1, false);
+  }
+
   async function runBattle(
     args: BattleArgs,
     teams: TeamWithCode[],
@@ -175,7 +197,7 @@ export default function useSingleBattle(workerId: WorkerName) {
   }
 
   return {
-    runBattle,
     runDemoGame,
+    replayFromSummary,
   };
 }

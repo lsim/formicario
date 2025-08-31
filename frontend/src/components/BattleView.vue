@@ -49,28 +49,7 @@ async function runBattle(startPaused = false) {
   const battle = summaryStats.value?.summary;
   if (!battle) return;
   battleReplay.value?.stop();
-  battleReplay.value = undefined;
-  const teamIds = battle.teams.map((t) => t.id);
-  const teams = (await Promise.all(
-    teamIds
-      .map(async (n) => {
-        const localTeam = teamStore.localTeams.find((t) => t.id === n);
-        if (localTeam) return localTeam;
-        const remoteTeam = teamStore.remoteTeams.find((t) => t.id === n);
-        if (remoteTeam) return await apiClient.getFullPublication(remoteTeam.id);
-        console.warn('Team not found for battle', n);
-        return null;
-      })
-      .filter((t) => !!t),
-  )) as TeamWithCode[];
-  battleReplay.value = await singleBattle.runBattle(
-    battle.args,
-    teams,
-    battle.seed,
-    startPaused ? 1 : -1,
-    false,
-  );
-
+  battleReplay.value = await singleBattle.replayFromSummary(battle, startPaused);
   battleReplay.value.endPromise.finally(() => {
     battleReplay.value = undefined;
   });

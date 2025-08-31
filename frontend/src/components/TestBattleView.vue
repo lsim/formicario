@@ -10,7 +10,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { onBeforeUnmount, ref } from 'vue';
 import { useStorage, watchDebounced } from '@vueuse/core';
-import type { BattleStatus } from '@/GameSummary.ts';
+import type { BattleStatus, BattleSummary } from '@/GameSummary.ts';
 import type { Observable } from 'rxjs';
 import useSingleBattle, { GameProxy } from '@/composables/single-battle.ts';
 import { useTeamStore } from '@/stores/teams.ts';
@@ -84,6 +84,7 @@ async function startDemo(code: string, color: string, incrementSeed = true) {
 
   activeBattle.value = await singleBattle.runDemoGame(gameSpec, wasPaused ? 1 : -1);
   activeBattle.value.endPromise.then(() => {
+    lastBattleSummary.value = activeBattle.value?.lastBattleSummary;
     activeBattle.value = null;
   });
 }
@@ -100,11 +101,21 @@ function stepForward() {
   activeBattle.value?.step(1);
 }
 
+const lastBattleSummary = ref<BattleSummary | undefined>();
+
 async function restartSame() {
-  if (!activeBattle.value) return;
-  // Switches from a many-battle game to a single-specific-battle game
-  activeBattle.value = await activeBattle.value.restartSame();
+  if (!activeBattle.value) {
+    if (lastBattleSummary.value) {
+      activeBattle.value = await singleBattle.replayFromSummary(lastBattleSummary.value, false);
+    } else {
+      return;
+    }
+  } else {
+    // Switches from a many-battle game to a single-specific-battle game
+    activeBattle.value = await activeBattle.value.restartSame();
+  }
   activeBattle.value.endPromise.then(() => {
+    lastBattleSummary.value = activeBattle.value?.lastBattleSummary;
     activeBattle.value = null;
   });
 }
@@ -150,7 +161,7 @@ onBeforeUnmount(() => {
             ><font-awesome-icon :icon="faStepForward"
           /></a>
         </div>
-        <div class="control" v-if="activeBattle">
+        <div class="control" v-if="activeBattle || lastBattleSummary">
           <a class="button is-small is-success" @click="restartSame"
             ><font-awesome-icon :icon="faRotateLeft"
           /></a>
