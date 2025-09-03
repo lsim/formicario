@@ -116,7 +116,7 @@ export const useTeamStore = defineStore('team', () => {
   }
 
   function isBuiltIn(team: { authorName: string }) {
-    return team.authorName === 'built-in';
+    return team.authorName === 'legacy';
   }
 
   function isOwnedByUser(team: Team | BackendPublication) {

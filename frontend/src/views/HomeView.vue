@@ -6,10 +6,10 @@ import { map, switchAll, tap } from 'rxjs';
 import { useGameStore } from '@/stores/game.ts';
 import { type BattleSummaryStats } from '@/composables/stats.ts';
 import { useWorker } from '@/workers/WorkerDispatcher.ts';
-import GameSummaryUi from '@/components/GameSummaryUi.vue';
 import BattleView from '@/components/BattleView.vue';
 import SpeedGauge from '@/components/SpeedGauge.vue';
 import { useMagicKeys, whenever } from '@vueuse/core';
+import GameStatusList from '@/components/GameStatusList.vue';
 const { enter, shift_space, escape } = useMagicKeys();
 
 const gameSummary = ref<GameSummary>();
@@ -60,7 +60,7 @@ onBeforeUnmount(() => {
           </div>
         </Transition>
         <div class="cell is-row-span-2 is-col-start-1">
-          <game-summary-ui />
+          <game-status-list />
         </div>
         <div class="cell" v-if="gameStore.lastError.length">
           <h3>Last error</h3>

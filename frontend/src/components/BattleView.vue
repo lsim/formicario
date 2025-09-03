@@ -8,9 +8,6 @@ import BattleArgs from '@/components/BattleArgs.vue';
 import BattleGraph from '@/components/BattleGraph.vue';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import BattleRender from '@/components/BattleRender.vue';
-import { useTeamStore } from '@/stores/teams.ts';
-import useApiClient from '@/composables/api-client.ts';
-import type { TeamWithCode } from '@/Team.ts';
 import TeamDisqualifications from '@/components/TeamDisqualifications.vue';
 import { throttleTime } from 'rxjs';
 import { useWorker } from '@/workers/WorkerDispatcher.ts';
@@ -19,11 +16,8 @@ import GameControls from '@/components/GameControls.vue';
 import { useStorage } from '@vueuse/core';
 
 const gameStore = useGameStore();
-const teamStore = useTeamStore();
 const worker = useWorker('game-worker');
 const singleBattle = useSingleBattle('game-worker');
-
-const apiClient = useApiClient();
 
 const isLive = computed(() => {
   return gameStore.gameRunning || !!battleReplay.value;

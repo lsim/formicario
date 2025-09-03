@@ -1,20 +1,15 @@
+z
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from 'vue';
-import { useWorker } from '@/workers/WorkerDispatcher.ts';
-import type { BattleSummary, GameSummary } from '@/GameSummary.ts';
+import type { BattleSummary } from '@/GameSummary.ts';
 import Color from 'color';
 import { useGameStore } from '@/stores/game.ts';
-import { map, switchAll, tap } from 'rxjs';
+import { filter, map, switchAll, tap } from 'rxjs';
 import type { BattleSummaryStats } from '@/composables/stats.ts';
 import { useTeamStore } from '@/stores/teams.ts';
 
-const worker = useWorker('game-worker');
 const gameStore = useGameStore();
 const teamStore = useTeamStore();
-
-const gameSummary = ref<GameSummary>();
-
-const subscription = worker.gameSummaries$.subscribe((summary) => (gameSummary.value = summary));
 
 const battleSummaryStats = ref<BattleSummaryStats[]>([]);
 
@@ -28,12 +23,12 @@ const subscription2 = gameStore.battleStreams$
       selectedRow.value = null;
     }),
     switchAll(),
+    filter((bss) => bss.summary.terminationReason !== 'user-abort' && bss.summary.isRanked),
     tap((bss: BattleSummaryStats) => battleSummaryStats.value.push(bss)),
   )
   .subscribe();
 
 onBeforeUnmount(() => {
-  subscription.unsubscribe();
   subscription2.unsubscribe();
 });
 
@@ -64,11 +59,8 @@ watch(
 </script>
 
 <template>
-  <article class="panel is-primary" v-if="gameSummary">
-    <p class="panel-heading">
-      Recent battles
-      <span class="is-pulled-right" v-if="gameSummary">Seed:{{ gameSummary.seed }}</span>
-    </p>
+  <article class="panel is-primary">
+    <p class="panel-heading">Recent battles</p>
     <div class="panel-block">
       <div class="table-container">
         <table class="table">
@@ -84,30 +76,30 @@ watch(
           </thead>
           <tbody>
             <tr
-              v-for="(battle, idx) in gameSummary.battles"
-              :key="battle.seed + '-' + battle.turns"
+              v-for="(battle, idx) in battleSummaryStats"
+              :key="battle.summary.battleId"
               :class="{
                 'is-selected': selectedRow === idx,
               }"
               @click="selectedRow = selectedRow === idx ? null : idx"
             >
-              <td>{{ battle.battleId }}</td>
+              <td>{{ battle.summary.battleId }}</td>
               <td>
-                <span class="button is-static" :style="winnerStyle(battle)">{{
-                  teamStore.teamName(battle.winner)
+                <span class="button is-static" :style="winnerStyle(battle.summary)">{{
+                  teamStore.teamName(battle.summary.winner)
                 }}</span>
               </td>
-              <td>{{ battle.turns }}</td>
+              <td>{{ battle.summary.turns }}</td>
               <td>
                 {{
-                  battle.teams
-                    .filter((t) => t.id !== battle.winner)
+                  battle.summary.teams
+                    .filter((t) => t.id !== battle.summary.winner)
                     .map((t) => teamStore.teamName(t.id))
                     .join(', ')
                 }}
               </td>
-              <td>{{ battle.args.mapWidth }}</td>
-              <td>{{ battle.args.mapHeight }}</td>
+              <td>{{ battle.summary.args.mapWidth }}</td>
+              <td>{{ battle.summary.args.mapHeight }}</td>
             </tr>
           </tbody>
         </table>

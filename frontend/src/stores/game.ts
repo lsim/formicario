@@ -15,6 +15,7 @@ import { Observable, ReplaySubject } from 'rxjs';
 import { watchDebounced } from '@vueuse/core';
 import useApiClient from '@/composables/api-client.ts';
 import useToast from '@/composables/toast.ts';
+import { BattleParticipant, BattleResult } from '#shared/BattleResult.ts';
 
 export const useGameStore = defineStore('game', () => {
   const worker = useWorker('game-worker');
@@ -44,13 +45,44 @@ export const useGameStore = defineStore('game', () => {
   });
 
   // We leak this subscription as it is a singleton
-  worker.gameSummaries$.subscribe(async (gameSummary) => {
-    gameRunning.value = false;
+  worker.battleSummaries$.subscribe(async (battleSummary) => {
+    const battleParticipants = battleSummary.teams.map((team) => {
+      // We insist that teams be published (or be built-in) before they can take part in a ranked battle
+      const builtInTeam = teamStore.localTeams.find(
+        (t) =>
+          t.authorName && teamStore.isBuiltIn({ authorName: t.authorName }) && t.id === team.id,
+      );
+      if (builtInTeam)
+        return new BattleParticipant(
+          builtInTeam.id,
+          builtInTeam.name,
+          builtInTeam.color,
+          0,
+          team.codeHash,
+        );
+      const remoteTeam = teamStore.remoteTeams.find((t) => t.id === team.id);
+      if (remoteTeam)
+        return new BattleParticipant(
+          remoteTeam.id,
+          remoteTeam.name,
+          remoteTeam.color,
+          remoteTeam.lamport,
+          team.codeHash,
+        );
+      throw Error('Team not published?: ' + team.id);
+    });
+
+    const bs = new BattleResult(
+      battleParticipants,
+      battleSummary.turns,
+      battleSummary.startTime,
+      battleSummary.winner,
+    );
     try {
-      const numSubmitted = await apiClient.submitGameSummary(gameSummary);
+      const numSubmitted = await apiClient.submitBattleResult(bs);
       if (numSubmitted > 0) toast.show(`Done submitting ${numSubmitted} battles`, 'is-info');
     } catch (e) {
-      console.error('Failed to submit game summary', e);
+      console.error('Failed to submit battle summary', e);
     }
   });
 
@@ -92,6 +124,7 @@ export const useGameStore = defineStore('game', () => {
       speed: worker.speed.value,
       gameId: gameCounter.value++,
       isTest: false,
+      isRanked: true,
     };
     gameRunning.value = true;
     battleStreams$.value.next([

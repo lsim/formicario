@@ -41,6 +41,7 @@ export class Game {
     private readonly fillerTeamFunctions: { id: string; func: AntFunction }[],
     public readonly id: number,
     private readonly isTest: boolean,
+    private readonly isRanked: boolean,
   ) {
     this.rng = getRNG(this.spec?.seed ?? 1);
   }
@@ -66,6 +67,7 @@ export class Game {
           i,
           startNextPaused ? 1 : -1,
           this.isTest,
+          this.isRanked,
         );
         this.activeBattle.setSpeed(this.speed);
 

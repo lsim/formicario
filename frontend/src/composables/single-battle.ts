@@ -1,7 +1,7 @@
 import { useWorker, type WorkerName } from '@/workers/WorkerDispatcher.ts';
 import type { BattleArgs } from '@/Battle.ts';
 import type { TeamWithCode } from '@/Team.ts';
-import { filter, finalize, type Observable, take } from 'rxjs';
+import { filter, finalize, type Observable, take, takeWhile } from 'rxjs';
 import type { BattleStatus, BattleSummary, GameSummary } from '@/GameSummary.ts';
 import type { GameSpec } from '@/GameSpec.ts';
 import type { RunGameCommand } from '@/workers/WorkerMessage.ts';
@@ -82,7 +82,7 @@ export class GameProxy {
           isTest: true,
         });
 
-        const endPromise = getBattleEndPromise(battleId, this.worker.battleSummaries$);
+        const endPromise = getBattleEndPromise(battleId, this.worker, -1);
 
         resolve(
           new GameProxy(
@@ -101,9 +101,13 @@ export class GameProxy {
   }
 }
 
-function getBattleEndPromise(battleId: number, battleSummaries$: Observable<BattleSummary>) {
+function getBattleEndPromise(
+  battleId: number,
+  worker: ReturnType<typeof useWorker>,
+  turns: number,
+) {
   return new Promise<void>((resolve) => {
-    battleSummaries$
+    const sub1 = worker.battleSummaries$
       .pipe(
         filter((summary) => {
           return summary.battleId === battleId;
@@ -111,6 +115,20 @@ function getBattleEndPromise(battleId: number, battleSummaries$: Observable<Batt
         take(1),
         finalize(() => {
           resolve();
+          sub2.unsubscribe();
+        }),
+      )
+      .subscribe();
+    const sub2 = worker.battleStatuses$
+      .pipe(
+        filter((status) => {
+          return status.battleId === battleId;
+        }),
+        takeWhile((status: BattleStatus) => status.turns < turns),
+        finalize(() => {
+          if (turns === -1) return;
+          resolve();
+          sub1.unsubscribe();
         }),
       )
       .subscribe();
@@ -150,7 +168,14 @@ export default function useSingleBattle(workerId: WorkerName) {
       }),
     )) as TeamWithCode[];
 
-    return await runBattle(summary.args, teams, summary.seed, startPaused ? 1 : -1, false);
+    return await runBattle(
+      summary.args,
+      teams,
+      summary.seed,
+      startPaused ? 1 : -1,
+      false,
+      summary.turns,
+    );
   }
 
   async function runBattle(
@@ -159,6 +184,7 @@ export default function useSingleBattle(workerId: WorkerName) {
     seed: number,
     pauseAfterTurns: number = -1,
     isTest: boolean = false,
+    turns: number = -1,
   ) {
     const battleId = battleCounter++;
     if (teams.length === 0) throw new Error('No teams selected');
@@ -174,7 +200,7 @@ export default function useSingleBattle(workerId: WorkerName) {
       gameId: dummyGameId,
       isTest,
     });
-    const endPromise = getBattleEndPromise(battleId, worker.battleSummaries$);
+    const endPromise = getBattleEndPromise(battleId, worker, turns);
 
     return new GameProxy(worker, teamStore, dummyGameId, pauseAfterTurns, endPromise);
   }

@@ -34,6 +34,7 @@ export interface RunGameCommand extends TypedMessage {
   speed: number;
   pauseAfterTurns?: number;
   isTest: boolean;
+  isRanked: boolean;
   gameId: number;
 }
 

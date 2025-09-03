@@ -185,6 +185,7 @@ export class Battle {
     readonly battleId: number,
     private pauseAfterTurns = -1,
     private readonly isTest = false,
+    private readonly isRanked = false,
   ) {
     console.log('Battle created', args, antFunctions, seed, pauseAfterTurns, isTest);
     this.rng = getRNG(seed);
@@ -528,6 +529,7 @@ export class Battle {
       }),
       turns: this.currentTurn,
       turnsPerSecond: Math.round(this.turnsPerSecond * 100) / 100, // Round to 2 decimal places
+      isRanked: this.isRanked,
     };
     this.touchedSquares.clear();
     postMessage({ type: 'battle-status', status });
@@ -637,6 +639,7 @@ export class Battle {
       squares: this.map.map((s, index) => this.squareDataToStatus(s, index)),
       seed: this.seed,
       terminationReason: this.terminationReason,
+      isRanked: this.isRanked,
     };
   }
 

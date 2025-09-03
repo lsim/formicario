@@ -42,6 +42,7 @@ export type BattleInfo = {
   battleId: number;
   args: BattleArgs;
   teams: TeamStatus[];
+  isRanked: boolean;
 };
 
 export type BattleStatus = BattleInfo & {

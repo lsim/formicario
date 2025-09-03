@@ -71,6 +71,7 @@ onmessage = async (e) => {
           })),
         command.gameId,
         command.isTest,
+        command.isRanked,
       );
       activeGame.setSpeed(command.speed);
       gameEnded = activeGame.run(command.pauseAfterTurns).then((summary) => {
@@ -115,6 +116,7 @@ onmessage = async (e) => {
         command.battleId,
         command.pauseAfterTurns,
         command.isTest,
+        false,
       );
       activeSingleBattle.setSpeed(command.speed);
       singleBattleEnded = activeSingleBattle
