@@ -26,7 +26,10 @@ const liveTeams = ref<TeamStatus[]>([]);
 
 const teams = computed(() => {
   // Look up the teams in the teamStore
-  const participatingTeamStatuses = liveTeams.value || props.battleSummary?.teams;
+  const participatingTeamStatuses =
+    liveTeams.value && liveTeams.value.length > 0
+      ? liveTeams.value
+      : (props.battleSummary?.teams ?? []);
   return participatingTeamStatuses.map((team) => {
     // Look up the team name in the teamStore and add it to the team status
     const teamFromStore = teamStore.allTeamMetas.find((t) => t.id === team.id);
