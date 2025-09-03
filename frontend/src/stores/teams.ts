@@ -40,7 +40,7 @@ export const useTeamStore = defineStore('team', () => {
         code,
         color: '',
         brainTemplate: {},
-        authorName: 'built-in',
+        authorName: 'legacy',
         name: id,
       };
       try {

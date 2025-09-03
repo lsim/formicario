@@ -107,7 +107,7 @@ function focusFilter() {
     <div class="control checkbox">
       <label class="label">
         <input type="checkbox" v-model="listBuiltIns" />
-        Built-in teams
+        Legacy teams
       </label>
     </div>
     <div class="control checkbox">

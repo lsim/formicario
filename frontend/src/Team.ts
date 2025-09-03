@@ -8,7 +8,7 @@ export type TeamExtract = {
 };
 
 export type Team = TeamExtract & {
-  // The id of the team. Either an uuid or the file name of the built-in team
+  // The id of the team. Either an uuid or the file name of the legacy team
   id: string;
   // Username of the team author. If not set, the team was created without an active login. Publish with local user as author
   authorName?: string;

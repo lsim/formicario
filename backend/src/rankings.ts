@@ -72,7 +72,7 @@ async function verifyParticipants(result: BattleResult) {
     if (builtInHash) {
       if (builtInHash !== participant.codeHash) {
         throw Error(
-          `Built-in team ${participant.teamId} has invalid code hash`,
+          `Legacy team ${participant.teamId} has invalid code hash`,
         );
       }
       continue;

@@ -14,7 +14,7 @@ function loadTeams(): TeamWithCode[] {
   for (const [key, value] of Object.entries(rawImport)) {
     const code = value.default;
     const id = key.replace(/^\.\.\/ants\/(.+)\.js$/, '$1');
-    const teamInfo = { id, code, name: id, color: '', authorName: 'built-in' };
+    const teamInfo = { id, code, name: id, color: '', authorName: 'legacy' };
     teams.push(teamInfo);
   }
   return teams;

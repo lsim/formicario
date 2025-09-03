@@ -52,7 +52,7 @@ export async function getPublication(id: string) {
 //         '',
 //         0,
 //         await hash(code),
-//         'built-in',
+//         'legacy',
 //       ),
 //     );
 //   }
