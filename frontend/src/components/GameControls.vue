@@ -112,6 +112,7 @@ const isPaused = computed(() =>
           class="button is-info"
           type="button"
           @click="skipBattle"
+          title="Skip battle"
           :disabled="!running"
           :class="{
             'is-small': size === 'small',
@@ -128,6 +129,7 @@ const isPaused = computed(() =>
           class="button is-info"
           type="button"
           @click="pause"
+          title="Pause battle"
           :class="{
             'is-small': size === 'small',
             'is-medium': size === 'medium',
@@ -143,6 +145,7 @@ const isPaused = computed(() =>
           class="button is-info"
           type="button"
           @click="resume"
+          title="Resume battle"
           :class="{
             'is-small': size === 'small',
             'is-medium': size === 'medium',

@@ -83,7 +83,7 @@ function handleStep() {
   if (battleReplay.value) {
     battleReplay.value.step();
   } else {
-    runBattle(true);
+    gameStore.step();
   }
 }
 
