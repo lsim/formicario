@@ -66,7 +66,7 @@ watch(
         <table class="table">
           <thead>
             <tr>
-              <th>Battle</th>
+              <!--              <th>Battle</th>-->
               <th>Winner</th>
               <th>Turns</th>
               <th>Losers</th>
@@ -83,7 +83,7 @@ watch(
               }"
               @click="selectedRow = selectedRow === idx ? null : idx"
             >
-              <td>{{ battle.summary.battleId }}</td>
+              <!--              <td>{{ battle.summary.battleId }}</td>-->
               <td>
                 <span class="button is-static" :style="winnerStyle(battle.summary)">{{
                   teamStore.teamName(battle.summary.winner)

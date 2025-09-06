@@ -86,7 +86,7 @@ const readyToStart = computed(() => !gameStore.gameRunning);
           v-model:lower="gameStore.gameSpec.newFoodSpace[0]"
           v-model:upper="gameStore.gameSpec.newFoodSpace[1]"
           :min="1"
-          :max="1000"
+          :max="100"
           :step="1"
         />
       </div>
@@ -97,7 +97,7 @@ const readyToStart = computed(() => !gameStore.gameRunning);
           v-model:lower="gameStore.gameSpec.newFoodMin[0]"
           v-model:upper="gameStore.gameSpec.newFoodMin[1]"
           :min="1"
-          :max="1000"
+          :max="100"
           :step="1"
         />
       </div>
@@ -108,7 +108,7 @@ const readyToStart = computed(() => !gameStore.gameRunning);
           v-model:lower="gameStore.gameSpec.newFoodDiff[0]"
           v-model:upper="gameStore.gameSpec.newFoodDiff[1]"
           :min="0"
-          :max="1000"
+          :max="100"
           :step="1"
         />
       </div>
@@ -245,8 +245,8 @@ const readyToStart = computed(() => !gameStore.gameRunning);
           v-model:lower="gameStore.gameSpec.startAnts[0]"
           v-model:upper="gameStore.gameSpec.startAnts[1]"
           :min="10"
-          :max="1000"
-          :step="10"
+          :max="100"
+          :step="5"
         />
       </div>
       <div class="panel-block">
