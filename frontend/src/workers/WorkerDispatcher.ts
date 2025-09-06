@@ -56,6 +56,7 @@ export class WorkerDispatcher {
           this.battleStatusSubject$.next(e.data.status);
         } else if (e.data.type === 'game-summary') {
           console.debug('Emitting game summary', this.workerId, e.data.results);
+          this.lastKnownBattleId = -1;
           this.gameSummarySubject$.next(e.data.results);
         } else if (e.data.type === 'battle-summary') {
           console.debug('Emitting battle summary', this.workerId, e.data.summary);

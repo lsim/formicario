@@ -10,6 +10,7 @@ import BattleView from '@/components/BattleView.vue';
 import SpeedGauge from '@/components/SpeedGauge.vue';
 import { useMagicKeys, whenever } from '@vueuse/core';
 import GameStatusList from '@/components/GameStatusList.vue';
+import HelpCenter from '@/components/HelpCenter.vue';
 const { enter, shift_space, escape } = useMagicKeys();
 
 const gameSummary = ref<GameSummary>();
@@ -53,7 +54,7 @@ onBeforeUnmount(() => {
         </div>
         <Transition name="from-the-right">
           <div
-            class="cell is-row-span-2 is-col-start-2"
+            class="cell is-row-span-5 is-col-start-2"
             v-if="gameStore.selectedBattleSummaryStats != null || gameStore.gameRunning"
           >
             <battle-view />
@@ -61,6 +62,9 @@ onBeforeUnmount(() => {
         </Transition>
         <div class="cell is-row-span-2 is-col-start-1">
           <game-status-list />
+        </div>
+        <div class="cell is-col-start-1">
+          <help-center />
         </div>
         <div class="cell" v-if="gameStore.lastError.length">
           <h3>Last error</h3>
