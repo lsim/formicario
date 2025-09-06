@@ -100,7 +100,7 @@ const pastHalfTime = computed(() => currentTurn.value > currentHalfTime.value);
       <span class="tps">{{ currentTps }} tps</span>
       <span class="navbar battle-controls">
         <game-controls
-          :battle-state="battleReplay"
+          :battle-proxy="battleReplay"
           :size="'small'"
           @start="handleStart"
           @step="handleStep"

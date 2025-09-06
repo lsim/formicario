@@ -18,6 +18,7 @@ import type { TeamWithCode } from '@/Team.ts';
 import { deepUnref } from 'vue-deepunref';
 import { type Ref, watch } from 'vue';
 import { useStorage } from '@vueuse/core';
+import useBattleRenderer from '@/composables/renderer.ts';
 
 export class WorkerDispatcher {
   private readonly battleStatusSubject$ = new Subject<BattleStatus>();
@@ -31,6 +32,16 @@ export class WorkerDispatcher {
 
   public readonly speed: Ref<number, number>;
 
+  // For each worker, we maintain a rendering of the current state of the battle
+  private backBuffer = document.createElement('canvas');
+  public get renderedBattle() {
+    return this.backBuffer;
+  }
+  private backBufferCtx = this.backBuffer.getContext('2d') as CanvasRenderingContext2D;
+  private lastKnownBattleId = -1;
+
+  private renderer = useBattleRenderer();
+
   constructor(public readonly workerId: string) {
     console.log('Creating a worker...', workerId);
     this.speed = useStorage(`${workerId}-speed`, 50);
@@ -41,6 +52,7 @@ export class WorkerDispatcher {
     this.worker.onmessage = (e) => {
       try {
         if (e.data.type === 'battle-status') {
+          this.renderBattleStatus(e.data.status);
           this.battleStatusSubject$.next(e.data.status);
         } else if (e.data.type === 'game-summary') {
           console.debug('Emitting game summary', this.workerId, e.data.results);
@@ -69,6 +81,18 @@ export class WorkerDispatcher {
     watch(this.speed, (newSpeed) => {
       this.worker.postMessage({ type: 'set-speed', speed: newSpeed });
     });
+  }
+
+  private renderBattleStatus(status: BattleStatus) {
+    if (status.battleId !== this.lastKnownBattleId) {
+      // A new battle started - reset the back buffer
+      this.backBuffer.width = status.args.mapWidth;
+      this.backBuffer.height = status.args.mapHeight;
+      this.backBufferCtx.clearRect(0, 0, this.backBuffer.width, this.backBuffer.height);
+      this.renderer.setTeamColors(status.teams.map((t) => t.color));
+      this.lastKnownBattleId = status.battleId;
+    }
+    this.renderer.renderDeltasToBackBuffer(status.deltaSquares, status.args, this.backBufferCtx);
   }
 
   private queueMessage<T extends WorkerMessage>(message: Omit<T, 'id'>): Promise<WorkerMessage> {

@@ -2,8 +2,6 @@
 import { computed, onBeforeUnmount, ref, useTemplateRef, watch, defineProps } from 'vue';
 import AntMagnifier from '@/components/AntMagnifier.vue';
 import { useMagicKeys, useMouseInElement } from '@vueuse/core';
-import { filter, tap } from 'rxjs';
-import useBattleRenderer from '@/composables/renderer.ts';
 import { useWorker, type WorkerName } from '@/workers/WorkerDispatcher.ts';
 
 const props = withDefaults(
@@ -24,13 +22,8 @@ const emits = defineEmits<{
 }>();
 
 const worker = useWorker(props.workerName);
-
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas');
-
-const backBuffer = document.createElement('canvas');
-const backBufferCtx = backBuffer.getContext('2d') as CanvasRenderingContext2D;
-
-const battleRenderer = useBattleRenderer();
+const context = computed(() => canvas.value?.getContext('2d'));
 
 // Magnifier stuff
 const { ctrl, meta } = useMagicKeys();
@@ -69,66 +62,51 @@ watch(
 const mapWidth = ref(0);
 const mapHeight = ref(0);
 
-const context = computed(() => canvas.value?.getContext('2d') || undefined);
+const lastKnownBattleId = ref(-1);
 
-let lastRenderedTurn = -1;
-let lastReceivedTurn = -1;
-function updateCanvas(ctx?: CanvasRenderingContext2D) {
-  // squares is a list of squares that have changed since the last status update
-  if (!ctx || lastReceivedTurn <= lastRenderedTurn) {
-    // All caught up
-    // console.debug('All caught up at turn', lastReceivedTurn);
-    rendering = false;
-    return;
+const subscription = worker.battleStatuses$.subscribe((battle) => {
+  if (lastKnownBattleId.value !== battle.battleId) {
+    // First status from new battle
+    if (props.centerMagnifier) {
+      magnifierX.value = (battle.args.mapWidth * props.zoomLevel) / 2;
+      magnifierY.value = (battle.args.mapHeight * props.zoomLevel) / 2;
+      magnifierPinned.value = true;
+    }
+    lastKnownBattleId.value = battle.battleId;
+
+    context.value?.clearRect(0, 0, battle.args.mapWidth, battle.args.mapHeight);
+    mapWidth.value = battle.args.mapWidth;
+    mapHeight.value = battle.args.mapHeight;
   }
-  // console.log('Rendering turn', lastReceivedTurn, lastRenderedTurn);
-
-  // Copy from back buffer to canvas
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(backBuffer, 0, 0);
-
-  lastRenderedTurn = lastReceivedTurn;
-  requestAnimationFrame(() => updateCanvas(ctx));
-}
-
-const subscription = worker.battleStatuses$
-  .pipe(
-    filter(() => !!canvas.value && !!context.value && !!backBufferCtx),
-    tap((battle) => {
-      if (lastRenderedTurn === -1 || battle.turns < lastReceivedTurn) {
-        // First status from new battle
-        if (props.centerMagnifier) {
-          magnifierX.value = (battle.args.mapWidth * props.zoomLevel) / 2;
-          magnifierY.value = (battle.args.mapHeight * props.zoomLevel) / 2;
-          magnifierPinned.value = true;
-        }
-
-        lastRenderedTurn = 0;
-        backBuffer.width = battle.args.mapWidth;
-        backBuffer.height = battle.args.mapHeight;
-        backBufferCtx.clearRect(0, 0, battle.args.mapWidth, battle.args.mapHeight);
-        context.value?.clearRect(0, 0, battle.args.mapWidth, battle.args.mapHeight);
-        battleRenderer.setTeamColors(battle.teams.map((t) => t.color));
-        mapWidth.value = battle.args.mapWidth;
-        mapHeight.value = battle.args.mapHeight;
-      }
-      lastReceivedTurn = battle.turns;
-    }),
-  )
-  .subscribe((battle) => {
-    battleRenderer.renderDeltasToBackBuffer(battle.deltaSquares, battle.args, backBufferCtx);
-    ensureRendering();
-  });
+  ensureRendering();
+});
 
 onBeforeUnmount(() => {
   subscription?.unsubscribe();
 });
 
-let rendering = false;
+let renderPending = false;
 function ensureRendering() {
-  if (rendering) return;
-  rendering = true;
-  requestAnimationFrame(() => updateCanvas(context.value));
+  // Skip rendering frames that arrive faster than the browser can render
+  if (renderPending || !context.value) return;
+  renderPending = true;
+  requestAnimationFrame(() => {
+    if (!context.value) return;
+
+    // Ensure the canvas is the right size
+    if (
+      canvas.value &&
+      (canvas.value.width !== worker.renderedBattle.width ||
+        canvas.value.height !== worker.renderedBattle.height)
+    ) {
+      canvas.value.width = worker.renderedBattle.width;
+      canvas.value.height = worker.renderedBattle.height;
+    }
+    // Copy from back buffer to canvas
+    context.value.imageSmoothingEnabled = false;
+    context.value.drawImage(worker.renderedBattle, 0, 0);
+    renderPending = false;
+  });
 }
 
 function getAntData() {
@@ -159,7 +137,8 @@ function getAntData() {
       <ant-magnifier
         v-if="magActive"
         class="magnifier"
-        :back-buffer="backBuffer"
+        :worker-name="workerName"
+        :battle-id="lastKnownBattleId"
         :zoom-level="5"
         :center-x="magX / (props.zoomLevel || 1)"
         :center-y="magY / (props.zoomLevel || 1)"

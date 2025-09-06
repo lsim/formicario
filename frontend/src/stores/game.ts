@@ -11,7 +11,7 @@ import {
   useStats,
 } from '@/composables/stats.ts';
 import type { BattleStatus } from '@/GameSummary.ts';
-import { Observable, ReplaySubject } from 'rxjs';
+import { filter, firstValueFrom, Observable, ReplaySubject } from 'rxjs';
 import { watchDebounced } from '@vueuse/core';
 import useApiClient from '@/composables/api-client.ts';
 import useToast from '@/composables/toast.ts';
@@ -110,6 +110,7 @@ export const useGameStore = defineStore('game', () => {
   async function start(pauseAfterTurns = -1) {
     selectedBattleSummaryStats.value = null;
     if (gameRunning.value) return;
+    const gameId = gameCounter.value++;
     const message = {
       game: {
         ...gameSpec,
@@ -122,7 +123,7 @@ export const useGameStore = defineStore('game', () => {
       },
       pauseAfterTurns,
       speed: worker.speed.value,
-      gameId: gameCounter.value++,
+      gameId,
       isTest: false,
       isRanked: true,
     };
@@ -132,6 +133,11 @@ export const useGameStore = defineStore('game', () => {
       stats.expandedBattleSummaries$,
       stats.aggregatedBattleStats$,
     ]);
+    firstValueFrom(worker.gameSummaries$.pipe(filter((summary) => summary.gameId === gameId))).then(
+      () => {
+        gameRunning.value = false;
+      },
+    );
     lastError.value = [];
     await worker.startGame(message as Omit<RunGameCommand, 'id' | 'type'>);
 

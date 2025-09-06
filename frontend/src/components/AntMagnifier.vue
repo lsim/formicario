@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue';
+import { useWorker, type WorkerName } from '@/workers/WorkerDispatcher.ts';
 
 const props = defineProps<{
-  backBuffer: HTMLCanvasElement;
+  workerName: WorkerName;
+  battleId: number;
   zoomLevel: number;
   centerX: number;
   centerY: number;
@@ -14,15 +16,17 @@ const canvasRef = useTemplateRef('canvasRef');
 
 const ctx = computed(() => canvasRef.value?.getContext('2d'));
 
+const worker = useWorker(props.workerName);
+
 const keepRendering = ref(false);
 
-function render(sourceCanvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
+function render(ctx: CanvasRenderingContext2D) {
   const subImageWidth = magnifierPixels.value / props.zoomLevel;
 
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, magnifierPixels.value, magnifierPixels.value);
   ctx.drawImage(
-    props.backBuffer,
+    worker.renderedBattle,
     props.centerX - subImageWidth / 2,
     props.centerY - subImageWidth / 2,
     subImageWidth,
@@ -33,19 +37,16 @@ function render(sourceCanvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) 
     magnifierPixels.value,
   );
   if (keepRendering.value) {
-    requestAnimationFrame(() => render(sourceCanvas, ctx));
+    requestAnimationFrame(() => render(ctx));
   }
 }
 
 watch(
-  () => [props.backBuffer, ctx.value],
-  ([buf, ctx]) => {
-    keepRendering.value = !!(buf && ctx);
-    if (buf && ctx) {
-      requestAnimationFrame(() =>
-        render(buf as HTMLCanvasElement, ctx as CanvasRenderingContext2D),
-      );
-    }
+  () => [props.battleId, ctx.value],
+  ([, ctx]) => {
+    if (!ctx || keepRendering.value) return;
+    keepRendering.value = true;
+    requestAnimationFrame(() => render(ctx as CanvasRenderingContext2D));
   },
 );
 
