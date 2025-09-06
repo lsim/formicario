@@ -231,7 +231,7 @@ const readyToStart = computed(() => !gameStore.gameRunning);
       <div class="panel-block">
         <div class="control">
           <label class="label"
-            >Number of randomly selected teams per battle<input
+            >Number of teams per battle<input
               class="input"
               type="number"
               v-model="gameStore.gameSpec.numBattleTeams"
