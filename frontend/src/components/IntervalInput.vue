@@ -1,8 +1,11 @@
 <script setup lang="ts">
-// import { computed, ref, watch } from 'vue';
+import { nextTick, ref, watch } from 'vue';
 
-const lowerModel = defineModel<number>('lower', { required: true });
-const upperModel = defineModel<number>('upper', { required: true });
+const lower = defineModel<number>('lower', { required: true });
+const upper = defineModel<number>('upper', { required: true });
+
+const a = ref(lower.value);
+const b = ref(upper.value);
 
 const props = withDefaults(
   defineProps<{
@@ -15,7 +18,17 @@ const props = withDefaults(
     label: '',
     step: 1,
     min: 1,
-    max: 1000,
+    max: 100,
+  },
+);
+
+// Ensure that lower is always less or equal to upper
+watch(
+  () => [a.value, b.value],
+  (newValues) => {
+    const sorted = newValues.sort((a, b) => a - b);
+    lower.value = sorted[0];
+    upper.value = sorted[1];
   },
 );
 </script>
@@ -29,31 +42,29 @@ const props = withDefaults(
         :style="{
           '--min': props.min,
           '--max': props.max,
-          '--a': lowerModel,
-          '--b': upperModel,
+          '--a': a,
+          '--b': b,
           '--p': '',
         }"
       >
-        <!--        <label class="sr-only" for="a">From:</label>-->
         <input
           id="a"
           type="range"
           :min="props.min"
           :max="props.max"
-          v-model.number="lowerModel"
+          v-model.number="a"
           :step="props.step"
         />
-        <output for="a" :style="{ '--c': lowerModel }"></output>
-        <!--        <label class="sr-only" for="b">To:</label>-->
+        <output for="a" :style="{ '--c': a }"></output>
         <input
           id="b"
           type="range"
           :min="props.min"
           :max="props.max"
-          v-model.number="upperModel"
+          v-model.number="b"
           :step="props.step"
         />
-        <output for="b" :style="{ '--c': upperModel }"></output>
+        <output for="b" :style="{ '--c': b }"></output>
       </div>
     </a>
   </div>
